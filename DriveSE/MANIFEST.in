@@ -1,0 +1,3 @@
+graft src/DriveSE/sphinx_build/html
+recursive-include src/DriveSE/test *.py
+
