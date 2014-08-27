@@ -1,7 +1,7 @@
 """
-nacelleSE.py
+DriveSE.py
 
-Created by Katherine Dykes 2012.
+Created by Taylor Parsons 2014.
 Copyright (c) NREL. All rights reserved.
 """
 
@@ -50,8 +50,8 @@ class NacelleBase(Assembly):
 class Drive3pt(NacelleBase):
 
     '''
-       NacelleSE class
-          The NacelleSE class is used to represent the nacelle system of a wind turbine.
+       DriveSE class
+          The DriveSE3pt class is used to represent the nacelle system of a wind turbine with a single main bearing
     '''
 
     # parameters
@@ -316,8 +316,8 @@ class Drive3pt(NacelleBase):
 class Drive4pt(NacelleBase):
 
     '''
-       NacelleSE class
-          The NacelleSE class is used to represent the nacelle system of a wind turbine.
+       DriveSE class
+          The DriveSE4pt class is used to represent the nacelle system of a wind turbine with two main bearings
     '''
 
     # variables
@@ -575,13 +575,8 @@ class Drive4pt(NacelleBase):
         return detailedMasses'''
 
 
-
-
-
-
-#examples
 #------------------------------------------------------------------
-
+#examples
 
 def nacelle_example_80m_baseline_3pt():
 
@@ -667,7 +662,7 @@ def nacelle_example_80m_baseline_3pt():
 
     nace.run()
 
-    cm_print(nace)
+    #cm_print(nace)
     sys_print(nace)
 
 def nacelle_example_80m_baseline_4pt():
@@ -758,7 +753,7 @@ def nacelle_example_80m_baseline_4pt():
 
     nace.run()
 
-    cm_print(nace)
+    #cm_print(nace)
     sys_print(nace)
 
 def nacelle_example_GE_3pt():
@@ -912,7 +907,7 @@ def nacelle_example_GE_4pt():
 
     nace.run()
 
-    cm_print(nace)
+    #cm_print(nace)
     sys_print(nace)
 
 def nacelle_example_GRC_3pt():
@@ -990,7 +985,7 @@ def nacelle_example_GRC_3pt():
     nace.tower_top_diameter = 2.21 # m
 
     nace.run()
-    cm_print(nace)
+    #cm_print(nace)
     sys_print(nace)
        
 def nacelle_example_GRC_4pt():
