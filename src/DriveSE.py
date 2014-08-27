@@ -765,16 +765,16 @@ def nacelle_example_1p5MW_3pt():
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 1500
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
-    nace.rotor_thrust = 2.6204e5 #209770.0 #500930.84 # N
-    nace.rotor_mass = 0.0 #142585.75 # kg
+    nace.rotor_thrust = 2.6204e5 #
+    nace.rotor_mass = 0.0 #
     nace.rotorRatedRPM = 16.18 #rpm
-    nace.rotor_bending_moment = 2.7795e6 #3080.8e3 #DLC 1.4
-    nace.rotor_bending_moment_x = 8.4389e5 #9.07e3 #4365248.74
-    nace.rotor_bending_moment_y = -2.6758e6 #-3080.49e3 #14700000.0
-    nace.rotor_bending_moment_z = 7.5222e2 #-45.9e3 #0.0
-    nace.rotor_force_x = 2.6204e5 #209770.0 #500930.84
-    nace.rotor_force_y = 2.8026e4 #37150. #0.0
-    nace.rotor_force_z = -3.4763e5 #-211.53e3 #1e6
+    nace.rotor_bending_moment = 2.7795e6 #
+    nace.rotor_bending_moment_x = 8.4389e5 #
+    nace.rotor_bending_moment_y = -2.6758e6 #
+    nace.rotor_bending_moment_z = 7.5222e2 #
+    nace.rotor_force_x = 2.6204e5 #
+    nace.rotor_force_y = 2.8026e4 #
+    nace.rotor_force_z = -3.4763e5 #
 
 
     # 1p5MW  Drivetrain variables
@@ -840,16 +840,16 @@ def nacelle_example_1p5MW_4pt():
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 1500
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
-    nace.rotor_thrust = 2.6204e5 #209770.0 #500930.84 # N
-    nace.rotor_mass = 0.0 #142585.75 # kg
+    nace.rotor_thrust = 2.6204e5 #
+    nace.rotor_mass = 0.0 #
     nace.rotorRatedRPM = 16.18 #rpm
-    nace.rotor_bending_moment = 2.7795e6 #3080.8e3 #DLC 1.4
-    nace.rotor_bending_moment_x = 8.4389e5 #9.07e3 #4365248.74
-    nace.rotor_bending_moment_y = -2.6758e6 #-3080.49e3 #14700000.0
-    nace.rotor_bending_moment_z = 7.5222e2 #-45.9e3 #0.0
-    nace.rotor_force_x = 2.6204e5 #209770.0 #500930.84
-    nace.rotor_force_y = 2.8026e4 #37150. #0.0
-    nace.rotor_force_z = -3.4763e5 #-211.53e3 #1e6
+    nace.rotor_bending_moment = 2.7795e6 #
+    nace.rotor_bending_moment_x = 8.4389e5 #
+    nace.rotor_bending_moment_y = -2.6758e6 #
+    nace.rotor_bending_moment_z = 7.5222e2 #
+    nace.rotor_force_x = 2.6204e5 #209770.0 #
+    nace.rotor_force_y = 2.8026e4 #37150. #
+    nace.rotor_force_z = -3.4763e5 #-211.53e3 #
 
     # 1p5MW  Drivetrain variables
     nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
@@ -921,7 +921,7 @@ def nacelle_example_p75_3pt():
     nace.rotor_thrust = 143000.0 # # N
     nace.rotor_mass = 0.0 # kg
     nace.rotorRatedRPM = 22.0 #rpm
-    nace.rotor_bending_moment = 495.6e3 #DLC 1.4
+    nace.rotor_bending_moment = 495.6e3 #
     nace.rotor_bending_moment_x = 401.0e3 #
     nace.rotor_bending_moment_y = 495.6e3 #
     nace.rotor_bending_moment_z = -443.0e3 #
@@ -932,7 +932,7 @@ def nacelle_example_p75_3pt():
     # NREL 750 kW Drivetrain variables
     nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 750 # kW
-    nace.gear_ratio = 81.491 # 97:1 as listed in the 5 MW reference document
+    nace.gear_ratio = 81.491 #  as listed in the 5 MW reference document
     nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
     #nace.bevel = 0 # no bevel stage
     nace.crane = False #True # onboard crane present
@@ -995,22 +995,22 @@ def nacelle_example_p75_4pt():
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 750
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
-    #nace.rotor_torque = 6.37e6 #4365248.74 # Nm
-    nace.rotor_thrust = 143000.0 #500930.84 # N
-    nace.rotor_mass = 0.0 #142585.75 # kg
+    #nace.rotor_torque = 6.37e6 #
+    nace.rotor_thrust = 143000.0 #
+    nace.rotor_mass = 0.0 #
     nace.rotorRatedRPM = 22.0 #rpm
-    nace.rotor_bending_moment = 495.6e3 #DLC 1.4
-    nace.rotor_bending_moment_x = 401.0e3 #4365248.74
-    nace.rotor_bending_moment_y = 495.6e3 #14700000.0
-    nace.rotor_bending_moment_z = -443.0e3 #0.0
-    nace.rotor_force_x = 143000.0 #500930.84
-    nace.rotor_force_y = -12600.0 #0.0
-    nace.rotor_force_z = -142.0e3 #1e6
+    nace.rotor_bending_moment = 495.6e3 #
+    nace.rotor_bending_moment_x = 401.0e3 #
+    nace.rotor_bending_moment_y = 495.6e3 #
+    nace.rotor_bending_moment_z = -443.0e3 #
+    nace.rotor_force_x = 143000.0 #
+    nace.rotor_force_y = -12600.0 #
+    nace.rotor_force_z = -142.0e3 #
 
     # NREL 750 kW Drivetrain variables
     nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 750 # kW
-    nace.gear_ratio = 81.491 # 97:1 as listed in the 5 MW reference document
+    nace.gear_ratio = 81.491 #  as listed in the 5 MW reference document
     nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
     #nace.bevel = 0 # no bevel stage
     nace.crane = False #True # onboard crane present
