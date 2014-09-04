@@ -731,6 +731,7 @@ class Hub_drive(Component):
             bladeRootDiam = self.bladeRootDiam
         else:
             bladeRootDiam = 2.659*self.machine_rating**.3254
+            print 'blade root diameter: ', bladeRootDiam
 
         if self.L_rb:
             L_rb = self.L_rb
@@ -2445,8 +2446,9 @@ class LowSpeedShaft_drive3pt(Component):
             [D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
          
         #resize bearing if no fatigue check
-        else:
-            [D_max_a,FW_max,bearingmass] = resize_for_bearings(D_max,  self.mb1Type)        
+        if check_fatigue == 0:
+            [D_max_a,FW_max,bearingmass] = resize_for_bearings(D_max,  self.mb1Type)
+
         [D_min_a,FW_min,trash] = resize_for_bearings(D_min,  self.mb2Type) #mb2 is a representation of the gearbox connection
             
         lss_mass_new=(pi/3)*(D_max_a**2+D_min_a**2+D_max_a*D_min_a)*(L_ms-(FW_max+FW_min)/2)*density/4+ \

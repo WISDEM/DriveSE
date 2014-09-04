@@ -708,7 +708,7 @@ def nacelle_example_5MW_baseline_4pt():
     nace.gearbox_cm = 0.1
     nace.hss_length = 1.5
 
-    nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
+    nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3. #cut-in m/s
@@ -951,6 +951,7 @@ def nacelle_example_p75_3pt():
     nace.overhang = 2.26
     nace.L_rb = 1.22 # length from hub center to main bearing, leave zero if unknown
     nace.gearbox_cm = 0.8
+    nace.blade_root_diameter= 1.7
 
     nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
@@ -962,6 +963,7 @@ def nacelle_example_p75_3pt():
     nace.weibull_A = 9. # windspeed distribution scale parameter
     nace.T_life=20. #design life in years
     nace.IEC_Class_Letter = 'A'
+
 
     #variables if check_fatigue =2:
     # nace.rotor_thrust_distribution = 
@@ -1111,7 +1113,7 @@ def sys_print(nace):
 
     print 'Yaw system      %8.1f kg' % (nace.yawSystem.mass )
 
-    print 'Hub             %8.1f kg. cm %6.2f %6.2f %6.2f' %(nace.hub.mass,nace.hub.cm[0], nace.hub.cm[1],nace.hub.cm[2])
+    print 'Hub             %8.1f kg. %8.1f m  cm %6.2f %6.2f %6.2f' %(nace.hub.mass,nace.hub.diameter,nace.hub.cm[0], nace.hub.cm[1],nace.hub.cm[2])
 
     print 'Overall nacelle:  %8.1f kg .cm %6.2f %6.2f %6.2f I %6.2f %6.2f %6.2f' % (nace.nacelle_mass, nace.nacelle_cm[0], nace.nacelle_cm[1], nace.nacelle_cm[2], nace.nacelle_I[0], nace.nacelle_I[1], nace.nacelle_I[2]  )
 
@@ -1123,11 +1125,11 @@ if __name__ == '__main__':
     ''' Main runs through tests of several drivetrain configurations with known component masses and dimensions '''
 
     #nacelle_example_5MW_baseline_3pt()
-    #nacelle_example_5MW_baseline_4pt()
+    nacelle_example_5MW_baseline_4pt()
     #nacelle_example_1p5MW_3pt()
-    #nacelle_example_1p5MW_4pt()
-    #nacelle_example_p75_3pt()
-    nacelle_example_p75_4pt()
+    nacelle_example_1p5MW_4pt()
+    nacelle_example_p75_3pt()
+    #nacelle_example_p75_4pt()
 
 
 
