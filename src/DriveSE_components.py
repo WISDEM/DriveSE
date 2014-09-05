@@ -731,6 +731,7 @@ class Hub_drive(Component):
             bladeRootDiam = self.bladeRootDiam
         else:
             bladeRootDiam = 2.659*self.machine_rating**.3254
+            print 'blade root diameter: ', bladeRootDiam
 
         if self.L_rb:
             L_rb = self.L_rb
@@ -1047,7 +1048,7 @@ class LowSpeedShaft_drive4pt(Component):
         else:
           L_rb = self.L_rb
 
-        L_bg = 6.11         #distance from hub center to gearbox yokes  # to add as an input
+        L_bg = 6.11-L_rb    #distance from first main bearing to gearbox yokes  # to add as an input
         L_as = L_ms/2.0     #distance from main bearing to shaft center
         L_gb = 0.0          #distance to gbx center from trunnions in x-dir # to add as an input
         H_gb = 1.0          #distance to gbx center from trunnions in z-dir # to add as an input     
@@ -1219,7 +1220,7 @@ class LowSpeedShaft_drive4pt(Component):
                 F_mb2_x = -F_r_x - rotorWeight*sin(radians(gamma))
                 F_mb2_y = -M_r_z/L_mb + F_r_y*(L_rb)/L_mb
                 F_mb2_z = (M_r_y - rotorWeight*cos(radians(gamma))*L_rb \
-                          -lssWeight*L_as*cos(radians(gamma)) - shrinkDiscWeight*L_ms*cos(radians(gamma)) \
+                          -lssWeight*L_as*cos(radians(gamma)) - shrinkDiscWeight*(L_mb+L_ms_0)*cos(radians(gamma)) \
                            + gbxWeight*cos(radians(gamma))*L_gb + F_r_z*cos(radians(gamma))*L_rb)/L_mb
 
                 F_mb1_x = 0.0
@@ -1234,15 +1235,15 @@ class LowSpeedShaft_drive4pt(Component):
                 Mz_ms = np.zeros(3*len_pts)
 
                 for k in range(len_pts):
-                    My_ms[k] = -M_r_y + rotorWeight*cos(radians(gamma))*x_rb[k] + 0.5*lssWeight/L_ms*x_rb[k]**2 - F_r_z*x_rb[k]
+                    My_ms[k] = -M_r_y + rotorWeight*cos(radians(gamma))*x_rb[k] + 0.5*lssWeight/(L_mb+L_ms_0)*x_rb[k]**2 - F_r_z*x_rb[k]
                     Mz_ms[k] = -M_r_z - F_r_y*x_rb[k]
 
                 for j in range(len_pts):
-                    My_ms[j+len_pts] = -F_r_z*x_mb[j] - M_r_y + rotorWeight*cos(radians(gamma))*x_mb[j] - F_mb1_z*(x_mb[j]-L_rb) + 0.5*lssWeight/L_ms*x_mb[j]**2
+                    My_ms[j+len_pts] = -F_r_z*x_mb[j] - M_r_y + rotorWeight*cos(radians(gamma))*x_mb[j] - F_mb1_z*(x_mb[j]-L_rb) + 0.5*lssWeight/(L_mb+L_ms_0)*x_mb[j]**2
                     Mz_ms[j+len_pts] = -M_r_z - F_mb1_y*(x_mb[j]-L_rb) -F_r_y*x_mb[j]
 
                 for l in range(len_pts):
-                    My_ms[l + 2*len_pts] = -F_r_z*x_ms[l] - M_r_y + rotorWeight*cos(radians(gamma))*x_ms[l] - F_mb1_z*(x_ms[l]-L_rb) -F_mb2_z*(x_ms[l] - L_rb - L_mb) + 0.5*lssWeight/L_ms*x_ms[l]**2
+                    My_ms[l + 2*len_pts] = -F_r_z*x_ms[l] - M_r_y + rotorWeight*cos(radians(gamma))*x_ms[l] - F_mb1_z*(x_ms[l]-L_rb) -F_mb2_z*(x_ms[l] - L_rb - L_mb) + 0.5*lssWeight/(L_mb+L_ms_0)*x_ms[l]**2
                     Mz_ms[l + 2*len_pts] = -M_r_z - F_mb_y*(x_ms[l]-L_rb) -F_r_y*x_ms[l]
 
                 x_shaft = np.concatenate([x_rb, x_mb, x_ms])
@@ -2445,8 +2446,9 @@ class LowSpeedShaft_drive3pt(Component):
             [D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
          
         #resize bearing if no fatigue check
-        else:
-            [D_max_a,FW_max,bearingmass] = resize_for_bearings(D_max,  self.mb1Type)        
+        if check_fatigue == 0:
+            [D_max_a,FW_max,bearingmass] = resize_for_bearings(D_max,  self.mb1Type)
+
         [D_min_a,FW_min,trash] = resize_for_bearings(D_min,  self.mb2Type) #mb2 is a representation of the gearbox connection
             
         lss_mass_new=(pi/3)*(D_max_a**2+D_min_a**2+D_max_a*D_min_a)*(L_ms-(FW_max+FW_min)/2)*density/4+ \

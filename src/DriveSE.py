@@ -578,10 +578,7 @@ class Drive4pt(NacelleBase):
 #------------------------------------------------------------------
 #examples
 
-def nacelle_example_80m_baseline_3pt():
-
-    #DLC7.1a_0001_Land_38.0V0_352ny_S01.out from Table 42 in 
-    #"Effect of Tip Velocity Constraints on the Optimized Design of a Wind Turbine"
+def nacelle_example_5MW_baseline_3pt():
 
     # NREL 5 MW Rotor Variables
     print '----- NREL 5 MW Turbine - 3 Point Suspension -----'
@@ -590,7 +587,7 @@ def nacelle_example_80m_baseline_3pt():
     nace.rotor_speed = 12.1 # #rpm m/s
     nace.machine_rating = 5000.0
     nace.DrivetrainEfficiency = 0.95
-    nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
+    nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 
     nace.rotor_thrust = 599610.0 # N
     nace.rotor_mass = 0.0 #accounted for in F_z # kg
     nace.rotorRatedRPM = 12.1 #rpm
@@ -615,7 +612,7 @@ def nacelle_example_80m_baseline_3pt():
     nace.ratio_type = 'optimal'
     nace.shaft_type = 'normal'
     nace.uptower_transformer=True
-    nace.shrink_disc_mass = 1000.0 # estimated
+    nace.shrink_disc_mass = 333.3*nace.machine_rating/1000.0 # estimated
     nace.carrier_mass = 8000.0 # estimated
     nace.mb1Type = 'SRB'
     nace.mb2Type = 'SRB'
@@ -665,7 +662,7 @@ def nacelle_example_80m_baseline_3pt():
     #cm_print(nace)
     sys_print(nace)
 
-def nacelle_example_80m_baseline_4pt():
+def nacelle_example_5MW_baseline_4pt():
 
     #DLC7.1a_0001_Land_38.0V0_352ny_S01.out from Table 42 in 
     #"Effect of Tip Velocity Constraints on the Optimized Design of a Wind Turbine"
@@ -702,7 +699,7 @@ def nacelle_example_80m_baseline_4pt():
     nace.ratio_type = 'optimal'
     nace.shaft_type = 'normal'
     nace.uptower_transformer=False
-    nace.shrink_disc_mass = 1000.0 # estimated
+    nace.shrink_disc_mass = 333.3*nace.machine_rating/1000.0 # estimated
     nace.carrier_mass = 8000.0 # estimated
     nace.mb1Type = 'CARB'
     nace.mb2Type = 'SRB'
@@ -711,7 +708,7 @@ def nacelle_example_80m_baseline_4pt():
     nace.gearbox_cm = 0.1
     nace.hss_length = 1.5
 
-    nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
+    nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3. #cut-in m/s
@@ -756,31 +753,31 @@ def nacelle_example_80m_baseline_4pt():
     #cm_print(nace)
     sys_print(nace)
 
-def nacelle_example_GE_3pt():
+def nacelle_example_1p5MW_3pt():
     
     # test of module for turbine data set
 
-    # GE 1.5 MW Rotor Variables 
-    print '----- NREL GE 1.5MW Drivetrain - 3 Point Suspension-----'
+    # 1.5 MW Rotor Variables 
+    print '----- NREL 1p5MW  Drivetrain - 3 Point Suspension-----'
     nace = Drive3pt()
     nace.rotor_diameter = 77 # m
     nace.rotor_speed = 16.18  #rpm# m/s
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 1500
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
-    nace.rotor_thrust = 2.6204e5 #209770.0 #500930.84 # N
-    nace.rotor_mass = 0.0 #142585.75 # kg
+    nace.rotor_thrust = 2.6204e5 #
+    nace.rotor_mass = 0.0 #
     nace.rotorRatedRPM = 16.18 #rpm
-    nace.rotor_bending_moment = 2.7795e6 #3080.8e3 #DLC 1.4
-    nace.rotor_bending_moment_x = 8.4389e5 #9.07e3 #4365248.74
-    nace.rotor_bending_moment_y = -2.6758e6 #-3080.49e3 #14700000.0
-    nace.rotor_bending_moment_z = 7.5222e2 #-45.9e3 #0.0
-    nace.rotor_force_x = 2.6204e5 #209770.0 #500930.84
-    nace.rotor_force_y = 2.8026e4 #37150. #0.0
-    nace.rotor_force_z = -3.4763e5 #-211.53e3 #1e6
+    nace.rotor_bending_moment = 2.7795e6 #
+    nace.rotor_bending_moment_x = 8.4389e5 #
+    nace.rotor_bending_moment_y = -2.6758e6 #
+    nace.rotor_bending_moment_z = 7.5222e2 #
+    nace.rotor_force_x = 2.6204e5 #
+    nace.rotor_force_y = 2.8026e4 #
+    nace.rotor_force_z = -3.4763e5 #
 
 
-    # GE 1.5MW Drivetrain variables
+    # 1p5MW  Drivetrain variables
     nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 1500.0 # kW
     nace.gear_ratio = 78 # 97:1 as listed in the 5 MW reference document
@@ -793,7 +790,7 @@ def nacelle_example_GE_3pt():
     nace.ratio_type = 'optimal'
     nace.shaft_type = 'normal'
     nace.uptower_transformer=False #True
-    nace.shrink_disc_mass = 200.0 # estimated
+    nace.shrink_disc_mass = 333.3*nace.machine_rating/1000.0 # estimated
     nace.carrier_mass = 2000.0 # estimated
     nace.mb1Type = 'SRB'
     nace.mb2Type = 'SRB'
@@ -825,37 +822,36 @@ def nacelle_example_GE_3pt():
     # nace.rotor_Mz_distribution = 
     # nace.rotor_Mz_count =     
 
-    # GE Tower Variables
+    # 1p5MW Tower Variables
     nace.tower_top_diameter = 2.3 # m
 
     nace.run()
 
     sys_print(nace)
 
-def nacelle_example_GE_4pt():
+def nacelle_example_1p5MW_4pt():
     
     # test of module for turbine data set
 
-    # GE 1.5 MW Rotor Variables 
-    print '----- NREL GE 1.5MW Drivetrain - 4 Point Suspension-----'
+    print '----- NREL 1p5MW  Drivetrain - 4 Point Suspension-----'
     nace = Drive4pt()
     nace.rotor_diameter = 77 # m
     nace.rotor_speed = 16.18  #rpm# rpm
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 1500
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
-    nace.rotor_thrust = 2.6204e5 #209770.0 #500930.84 # N
-    nace.rotor_mass = 0.0 #142585.75 # kg
+    nace.rotor_thrust = 2.6204e5 #
+    nace.rotor_mass = 0.0 #
     nace.rotorRatedRPM = 16.18 #rpm
-    nace.rotor_bending_moment = 2.7795e6 #3080.8e3 #DLC 1.4
-    nace.rotor_bending_moment_x = 8.4389e5 #9.07e3 #4365248.74
-    nace.rotor_bending_moment_y = -2.6758e6 #-3080.49e3 #14700000.0
-    nace.rotor_bending_moment_z = 7.5222e2 #-45.9e3 #0.0
-    nace.rotor_force_x = 2.6204e5 #209770.0 #500930.84
-    nace.rotor_force_y = 2.8026e4 #37150. #0.0
-    nace.rotor_force_z = -3.4763e5 #-211.53e3 #1e6
+    nace.rotor_bending_moment = 2.7795e6 #
+    nace.rotor_bending_moment_x = 8.4389e5 #
+    nace.rotor_bending_moment_y = -2.6758e6 #
+    nace.rotor_bending_moment_z = 7.5222e2 #
+    nace.rotor_force_x = 2.6204e5 #209770.0 #
+    nace.rotor_force_y = 2.8026e4 #37150. #
+    nace.rotor_force_z = -3.4763e5 #-211.53e3 #
 
-    # GE 1.5MW Drivetrain variables
+    # 1p5MW  Drivetrain variables
     nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 1500.0 # kW
     nace.gear_ratio = 78 # 97:1 as listed in the 5 MW reference document
@@ -868,7 +864,7 @@ def nacelle_example_GE_4pt():
     nace.ratio_type = 'optimal'
     nace.shaft_type = 'normal'
     nace.uptower_transformer=False #True
-    nace.shrink_disc_mass = 200.0 # estimated
+    nace.shrink_disc_mass = 333.3*nace.machine_rating/1000.0 # estimated
     nace.carrier_mass = 2000.0 # estimated
     nace.mb1Type = 'CARB'
     nace.mb2Type = 'SRB'
@@ -902,7 +898,7 @@ def nacelle_example_GE_4pt():
     # nace.rotor_Mz_distribution = 
     # nace.rotor_Mz_count = 
 
-    # GE Tower Variables
+    # 1p5MW Tower Variables
     nace.tower_top_diameter = 2.3 # m
 
     nace.run()
@@ -910,33 +906,33 @@ def nacelle_example_GE_4pt():
     #cm_print(nace)
     sys_print(nace)
 
-def nacelle_example_GRC_3pt():
+def nacelle_example_p75_3pt():
 
     # test of module for turbine data set
-    print '----- NREL GRC 750kW Design - 3 Point Suspension----'
-    # GRC Rotor Variables
+    print '----- NREL 750kW Design - 3 Point Suspension----'
+    # 0.75MW Rotor Variables
     nace = Drive3pt()
     nace.rotor_diameter = 48.2 # m
     nace.rotor_speed = 22.0 # #rpm m/s
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 750
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
-    #nace.rotor_torque = 6.37e6 #4365248.74 # Nm
-    nace.rotor_thrust = 143000.0 #500930.84 # N
-    nace.rotor_mass = 0.0 #142585.75 # kg
+ 
+    nace.rotor_thrust = 143000.0 # # N
+    nace.rotor_mass = 0.0 # kg
     nace.rotorRatedRPM = 22.0 #rpm
-    nace.rotor_bending_moment = 495.6e3 #DLC 1.4
-    nace.rotor_bending_moment_x = 401.0e3 #4365248.74
-    nace.rotor_bending_moment_y = 495.6e3 #14700000.0
-    nace.rotor_bending_moment_z = -443.0e3 #0.0
-    nace.rotor_force_x = 143000.0 #500930.84
-    nace.rotor_force_y = -12600.0 #0.0
-    nace.rotor_force_z = -142.0e3 #1e6
+    nace.rotor_bending_moment = 495.6e3 #
+    nace.rotor_bending_moment_x = 401.0e3 #
+    nace.rotor_bending_moment_y = 495.6e3 #
+    nace.rotor_bending_moment_z = -443.0e3 #
+    nace.rotor_force_x = 143000.0 #
+    nace.rotor_force_y = -12600.0 #
+    nace.rotor_force_z = -142.0e3 #
 
     # NREL 750 kW Drivetrain variables
     nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 750 # kW
-    nace.gear_ratio = 81.491 # 97:1 as listed in the 5 MW reference document
+    nace.gear_ratio = 81.491 #  as listed in the 5 MW reference document
     nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
     #nace.bevel = 0 # no bevel stage
     nace.crane = False #True # onboard crane present
@@ -947,7 +943,7 @@ def nacelle_example_GRC_3pt():
     nace.ratio_type = 'optimal'
     nace.shaft_type = 'normal'
     nace.uptower_transformer=False
-    nace.shrink_disc_mass = 1000.0 # estimated
+    nace.shrink_disc_mass = 333.3*nace.machine_rating/1000.0 # estimated
     nace.carrier_mass = 250. # estimated
     nace.mb1Type = 'SRB'
     nace.mb2Type = 'TRB2'
@@ -955,6 +951,7 @@ def nacelle_example_GRC_3pt():
     nace.overhang = 2.26
     nace.L_rb = 1.22 # length from hub center to main bearing, leave zero if unknown
     nace.gearbox_cm = 0.8
+    nace.blade_root_diameter= 1.7
 
     nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
@@ -966,6 +963,7 @@ def nacelle_example_GRC_3pt():
     nace.weibull_A = 9. # windspeed distribution scale parameter
     nace.T_life=20. #design life in years
     nace.IEC_Class_Letter = 'A'
+
 
     #variables if check_fatigue =2:
     # nace.rotor_thrust_distribution = 
@@ -981,40 +979,40 @@ def nacelle_example_GRC_3pt():
     # nace.rotor_Mz_distribution = 
     # nace.rotor_Mz_count = 
 
-    # GRC Tower Variables
+    # 0.75MW Tower Variables
     nace.tower_top_diameter = 2.21 # m
 
     nace.run()
     #cm_print(nace)
     sys_print(nace)
        
-def nacelle_example_GRC_4pt():
+def nacelle_example_p75_4pt():
 
     # test of module for turbine data set
-    print '----- NREL GRC 750kW Design - 4 Point Suspension----'
-    # GRC Rotor Variables
+    print '----- NREL 0.75MW 750kW Design - 4 Point Suspension----'
+    # 0.75MW Rotor Variables
     nace = Drive4pt()
     nace.rotor_diameter = 48.2 # m
     nace.rotor_speed = 22.0 # #rpm m/s
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 750
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
-    #nace.rotor_torque = 6.37e6 #4365248.74 # Nm
-    nace.rotor_thrust = 143000.0 #500930.84 # N
-    nace.rotor_mass = 0.0 #142585.75 # kg
+    #nace.rotor_torque = 6.37e6 #
+    nace.rotor_thrust = 143000.0 #
+    nace.rotor_mass = 0.0 #
     nace.rotorRatedRPM = 22.0 #rpm
-    nace.rotor_bending_moment = 495.6e3 #DLC 1.4
-    nace.rotor_bending_moment_x = 401.0e3 #4365248.74
-    nace.rotor_bending_moment_y = 495.6e3 #14700000.0
-    nace.rotor_bending_moment_z = -443.0e3 #0.0
-    nace.rotor_force_x = 143000.0 #500930.84
-    nace.rotor_force_y = -12600.0 #0.0
-    nace.rotor_force_z = -142.0e3 #1e6
+    nace.rotor_bending_moment = 495.6e3 #
+    nace.rotor_bending_moment_x = 401.0e3 #
+    nace.rotor_bending_moment_y = 495.6e3 #
+    nace.rotor_bending_moment_z = -443.0e3 #
+    nace.rotor_force_x = 143000.0 #
+    nace.rotor_force_y = -12600.0 #
+    nace.rotor_force_z = -142.0e3 #
 
     # NREL 750 kW Drivetrain variables
     nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 750 # kW
-    nace.gear_ratio = 81.491 # 97:1 as listed in the 5 MW reference document
+    nace.gear_ratio = 81.491 #  as listed in the 5 MW reference document
     nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
     #nace.bevel = 0 # no bevel stage
     nace.crane = False #True # onboard crane present
@@ -1025,7 +1023,7 @@ def nacelle_example_GRC_4pt():
     nace.ratio_type = 'optimal'
     nace.shaft_type = 'normal'
     nace.uptower_transformer=False #True
-    nace.shrink_disc_mass = 1000.0 # estimated
+    nace.shrink_disc_mass = 333.3*nace.machine_rating/1000.0 # estimated
     nace.carrier_mass = 1000.0 # estimated
     nace.mb1Type = 'SRB'
     nace.mb2Type = 'TRB2'
@@ -1058,7 +1056,7 @@ def nacelle_example_GRC_4pt():
     # nace.rotor_Mz_distribution = 
     # nace.rotor_Mz_count = 
 
-    # GRC Tower Variables
+    # 0.75MW Tower Variables
     nace.tower_top_diameter = 2.21 # m
 
     nace.run()
@@ -1084,7 +1082,7 @@ def sys_print(nace):
     print '-------------Nacelle system model results--------------------'
 
     print 'Low speed shaft %8.1f kg %6.2f m %6.2f Ixx %6.2f Iyy %6.2f Izz %6.2f CGx %6.2f CGy %6.2f CGz '\
-          % (nace.lowSpeedShaft.mass , nace.lowSpeedShaft.length, nace.lowSpeedShaft.I[0], nace.lowSpeedShaft.I[1], nace.lowSpeedShaft.I[2], nace.lowSpeedShaft.cm[0], nace.lowSpeedShaft.cm[1], nace.lowSpeedShaft.cm[2])
+          % (nace.lowSpeedShaft.mass-nace.lowSpeedShaft.shrink_disc_mass , nace.lowSpeedShaft.length, nace.lowSpeedShaft.I[0], nace.lowSpeedShaft.I[1], nace.lowSpeedShaft.I[2], nace.lowSpeedShaft.cm[0], nace.lowSpeedShaft.cm[1], nace.lowSpeedShaft.cm[2])
     print 'LSS diameters:', 'upwind', nace.lowSpeedShaft.diameter1   , 'downwind', nace.lowSpeedShaft.diameter2 , 'inner', nace.lowSpeedShaft.diameter1*nace.shaft_ratio
 
     print 'Main bearing upwind   %8.1f kg. cm %8.1f %8.1f %8.1f' % (nace.mainBearing.mass ,nace.mainBearing.cm[0],nace.mainBearing.cm[1],nace.mainBearing.cm[2])
@@ -1115,7 +1113,7 @@ def sys_print(nace):
 
     print 'Yaw system      %8.1f kg' % (nace.yawSystem.mass )
 
-    print 'Hub             %8.1f kg. cm %6.2f %6.2f %6.2f' %(nace.hub.mass,nace.hub.cm[0], nace.hub.cm[1],nace.hub.cm[2])
+    print 'Hub             %8.1f kg. %8.1f m  cm %6.2f %6.2f %6.2f' %(nace.hub.mass,nace.hub.diameter,nace.hub.cm[0], nace.hub.cm[1],nace.hub.cm[2])
 
     print 'Overall nacelle:  %8.1f kg .cm %6.2f %6.2f %6.2f I %6.2f %6.2f %6.2f' % (nace.nacelle_mass, nace.nacelle_cm[0], nace.nacelle_cm[1], nace.nacelle_cm[2], nace.nacelle_I[0], nace.nacelle_I[1], nace.nacelle_I[2]  )
 
@@ -1126,12 +1124,12 @@ def sys_print(nace):
 if __name__ == '__main__':
     ''' Main runs through tests of several drivetrain configurations with known component masses and dimensions '''
 
-    #nacelle_example_80m_baseline_3pt()
-    #nacelle_example_80m_baseline_4pt()
-    #nacelle_example_GE_3pt()
-    #nacelle_example_GE_4pt()
-    nacelle_example_GRC_3pt()
-    #nacelle_example_GRC_4pt()
+    #nacelle_example_5MW_baseline_3pt()
+    nacelle_example_5MW_baseline_4pt()
+    #nacelle_example_1p5MW_3pt()
+    nacelle_example_1p5MW_4pt()
+    nacelle_example_p75_3pt()
+    #nacelle_example_p75_4pt()
 
 
 
