@@ -683,15 +683,15 @@ class Hub_drive(Component):
     '''
 
     # variables
-    rotorDiameter = Float(iotype='in', units='m', desc='rotor diameter')
-    bladeRootDiam = Float(iotype='in', units='m', desc='blade root diameter')
+    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
+    blade_root_diameter = Float(iotype='in', units='m', desc='blade root diameter')
     L_rb = Float(iotype='in', units = 'm', desc = 'distance between hub center and upwind main bearing')
     gamma = Float(iotype = 'in', units = 'deg', desc = 'shaft angle')
     MB1_location = Array(iotype = 'in', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
     machine_rating = Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
     
     # parameters
-    bladeNumber = Int(3, iotype='in', desc='number of turbine blades')
+    blade_number = Int(3, iotype='in', desc='number of turbine blades')
 
     # outputs
     diameter = Float(0.0, iotype='out', units='m', desc='hub diameter')
@@ -705,11 +705,11 @@ class Hub_drive(Component):
         
         Parameters
         ----------
-        rotorDiameter : float
+        rotor_diameter : float
           The wind turbine rotor diameter [m]
-        bladeRootDiam : float
+        blade_root_diameter : float
           The diameter of the blade root [m]
-        bladeNumber : int
+        blade_number : int
           Number of wind turbine rotor blades
 
         
@@ -727,26 +727,26 @@ class Hub_drive(Component):
 
     def execute(self):
 
-        if self.bladeRootDiam: #added 8/6/14 to allow analysis of hubs for unknown blade roots.
-            bladeRootDiam = self.bladeRootDiam
+        if self.blade_root_diameter: #added 8/6/14 to allow analysis of hubs for unknown blade roots.
+            blade_root_diameter = self.blade_root_diameter
         else:
-            bladeRootDiam = 2.659*self.machine_rating**.3254
-            print 'blade root diameter: ', bladeRootDiam
+            blade_root_diameter = 2.659*self.machine_rating**.3254
+            print 'blade root diameter: ', blade_root_diameter
 
         if self.L_rb:
             L_rb = self.L_rb
         else:
-            L_rb = get_L_rb(self.rotorDiameter)
+            L_rb = get_L_rb(self.rotor_diameter)
 
         #Model hub as a cyclinder with holes for blade root and nacelle flange.
-        rCyl=1.1*bladeRootDiam/2.0
-        hCyl=2.8*bladeRootDiam/2.0
+        rCyl=1.1*blade_root_diameter/2.0
+        hCyl=2.8*blade_root_diameter/2.0
         castThickness = rCyl/10.0
         approxCylVol=2*pi*rCyl*castThickness*hCyl
-        bladeRootVol=pi*(bladeRootDiam/2.0)**2*castThickness
+        bladeRootVol=pi*(blade_root_diameter/2.0)**2*castThickness
 
         #assume nacelle flange opening is similar to blade root opening
-        approxCylNetVol = approxCylVol - (1.0 + self.bladeNumber)*bladeRootVol
+        approxCylNetVol = approxCylVol - (1.0 + self.blade_number)*bladeRootVol
         castDensity = 7200.0 # kg/m^3
         self.mass=approxCylNetVol*castDensity
 
