@@ -620,7 +620,7 @@ def nacelle_example_5MW_baseline_3pt():
     nace.overhang = 5.0
     nace.L_rb = 1.912 # length from hub center to main bearing, leave zero if unknow
 
-    nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
+    nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3. #cut-in m/s
@@ -708,7 +708,7 @@ def nacelle_example_5MW_baseline_4pt():
     nace.gearbox_cm = 0.1
     nace.hss_length = 1.5
 
-    nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
+    nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3. #cut-in m/s
@@ -798,7 +798,7 @@ def nacelle_example_1p5MW_3pt():
     nace.overhang = 3.3
     nace.L_rb = 1.535 # length from hub center to main bearing, leave zero if unknow
 
-    nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
+    nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3.5 #cut-in m/s
@@ -873,7 +873,7 @@ def nacelle_example_1p5MW_4pt():
     nace.L_rb =  1.3# length from hub center to main bearing, leave zero if unknown
     nace.gearbox_cm = 0.0
 
-    nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
+    nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3.5 #cut-in m/s
@@ -951,9 +951,9 @@ def nacelle_example_p75_3pt():
     nace.overhang = 2.26
     nace.L_rb = 1.22 # length from hub center to main bearing, leave zero if unknown
     nace.gearbox_cm = 0.8
-    nace.blade_root_diameter= 1.7
+    nace.blade_root_diameter= 1.6
 
-    nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
+    nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3. #cut-in m/s
@@ -1032,7 +1032,7 @@ def nacelle_example_p75_4pt():
     nace.L_rb = 1.22 # 0.007835*rotor_diameter+0.9642 length from hub center to main bearing, leave zero if unknown
     nace.gearbox_cm = 0.90
 
-    nace.check_fatigue = 1 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
+    nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3. #cut-in m/s
