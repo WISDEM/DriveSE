@@ -7,8 +7,8 @@ Created by Andrew Ning on 2014-02-15.
 Copyright (c) NREL. All rights reserved.
 """
 
-from openmdao.main.api import Component
-from openmdao.main.datatypes.api import Float, Array, Enum, Str
+from openmdao.main.api import Component, Assembly
+from openmdao.main.datatypes.api import Float, Array, Enum, Str, Int, Bool
 import numpy as np
 from math import pi, sin, cos, radians
 from scipy.optimize import fmin_cobyla
@@ -16,11 +16,43 @@ import algopy
 
 from akima import Akima
 from commonse.utilities import smooth_abs, vstack
-from NacelleSE import NacelleBase
-from NacelleSE_components import HighSpeedSide, Generator, AboveYawMassAdder, NacelleSystemAdder
+from drivewpact.drive import NacelleBase
+from drivewpact.drive import HighSpeedSide, Generator, AboveYawMassAdder, NacelleSystemAdder
+from fusedwind.interface import implement_base
 
+@implement_base(NacelleBase)
+class NacelleTS(Assembly):
 
-class NacelleTS(NacelleBase):
+    # Base Variables
+    # variables
+    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
+    rotor_mass = Float(iotype='in', units='kg', desc='rotor mass')
+    rotor_torque = Float(iotype='in', units='N*m', desc='rotor torque at rated power')
+    rotor_thrust = Float(iotype='in', units='N', desc='maximum rotor thrust')
+    rotor_speed = Float(iotype='in', units='rpm', desc='rotor speed at rated')
+    machine_rating = Float(iotype='in', units='kW', desc='machine rating of generator')
+    gear_ratio = Float(iotype='in', desc='overall gearbox ratio')
+    tower_top_diameter = Float(iotype='in', units='m', desc='diameter of tower top')
+    rotor_bending_moment = Float(iotype='in', units='N*m', desc='maximum aerodynamic bending moment')
+
+    # parameters
+    drivetrain_design = Int(iotype='in', desc='type of gearbox based on drivetrain type: 1 = standard 3-stage gearbox, 2 = single-stage, 3 = multi-gen, 4 = direct drive', deriv_ignore=True)
+    crane = Bool(iotype='in', desc='flag for presence of crane', deriv_ignore=True)
+    bevel = Int(0, iotype='in', desc='Flag for the presence of a bevel stage - 1 if present, 0 if not')
+    gear_configuration = Str(iotype='in', desc='tring that represents the configuration of the gearbox (stage number and types)')
+
+    # outputs
+    nacelle_mass = Float(iotype='out', units='kg', desc='nacelle mass')
+    nacelle_cm = Array(iotype='out', units='m', desc='center of mass of nacelle from tower top in yaw-aligned coordinate system')
+    nacelle_I = Array(iotype='out', units='kg*m**2', desc='mass moments of inertia for nacelle [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] about its center of mass')
+    low_speed_shaft_mass = Float(iotype='out', units='kg', desc='component mass')
+    main_bearing_mass = Float(iotype='out', units='kg', desc='component mass')
+    second_bearing_mass = Float(iotype='out', units='kg', desc='component mass')
+    gearbox_mass = Float(iotype='out', units='kg', desc='component mass')
+    high_speed_side_mass = Float(iotype='out', units='kg', desc='component mass')
+    generator_mass = Float(iotype='out', units='kg', desc='component mass')
+    bedplate_mass = Float(iotype='out', units='kg', desc='component mass')
+    yaw_system_mass = Float(iotype='out', units='kg', desc='component mass')
 
     # design variables
     L_ms = Float(iotype='in')  # lengths in low-speed shaft
