@@ -6,24 +6,17 @@
 
 from setuptools import setup, find_packages
 
-kwargs = {'author': 'Katherine Dykes, Ryan King and Yi Guo',
+kwargs = {'author': 'Yi Guo, Taylor Parsons and Ryan King',
  'author_email': 'systems.engineering@nrel.gov',
- 'classifiers': ['Intended Audience :: Science/Research',
-                 'Topic :: Scientific/Engineering'],
  'description': 'Sizing model for wind turbine hub and nacelle components.',
- 'download_url': '',
  'include_package_data': True,
  'install_requires': ['openmdao.main'],
  'keywords': ['openmdao'],
- 'license': 'Apache v. 2.0',
- #'maintainer': '',
- #'maintainer_email': '',
- 'name': 'NacelleSE',
+ 'license' : 'Apache License, Version 2.0',
+ 'name': 'DriveSE',
  'package_data': {'DriveSE': []},
  'package_dir': {'': 'src'},
- 'packages': ['DriveSE'],
- 'url': '',
- 'version': '0.1',
+ 'packages': ['drivese', 'test'],
  'zip_safe': False}
 
 

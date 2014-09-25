@@ -10,7 +10,7 @@ import unittest
 import numpy as np
 from commonse.utilities import check_gradient_unit_test
 
-from DriveSE.DriveSmoothComponents import BearingSmooth, YawSystemSmooth, BedplateSmooth
+from drivese.drive_smooth import BearingSmooth, YawSystemSmooth, BedplateSmooth
 
 class TestBearingSmooth(unittest.TestCase):
 
