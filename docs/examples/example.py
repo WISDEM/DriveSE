@@ -64,7 +64,7 @@ nace.rotor_force_y = 186780.0 # N
 nace.rotor_force_z = -842710.0 # N
 
 # NREL 5 MW Drivetrain variables
-nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
+nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
 nace.machine_rating = 5000.0 # kW
 nace.gear_ratio = 96.76 # 97:1 as listed in the 5 MW reference document
 nace.gear_configuration = 'eep' # epicyclic-epicyclic-parallel

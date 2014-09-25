@@ -36,7 +36,7 @@ class NacelleTS(Assembly):
     rotor_bending_moment = Float(iotype='in', units='N*m', desc='maximum aerodynamic bending moment')
 
     # parameters
-    drivetrain_design = Int(iotype='in', desc='type of gearbox based on drivetrain type: 1 = standard 3-stage gearbox, 2 = single-stage, 3 = multi-gen, 4 = direct drive', deriv_ignore=True)
+    drivetrain_design = Enum('geared', ('geared', 'single_stage', 'multi_drive', 'pm_direct_drive'), iotype='in')
     crane = Bool(iotype='in', desc='flag for presence of crane', deriv_ignore=True)
     bevel = Int(0, iotype='in', desc='Flag for the presence of a bevel stage - 1 if present, 0 if not')
     gear_configuration = Str(iotype='in', desc='tring that represents the configuration of the gearbox (stage number and types)')

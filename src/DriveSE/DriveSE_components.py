@@ -7,7 +7,7 @@ Copyright (c) NREL. All rights reserved.
 """
 
 from openmdao.main.api import Component, Assembly
-from openmdao.main.datatypes.api import Float, Bool, Int, Str, Array
+from openmdao.main.datatypes.api import Float, Bool, Int, Str, Array, Enum
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
@@ -3813,7 +3813,7 @@ class Generator_drive(Component):
     rotorRatedRPM = Float(iotype='in', units='rpm', desc='Speed of rotor at rated power')
 
     # parameters
-    drivetrain_design = Int(iotype='in', desc='type of gearbox based on drivetrain type: 1 = standard 3-stage gearbox, 2 = single-stage, 3 = multi-gen, 4 = direct drive')
+    drivetrain_design = Enum('geared', ('geared', 'single_stage', 'multi_drive', 'pm_direct_drive'), iotype='in')
 
     # returns
     mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
@@ -3861,10 +3861,19 @@ class Generator_drive(Component):
           CalcRPM    = 80 / (self.rotor_diameter*0.5*pi/30)
         CalcTorque = (self.machine_rating*1.1) / (CalcRPM * pi/30)
 
-        if (self.drivetrain_design < 4):
-            self.mass = (massCoeff[self.drivetrain_design] * self.machine_rating ** massExp[self.drivetrain_design])
+        if self.drivetrain_design == 'geared':
+            drivetrain_design = 1
+        elif self.drivetrain_design == 'single_stage':
+            drivetrain_design = 2
+        elif self.drivetrain_design == 'multi_drive':
+            drivetrain_design = 3
+        elif self.drivetrain_design == 'pm_direct_drive':
+            drivetrain_design = 4
+
+        if (drivetrain_design < 4):
+            self.mass = (massCoeff[drivetrain_design] * self.machine_rating ** massExp[drivetrain_design])
         else:  # direct drive
-            self.mass = (massCoeff[self.drivetrain_design] * CalcTorque ** massExp[self.drivetrain_design])
+            self.mass = (massCoeff[drivetrain_design] * CalcTorque ** massExp[drivetrain_design])
 
         # calculate mass properties
         length = (1.8 * 0.015 * self.rotor_diameter)

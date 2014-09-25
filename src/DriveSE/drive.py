@@ -6,7 +6,7 @@ Copyright (c) NREL. All rights reserved.
 """
 
 from openmdao.main.api import Component, Assembly
-from openmdao.main.datatypes.api import Float, Bool, Int, Str, Array
+from openmdao.main.datatypes.api import Float, Bool, Int, Str, Array, Enum
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
@@ -40,7 +40,7 @@ class Drive3pt(Assembly):
     rotor_bending_moment = Float(iotype='in', units='N*m', desc='maximum aerodynamic bending moment')
 
     # parameters
-    drivetrain_design = Int(iotype='in', desc='type of gearbox based on drivetrain type: 1 = standard 3-stage gearbox, 2 = single-stage, 3 = multi-gen, 4 = direct drive', deriv_ignore=True)
+    drivetrain_design = Enum('geared', ('geared', 'single_stage', 'multi_drive', 'pm_direct_drive'), iotype='in')
     crane = Bool(iotype='in', desc='flag for presence of crane', deriv_ignore=True)
     bevel = Int(0, iotype='in', desc='Flag for the presence of a bevel stage - 1 if present, 0 if not')
     gear_configuration = Str(iotype='in', desc='tring that represents the configuration of the gearbox (stage number and types)')
@@ -300,7 +300,7 @@ class Drive4pt(Assembly):
     rotor_bending_moment = Float(iotype='in', units='N*m', desc='maximum aerodynamic bending moment')
 
     # parameters
-    drivetrain_design = Int(iotype='in', desc='type of gearbox based on drivetrain type: 1 = standard 3-stage gearbox, 2 = single-stage, 3 = multi-gen, 4 = direct drive', deriv_ignore=True)
+    drivetrain_design = Enum('geared', ('geared', 'single_stage', 'multi_drive', 'pm_direct_drive'), iotype='in')
     crane = Bool(iotype='in', desc='flag for presence of crane', deriv_ignore=True)
     bevel = Int(0, iotype='in', desc='Flag for the presence of a bevel stage - 1 if present, 0 if not')
     gear_configuration = Str(iotype='in', desc='tring that represents the configuration of the gearbox (stage number and types)')
@@ -564,7 +564,7 @@ def nacelle_example_5MW_baseline_3pt():
     nace.rotor_force_z = -842710.0 # N
 
     # NREL 5 MW Drivetrain variables
-    nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
+    nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 5000.0 # kW
     nace.gear_ratio = 96.76 # 97:1 as listed in the 5 MW reference document
     nace.gear_configuration = 'eep' # epicyclic-epicyclic-parallel
@@ -651,7 +651,7 @@ def nacelle_example_5MW_baseline_4pt():
     nace.rotor_force_z = -842710.0 # N
 
     # NREL 5 MW Drivetrain variables
-    nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
+    nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 5000.0 # kW
     nace.gear_ratio = 96.76 # 97:1 as listed in the 5 MW reference document
     nace.gear_configuration = 'eep' # epicyclic-epicyclic-parallel
@@ -742,7 +742,7 @@ def nacelle_example_1p5MW_3pt():
 
 
     # 1p5MW  Drivetrain variables
-    nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
+    nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 1500.0 # kW
     nace.gear_ratio = 78 # 97:1 as listed in the 5 MW reference document
     nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
@@ -816,7 +816,7 @@ def nacelle_example_1p5MW_4pt():
     nace.rotor_force_z = -3.4763e5 #-211.53e3 #
 
     # 1p5MW  Drivetrain variables
-    nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
+    nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 1500.0 # kW
     nace.gear_ratio = 78 # 97:1 as listed in the 5 MW reference document
     nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
@@ -894,7 +894,7 @@ def nacelle_example_p75_3pt():
     nace.rotor_force_z = -142.0e3 #
 
     # NREL 750 kW Drivetrain variables
-    nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
+    nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 750 # kW
     nace.gear_ratio = 81.491 #  as listed in the 5 MW reference document
     nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
@@ -974,7 +974,7 @@ def nacelle_example_p75_4pt():
     nace.rotor_force_z = -142.0e3 #
 
     # NREL 750 kW Drivetrain variables
-    nace.drivetrain_design = 1 # geared 3-stage Gearbox with induction generator machine
+    nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 750 # kW
     nace.gear_ratio = 81.491 #  as listed in the 5 MW reference document
     nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
