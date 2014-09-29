@@ -725,7 +725,7 @@ def nacelle_example_1p5MW_3pt():
     print '----- NREL 1p5MW  Drivetrain - 3 Point Suspension-----'
     nace = Drive3pt()
     nace.rotor_diameter = 77 # m
-    nace.rotor_speed = 16.18  #rpm# m/s
+    nace.rotor_speed = 16.18  #rpm
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 1500
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
@@ -744,10 +744,10 @@ def nacelle_example_1p5MW_3pt():
     # 1p5MW  Drivetrain variables
     nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 1500.0 # kW
-    nace.gear_ratio = 78 # 97:1 as listed in the 5 MW reference document
-    nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
+    nace.gear_ratio = 78 # 
+    nace.gear_configuration = 'epp' # epicyclic-parallel-parallel
     #nace.bevel = 0 # no bevel stage
-    nace.crane = False #True # onboard crane present
+    nace.crane = False # onboard crane not present
     nace.shaft_angle = 5.0 #deg
     nace.shaft_ratio = 0.10
     nace.Np = [3,1,1]
@@ -760,7 +760,7 @@ def nacelle_example_1p5MW_3pt():
     nace.mb2Type = 'SRB'
     nace.flange_length = 0.285 #m
     nace.overhang = 3.3
-    nace.L_rb = 1.535 # length from hub center to main bearing, leave zero if unknow
+    nace.L_rb = 1.535 # length from hub center to main bearing, leave zero if unknown
 
     nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
     #variables if check_fatigue = 1:
@@ -800,7 +800,7 @@ def nacelle_example_1p5MW_4pt():
     print '----- NREL 1p5MW  Drivetrain - 4 Point Suspension-----'
     nace = Drive4pt()
     nace.rotor_diameter = 77 # m
-    nace.rotor_speed = 16.18  #rpm# rpm
+    nace.rotor_speed = 16.18  #rpm
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 1500
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
@@ -811,15 +811,15 @@ def nacelle_example_1p5MW_4pt():
     nace.rotor_bending_moment_x = 8.4389e5 #
     nace.rotor_bending_moment_y = -2.6758e6 #
     nace.rotor_bending_moment_z = 7.5222e2 #
-    nace.rotor_force_x = 2.6204e5 #209770.0 #
-    nace.rotor_force_y = 2.8026e4 #37150. #
-    nace.rotor_force_z = -3.4763e5 #-211.53e3 #
+    nace.rotor_force_x = 2.6204e5 #
+    nace.rotor_force_y = 2.8026e4 #
+    nace.rotor_force_z = -3.4763e5 #
 
     # 1p5MW  Drivetrain variables
     nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 1500.0 # kW
-    nace.gear_ratio = 78 # 97:1 as listed in the 5 MW reference document
-    nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
+    nace.gear_ratio = 78 # 
+    nace.gear_configuration = 'epp' # epicyclic-parallel-parallel
     #nace.bevel = 0 # no bevel stage
     nace.crane = False #True # onboard crane present
     nace.shaft_angle = 5.0 #deg
@@ -896,10 +896,10 @@ def nacelle_example_p75_3pt():
     # NREL 750 kW Drivetrain variables
     nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 750 # kW
-    nace.gear_ratio = 81.491 #  as listed in the 5 MW reference document
-    nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
+    nace.gear_ratio = 81.491 #  
+    nace.gear_configuration = 'epp' # epicyclic-parallel-parallel
     #nace.bevel = 0 # no bevel stage
-    nace.crane = False #True # onboard crane present
+    nace.crane = False #True if onboard crane present
     nace.shaft_angle = 5.0 #deg
     nace.shaft_length = 2.1 #m
     nace.shaft_ratio = 0.10
@@ -953,11 +953,11 @@ def nacelle_example_p75_3pt():
 def nacelle_example_p75_4pt():
 
     # test of module for turbine data set
-    print '----- NREL 0.75MW 750kW Design - 4 Point Suspension----'
+    print '----- NREL 750kW Design - 4 Point Suspension----'
     # 0.75MW Rotor Variables
     nace = Drive4pt()
     nace.rotor_diameter = 48.2 # m
-    nace.rotor_speed = 22.0 # #rpm m/s
+    nace.rotor_speed = 22.0 # #rpm 
     nace.DrivetrainEfficiency = 0.95
     nace.machine_rating = 750
     nace.rotor_torque =  1.5 * (nace.machine_rating * 1000 / nace.DrivetrainEfficiency) / (nace.rotor_speed * (pi / 30)) # 6.35e6 #4365248.74 # Nm
@@ -977,7 +977,7 @@ def nacelle_example_p75_4pt():
     nace.drivetrain_design = 'geared' # geared 3-stage Gearbox with induction generator machine
     nace.machine_rating = 750 # kW
     nace.gear_ratio = 81.491 #  as listed in the 5 MW reference document
-    nace.gear_configuration = 'epp' # epicyclic-epicyclic-parallel
+    nace.gear_configuration = 'epp' # epicyclic-parallel-parallel
     #nace.bevel = 0 # no bevel stage
     nace.crane = False #True # onboard crane present
     nace.shaft_angle = 5.0 #deg

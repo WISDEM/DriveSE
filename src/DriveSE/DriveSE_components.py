@@ -1097,8 +1097,7 @@ class LowSpeedShaft_drive4pt(Component):
             L_ms_gb_new=0.0
             L_ms_0=0.5 #mainshaft length
             L_ms = L_ms_0
-            # print 'L_mb:', L_mb
-            # print 'L_ms:', L_ms
+
 
             while abs(check_limit) > tol and counter <N_count_2:
                 counter =counter+1
@@ -1579,18 +1578,14 @@ class LowSpeedShaft_drive4pt(Component):
             elif np.max(n_My > 1e6):
                 N_rotations = np.max(n_My)/blade_number
             # print 'Upwind bearing calcs'
-            # Fz1 = (Fz*(L_mb+L_rb)+My)/L_mb
             Fz1_Fz = Fz*(L_mb+L_rb)/L_mb
             Fz1_My = My/L_mb
-            # Fy1 = (Mz-Fy(L_mb+L_rb))/L_mb
             Fy1_Fy = -Fy*(L_mb+L_rb)/L_mb
             Fy1_Mz = Mz/L_mb
             [D_max_a,FW_max,bearing1mass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
             # print 'Downwind bearing calcs'
-            # Fz2 = (Fz*L_rb+My)/L_mb
             Fz2_Fz = Fz*L_rb/L_mb
             Fz2_My = My/L_mb
-            # Fy2 = (Mz-Fy*L_rb)/L_mb
             Fy2_Fy = Fy*L_rb/L_mb
             Fy2_Mz = Mz/L_mb
             [D_med_a,FW_med,bearing2mass] = fatigue2_for_bearings(D_med,self.mb2Type,Fx,n_Fx/blade_number,Fy2_Fy,n_Fy/blade_number,Fz2_Fz,n_Fz/blade_number,Fz2_My,n_My/blade_number,Fy2_Mz,n_Mz/blade_number,N_rotations)
@@ -2344,7 +2339,6 @@ class LowSpeedShaft_drive3pt(Component):
             # Fz1 = (Fz*(L_ms+L_rb)+My)/L_ms
             Fz1_Fz = Fz*(L_ms+L_rb)/L_ms #force in z direction due to Fz
             Fz1_My = My/L_ms #force in z direction due to My
-            # Fy1 = (Mz-Fy(L_ms+L_rb))/L_ms
             Fy1_Fy = -Fy*(L_ms+L_rb)/L_ms
             Fy1_Mz = Mz/L_ms
             [D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
@@ -2408,10 +2402,7 @@ class LowSpeedShaft_drive3pt(Component):
         # print 'L_rb %8.f' %(L_rb) #*(self.machine_rating/5.0e3)   #distance from hub center to main bearing scaled off NREL 5MW
         # print 'L_bg %8.f' %(L_bg) #*(self.machine_rating/5.0e3)         #distance from hub center to gearbox yokes
         # print 'L_as %8.f' %(L_as) #distance from main bearing to shaft center
-        # L_cu
-        # L_cd
-        # L_gb
-
+      
         self.FW_mb=FW_max
         self.bearing_mass1 = bearingmass
         self.bearing_mass2 = 0.
@@ -2750,7 +2741,7 @@ class Gearbox_drive(Component):
     '''
 
     #variables
-    #gbxPower = Float(iotype='in', units='kW', desc='gearbox rated power')
+    
     gear_ratio = Float(iotype='in', desc='overall gearbox speedup ratio')
     Np = Array(np.array([0.0,0.0,0.0,]), iotype='in', desc='number of planets in each stage')
     rotor_speed = Float(iotype='in', desc='rotor rpm at rated power')
@@ -3361,7 +3352,6 @@ class Bedplate_drive(Component):
 
           #root stress
           totalBendingMoment=(mb1_location*self.mb1_mass/2.0 + mb2_location*self.mb2_mass/2.0 + lss_location*self.lss_mass/2.0 + w*frontTotalLength**2/2.0 + rotorLoc*self.rotor_mass/2.0)*g + rotorLoc*rotorFz/2.0 +rotorMy/2.0
-          #totalBendingMoment=(mb1_location*self.mb1_mass/2.0 + mb2_location*self.mb2_mass/2.0 + lss_location*self.lss_mass/2.0 + w*frontTotalLength**2/2.0 + rotorLoc*self.rotor_mass)*g + rotorLoc*rotorFz/2.0 +rotorMy/2.0
           rootStress = totalBendingMoment*h0/2/I
 
           #mass
@@ -3565,8 +3555,8 @@ class YawSystem_drive(Component):
           else:
             self.yaw_motors_number = 8.0
 
-        #assume friction plate surface width is 1/10 the diameter
-        #assume friction plate thickness scales with rotor diameter
+        #Assume friction plate surface width is 1/10 the diameter
+        #Assume friction plate thickness scales with rotor diameter
         frictionPlateVol=pi*self.tower_top_diameter*(self.tower_top_diameter*0.10)*(self.rotor_diameter/1000.0)
         steelDensity=8000.0
         frictionPlateMass=frictionPlateVol*steelDensity
