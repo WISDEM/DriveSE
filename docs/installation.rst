@@ -38,4 +38,4 @@ For software issues please use `<https://github.com/WISDEM/DriveSE/issues>`_.  F
 
 .. only:: latex
 
-    An HTML version of this documentation that contains further details and links to the source code is available at `<http://wisdem.github.io/DriveWPACT>`_
+    An HTML version of this documentation that contains further details and links to the source code is available at `<http://wisdem.github.io/DriveSE>`_

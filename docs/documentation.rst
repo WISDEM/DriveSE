@@ -15,13 +15,27 @@ Turbine component sizing models for hub and drivetrain components are described 
 Documentation for DriveSE
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following inputs and outputs are defined for DriveWPACT:
+The following inputs and outputs are defined for DriveSE using the three-point suspension configuration:
+
+.. literalinclude:: ../src/drivese/drive.py
+    :language: python
+    :start-after: Drive3pt(Assembly)
+    :end-before: def configure(self)
+    :prepend: class Drive3pt(Assembly):
+
+.. module:: drivese.drive
+.. class:: Drive3pt
+
+The following inputs and outputs are defined for DriveSE using the four-point suspension configuration:
 
 .. literalinclude:: ../src/drivese/drive.py
     :language: python
     :start-after: Drive4pt(Assembly)
     :end-before: def configure(self)
     :prepend: class Drive4pt(Assembly):
+
+.. module:: drivese.drive
+.. class:: Drive4pt
 
 Implemented Base Model
 =========================
@@ -45,6 +59,16 @@ Referenced Sub-System Modules
 .. class:: NacelleSystemAdder_drive
 
 
+Supporting Functions
+=====================
+.. module:: drivese.drivese_utils
+.. function:: seed_bearing_table
+.. function:: fatigue_for_bearings
+.. function:: fatigue2_for_bearings
+.. function:: resize_for_bearings
+.. function:: get_rotor_mass
+.. function:: get_L_rb
+
 .. currentmodule:: drivese.hub
 
 Documentation for HubSE
@@ -58,6 +82,9 @@ The following inputs and outputs are defined for HubWPACT:
     :end-before: def configure(self)
     :prepend: class HubSE(Assembly):
 
+.. module:: drivese.hub
+.. class:: HubSE
+
 Implemented Base Model
 =========================
 .. module:: drivewpact.hub
@@ -65,9 +92,10 @@ Implemented Base Model
 
 Referenced Sub-System Modules 
 ==============================
-.. module:: drivewpact.hub
-.. class:: PitchSystem
-.. class:: Spinner
-.. class:: HubSystemAdder
 .. module:: drivese.hub
 .. class:: Hub_drive
+.. class:: PitchSystem_drive
+.. class:: Spinner_drive
+.. module:: drivewpact.hub
+.. class:: HubSystemAdder
+

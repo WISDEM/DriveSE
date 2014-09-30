@@ -1,6 +1,9 @@
 DriveSE is a set of models to size wind turbine components from the hub system, drivetrain and overall nacelle.  It replaces the Drive WindPACT (DriveWPACT) model which was based on older technology and empirical data.  The new models are physics-based and provide sizing of components based off of key system configuration parameters as well as the aerodynamic loads from the rotor. 
 
-Author: [Y. Guo](mailto:yi.guo@nrel.gov)
+Author: 
+[Y. Guo](mailto:yi.guo@nrel.gov) and
+[R. King](mailto:ryan.king@nrel.gov) and
+[T. Parsons](mailto:taylor.parsons@nrel.gov)
 
 ## Version
 
