@@ -55,6 +55,9 @@ class Drive3pt(Assembly):
     generator_mass = Float(iotype='out', units='kg', desc='component mass')
     bedplate_mass = Float(iotype='out', units='kg', desc='component mass')
     yaw_system_mass = Float(iotype='out', units='kg', desc='component mass')
+    
+    # outputs for hub CM calcuations
+    MB1_location = Array(iotype = 'out', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')    
 
     # new variables
     rotor_bending_moment_x = Float(iotype='in', units='N*m', desc='The bending moment about the x axis')
@@ -70,7 +73,7 @@ class Drive3pt(Assembly):
     ratio_type=Str(iotype='in', desc='optimal or empirical stage ratios')
     shaft_type = Str(iotype='in', desc = 'normal or short shaft length')
     uptower_transformer = Bool(iotype = 'in', desc = 'Boolean stating if transformer is uptower')
-    shrink_disc_mass = Float(iotype='in', units='kg', desc='Mass of the shrink disc')
+    shrink_disc_mass = Float(iotype='in',desc='Mass of the shrink disc')
     carrier_mass = Float(iotype='in', units='kg', desc='Carrier mass')
     flange_length = Float(iotype='in', units='m', desc='flange length')    
     L_rb = Float(iotype='in', units='m', desc='distance between hub center and upwind main bearing')
@@ -271,6 +274,9 @@ class Drive3pt(Assembly):
         self.connect('nacelleSystem.nacelle_mass', 'nacelle_mass')
         self.connect('nacelleSystem.nacelle_cm', 'nacelle_cm')
         self.connect('nacelleSystem.nacelle_I', 'nacelle_I')
+        
+        # passthroughs for hub
+        self.connect('mainBearing.cm','MB1_location')
 
 #------------------------------------------------------------------
 @implement_base(NacelleBase)
@@ -310,6 +316,9 @@ class Drive4pt(Assembly):
     bedplate_mass = Float(iotype='out', units='kg', desc='component mass')
     yaw_system_mass = Float(iotype='out', units='kg', desc='component mass')
 
+    # outputs for hub CM calcuations
+    MB1_location = Array(iotype = 'out', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+
     # new variables
     rotor_bending_moment_x = Float(iotype='in', units='N*m', desc='The bending moment about the x axis')
     rotor_bending_moment_y = Float(iotype='in', units='N*m', desc='The bending moment about the y axis')
@@ -330,7 +339,7 @@ class Drive4pt(Assembly):
     ratio_type=Str(iotype='in', desc='optimal or empirical stage ratios')
     shaft_type = Str(iotype='in', desc = 'normal or short shaft length')
     uptower_transformer = Bool(iotype = 'in', desc = 'Boolean stating if transformer is uptower')
-    shrink_disc_mass = Float(iotype='in', units='kg', desc='Mass of the shrink disc')
+    shrink_disc_mass = Float(iotype='in',  desc='Mass of the shrink disc')
     carrier_mass = Float(iotype='in', units='kg', desc='Carrier mass')
     mb1Type = Str(iotype='in',desc='Main bearing type: CARB, TRB or SRB')
     mb2Type = Str(iotype='in',desc='Second bearing type: CARB, TRB or SRB')
@@ -525,6 +534,8 @@ class Drive4pt(Assembly):
         self.connect('nacelleSystem.nacelle_cm', 'nacelle_cm')
         self.connect('nacelleSystem.nacelle_I', 'nacelle_I')
 
+        # passthroughs for hub
+        self.connect('mainBearing.cm','MB1_location')
 
 #------------------------------------------------------------------
 #NacelleSE drive with simplified low speed shaft and windpact models
