@@ -4,10 +4,16 @@ Installation
 .. admonition:: prerequisites
    :class: warning
 
-   NumPy, SciPy, FUSED-Wind, OpenMDAO, CommonSE, DriveWPACT
+	General: NumPy, SciPy, Swig, pyWin32, MatlPlotLib, Lxml, OpenMDAO
+
+	Wind Plant Framework: FUSED-Wind (Framework for Unified Systems Engineering and Design of Wind Plants)
+
+	Sub-Models: CommonSE, DriveWPACT
+
+	Supporting python packages: Pandas, Algopy, Zope.interface, Sphinx, Xlrd, PyOpt, py2exe, Pyzmq, Sphinxcontrib-bibtex, Sphinxcontrib-zopeext, Numpydoc, Ipython
 
 Clone the repository at `<https://github.com/WISDEM/DriveSE>`_
-or download the releases and uncompress/unpack (DriveSE.py-|release|.tar.gz or DriveSE.py-|release|.zip)
+or download the releases and uncompress/unpack (DriveSE.py-|release|.tar.gz or DriveSE.py-|release|.zip) from the website link at the bottom the `DriveSE site<http://nwtc.nrel.gov/DriveSE>`_.
 
 To install DriveSE, first activate the OpenMDAO environment and then install with the following command.
 
@@ -15,7 +21,7 @@ To install DriveSE, first activate the OpenMDAO environment and then install wit
 
    $ plugin install
 
-To check if installation was successful try to import the module
+To check if installation was successful try to import the module from within an activated OpenMDAO environment:
 
 .. code-block:: bash
 
