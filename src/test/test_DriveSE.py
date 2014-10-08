@@ -214,6 +214,7 @@ class Test_Drive4pt(unittest.TestCase):
         self.nace.overhang = 5.0
         self.nace.gearbox_cm = 0.1
         self.nace.hss_length = 1.5
+        self.nace.L_rb = 1.912 # length from hub center to main bearing, leave zero if unknown
 
         self.nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
 
@@ -222,7 +223,7 @@ class Test_Drive4pt(unittest.TestCase):
     def test_functionality(self):
         
         self.nace.run()
-        #sys_print(self.nace)
+        sys_print(self.nace)
         
         self.assertEqual(round(self.nace.nacelle_mass,1), 170990.5)
 

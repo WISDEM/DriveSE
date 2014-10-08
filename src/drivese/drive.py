@@ -781,6 +781,7 @@ def nacelle_example_5MW_baseline_4pt():
     nace.overhang = 5.0
     nace.gearbox_cm = 0.1
     nace.hss_length = 1.5
+    nace.L_rb = 1.912 # length from hub center to main bearing, leave zero if unknown
 
     nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
 
@@ -793,7 +794,6 @@ def nacelle_example_5MW_baseline_4pt():
     nace.weibull_A = 9. # windspeed distribution scale parameter
     nace.T_life=20. #design life in years
     nace.IEC_Class_Letter = 'A'
-    nace.L_rb = 1.912 # length from hub center to main bearing, leave zero if unknown
 
     #variables if check_fatigue =2:
     #test distribution
