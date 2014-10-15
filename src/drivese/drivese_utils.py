@@ -513,11 +513,11 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     elif type == 'TRB1':
         return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
     elif type == 'CRB':
-        return [D_shaft,(0.156*D_shaft**0.3879),(1479.9*D_shaft**1.805)]
+        return [D_shaft,(0.156*D_shaft**0.3879),(535*D_shaft**1.7248)]
     elif type == 'TRB2':
-        return [D_shaft,(0.281*D_shaft**0.3938),(831.25*D_shaft**1.8754)]
+        return [D_shaft,(0.281*D_shaft**0.3938),(813.25*D_shaft**1.8754)]
     elif type == 'RB':
-        return [D_shaft,(0.1237*D_shaft**0.4776),(124.18*D_shaft**0.9931)]
+        return [D_shaft,(0.1237*D_shaft**0.4776),(415.82*D_shaft**1.9128)]
 
 
 # -------------------------------------------------
@@ -628,11 +628,11 @@ def fatigue2_for_bearings(D_shaft,type,Fx,n_Fx,Fy_Fy,n_Fy,Fz_Fz,n_Fz,Fz_My,n_My,
     elif type == 'TRB1':
         return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
     elif type == 'CRB':
-        return [D_shaft,(0.156*D_shaft**0.3879),(1479.9*D_shaft**1.805)]
+        return [D_shaft,(0.156*D_shaft**0.3879),(535*D_shaft**1.7248)]
     elif type == 'TRB2':
-        return [D_shaft,(0.281*D_shaft**0.3938),(831.25*D_shaft**1.8754)]
+        return [D_shaft,(0.281*D_shaft**0.3938),(813.25*D_shaft**1.8754)]
     elif type == 'RB':
-        return [D_shaft,(0.1237*D_shaft**0.4776),(124.18*D_shaft**0.9931)]
+        return [D_shaft,(0.1237*D_shaft**0.4776),(415.82*D_shaft**1.9128)]
 
 
 # -------------------------------------------------
@@ -655,11 +655,11 @@ def resize_for_bearings(D_shaft,type):
     elif type == 'TRB1':
         return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
     elif type == 'CRB':
-        return [D_shaft,(0.156*D_shaft**0.3879),(1479.9*D_shaft**1.805)]
+        return [D_shaft,(0.156*D_shaft**0.3879),(535*D_shaft**1.7248)]
     elif type == 'TRB2':
-        return [D_shaft,(0.281*D_shaft**0.3938),(831.25*D_shaft**1.8754)]
+        return [D_shaft,(0.281*D_shaft**0.3938),(813.25*D_shaft**1.8754)]
     elif type == 'RB':
-        return [D_shaft,(0.1237*D_shaft**0.4776),(124.18*D_shaft**0.9931)]
+        return [D_shaft,(0.1237*D_shaft**0.4776),(415.82*D_shaft**1.9128)]
 
 def get_rotor_mass(machine_rating): #if user inputs forces and zero rotor mass
     return 23.566*machine_rating
