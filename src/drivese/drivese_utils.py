@@ -122,13 +122,13 @@ def seed_bearing_table(bearing_type):
     TABLE [49] = (.71,1.28,.45,20400,34500,2610)
     TABLE [50] = (.75,1.,.185,6000,13200,405)
     TABLE [51] = (.75,1.09,.25,9650,18600,795)
-    TABLE [52] = (.75,1.22,365,15600,29000,1650)
+    TABLE [52] = (.75,1.22,.365,15600,29000,1650)
     TABLE [53] = (.75,1.36,.475,21600,36500,3050)
     TABLE [54] = (.8,1.06,.195,6400,14300,455)
     TABLE [55] = (.8,1.15,.258,10000,20000,865)
     TABLE [56] = (.8,1.28,.375,17300,31500,1920)
     TABLE [57] = (.85,1.12,.272,9300,22800,740)
-    TABLE [58] = (.85,1.360,500,23200,45000,2710)
+    TABLE [58] = (.85,1.360,.500,23200,45000,2710)
     TABLE [59] = (.9,1.118,.206,7500,17000,585)
     TABLE [60] = (.9,1.280,.28,11600,23200,1200)
     TABLE [61] = (.9,1.42,.515,24500,49000,3350)
@@ -226,7 +226,7 @@ def seed_bearing_table(bearing_type):
     TABLE [19] = (.44,.65,.122,2550,4900,145)
     TABLE [20] = (.44,.72,.226,5120,9650,395)
     TABLE [21] = (.46,.58,.72,1080,2400,48)
-    TABLE [22] = (.46,.68,128,2810,5400,165)
+    TABLE [22] = (.46,.68,.128,2810,5400,165)
     TABLE [23] = (.46,.83,.165,4180,6800,415)
     TABLE [24] = (.48,.6,.072,1100,2450,47.5)
     TABLE [25] = (.48,.65,.078,1170,2240,78.)
@@ -252,7 +252,7 @@ def seed_bearing_table(bearing_type):
     TABLE [45] = (.67,.98,.18,5390,11000,480)
     TABLE [46] = (.71,.95,.14,3740,8300,300)
     TABLE [47] = (.71, 1.03,.185,5940,12000,540)
-    TABLE [48] = (.75,1.,112,2810,5850,265)
+    TABLE [48] = (.75,1.,.112,2810,5850,265)
     TABLE [49] = (.75,1.09,.195,7040,14600,635)
     TABLE [50] = (.8,1.15,.2,7040,14600,715)
     TABLE [51] = (.8,.98,.082,1720,4150,145)
@@ -265,7 +265,7 @@ def seed_bearing_table(bearing_type):
     TABLE [58] = (.95,1.150,.09,1340,3100,170)
     TABLE [59] = (1.,1.22,.128,3690,10000,350)
     TABLE [60] = (1.,1.32,.185,7040,17300,700)
-    TABLE [61] = (1.03,1250,.1,1510,3450,230)
+    TABLE [61] = (1.03,1.250,.1,1510,3450,230)
     TABLE [62] = (1.06,1.28,.128,3580,10400,360)
     TABLE [63] = (1.06,1.4,.195,7210,17300,870)
     TABLE [64] = (1.06,1.5,.325,13000,32500,1900)
@@ -356,7 +356,7 @@ def seed_bearing_table(bearing_type):
     TABLE [21] = (.48,.65,.078,449,815,74)
     TABLE [22] = (.48,.7,.1,618,1140,125)
     TABLE [23] = (.5,.62,.056,332,620,40)
-    TABLE [24] = (.5,.689,100,475,865,77)
+    TABLE [24] = (.5,.689,.100,475,865,77)
     TABLE [25] = (.5,.72,.1,605,1140,135)
     TABLE [26] = (.53,.71,.082,488,930,90.5)
     TABLE [27] = (.53,.76,.1,585,1120,150)
@@ -463,8 +463,7 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     Y2 = 1.75
     p = 10./3
 
-  elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality?
-  #idea: select bearing based off of bore, then calculate Fa/C0, see if life is feasible, if not, iterate?
+  elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality
     e = 0.4
     Y1 = 1.6
     X2 = 0.75
@@ -504,19 +503,22 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     return [bearing['d'],bearing['B'],bearing['mass']] #add outer diameter output for calculating housing mass?
 
   else:
-    print ''
-    print '---------------------------------------------------------------------'
-    print 'Suitable Bearing not found in table! Large mass and facewidth assumed'
-    print '---------------------------------------------------------------------'
-    print ''
-    if D_shaft < 2.0:
-        return [2.0,2.0,5000.]
-    elif D_shaft < 2.5:
-        return [2.5,2.5,7000.]
-    elif D_shaft < 3.0:
-        return [3.0,3.0,9000.]
-    else:
-        return [5.0,4.0,15000.]
+    #Suitable not found in table
+    print 'SUITABLE BEARING NOT FOUND IN LOOKUP TABLE... INTERPOLATING'
+    D_shaft = ceil(D_shaft*50.0)/50 #round up to nearest .02m bore diameter (standard size) before interpolation
+    if type == 'CARB':
+        return [D_shaft,(0.3609*D_shaft**0.764),(2173.7*D_shaft**2.5601)]
+    elif type == 'SRB':
+        return [D_shaft,(0.3319*D_shaft**0.4987),(1479.9*D_shaft**1.805)]
+    elif type == 'TRB1':
+        return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
+    elif type == 'CRB':
+        return [D_shaft,(0.156*D_shaft**0.3879),(1479.9*D_shaft**1.805)]
+    elif type == 'TRB2':
+        return [D_shaft,(0.281*D_shaft**0.3938),(831.25*D_shaft**1.8754)]
+    elif type == 'RB':
+        return [D_shaft,(0.1237*D_shaft**0.4776),(124.18*D_shaft**0.9931)]
+
 
 # -------------------------------------------------
 
@@ -587,12 +589,6 @@ def fatigue2_for_bearings(D_shaft,type,Fx,n_Fx,Fy_Fy,n_Fy,Fz_Fz,n_Fz,Fz_My,n_My,
     P_my =X2*Fz_My
     P_mz =X2*Fy_Mz
 
-  # print ((scp.integrate.simps((P_fx**p),x=n_Fx,even='avg'))/(np.max(n_Fx)-np.min(n_Fx)))**(1/p)
-  # print ((scp.integrate.simps((P_fy**p),x=n_Fy,even='avg'))/(np.max(n_Fy)-np.min(n_Fy)))**(1/p)
-  # print ((scp.integrate.simps((P_fz**p),x=n_Fz,even='avg'))/(np.max(n_Fz)-np.min(n_Fz)))**(1/p)
-  # print ((scp.integrate.simps((P_my**p),x=n_My,even='avg'))/(np.max(n_My)-np.min(n_My)))**(1/p)
-  # print ((scp.integrate.simps((P_mz**p),x=n_Mz,even='avg'))/(np.max(n_Mz)-np.min(n_Mz)))**(1/p)
-
   P_eq = ((scp.integrate.simps((P_fx**p),x=n_Fx,even='avg'))/(np.max(n_Fx)-np.min(n_Fx)))**(1/p)\
   +((scp.integrate.simps((P_fy**p),x=n_Fy,even='avg'))/(np.max(n_Fy)-np.min(n_Fy)))**(1/p)\
   +((scp.integrate.simps((P_fz**p),x=n_Fz,even='avg'))/(np.max(n_Fz)-np.min(n_Fz)))**(1/p)\
@@ -622,19 +618,21 @@ def fatigue2_for_bearings(D_shaft,type,Fx,n_Fx,Fy_Fy,n_Fy,Fz_Fz,n_Fz,Fz_My,n_My,
     return [bearing['d'],bearing['B'],bearing['mass']] #add outer diameter output for calculating housing mass?
 
   else:
-    print ''
-    print '---------------------------------------------------------------------'
-    print 'Suitable Bearing not found in table! Large mass and facewidth assumed'
-    print '---------------------------------------------------------------------'
-    print ''
-    if D_shaft < 2.0:
-        return [2.0,2.0,5000.]
-    elif D_shaft < 2.5:
-        return [2.5,2.5,7000.]
-    elif D_shaft < 3.0:
-        return [3.0,3.0,9000.]
-    else:
-        return [5.0,4.0,15000.]
+    #Suitable not found in table
+    print 'SUITABLE BEARING NOT FOUND IN LOOKUP TABLE... INTERPOLATING'
+    D_shaft = ceil(D_shaft*50.0)/50 #round up to nearest .02m bore diameter (standard size) before interpolation
+    if type == 'CARB':
+        return [D_shaft,(0.3609*D_shaft**0.764),(2173.7*D_shaft**2.5601)]
+    elif type == 'SRB':
+        return [D_shaft,(0.3319*D_shaft**0.4987),(1479.9*D_shaft**1.805)]
+    elif type == 'TRB1':
+        return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
+    elif type == 'CRB':
+        return [D_shaft,(0.156*D_shaft**0.3879),(1479.9*D_shaft**1.805)]
+    elif type == 'TRB2':
+        return [D_shaft,(0.281*D_shaft**0.3938),(831.25*D_shaft**1.8754)]
+    elif type == 'RB':
+        return [D_shaft,(0.1237*D_shaft**0.4776),(124.18*D_shaft**0.9931)]
 
 
 # -------------------------------------------------
@@ -647,19 +645,21 @@ def resize_for_bearings(D_shaft,type):
     bearing = bearing[np.argmin(bearing['d'])]
     return [bearing['d'],bearing['B'],bearing['mass']]
   else:
-    print ''
-    print '---------------------------------------------------------------------'
-    print 'Suitable Bearing not found in table! Large mass and facewidth assumed'
-    print '---------------------------------------------------------------------'
-    print ''
-    if D_shaft < 2.0:
-        return [2.0,2.0,5000.]
-    elif D_shaft < 2.5:
-        return [2.5,2.5,7000.]
-    elif D_shaft < 3.0:
-        return [3.0,3.0,9000.]
-    else:
-        return [5.0,4.0,15000.]
+    #Suitable not found in table
+    print 'SUITABLE BEARING NOT FOUND IN LOOKUP TABLE... INTERPOLATING'
+    D_shaft = ceil(D_shaft*50.0)/50 #round up to nearest .02m bore diameter (standard size) before interpolation
+    if type == 'CARB':
+        return [D_shaft,(0.3609*D_shaft**0.764),(2173.7*D_shaft**2.5601)]
+    elif type == 'SRB':
+        return [D_shaft,(0.3319*D_shaft**0.4987),(1479.9*D_shaft**1.805)]
+    elif type == 'TRB1':
+        return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
+    elif type == 'CRB':
+        return [D_shaft,(0.156*D_shaft**0.3879),(1479.9*D_shaft**1.805)]
+    elif type == 'TRB2':
+        return [D_shaft,(0.281*D_shaft**0.3938),(831.25*D_shaft**1.8754)]
+    elif type == 'RB':
+        return [D_shaft,(0.1237*D_shaft**0.4776),(124.18*D_shaft**0.9931)]
 
 def get_rotor_mass(machine_rating): #if user inputs forces and zero rotor mass
     return 23.566*machine_rating

@@ -223,7 +223,7 @@ class Test_Drive4pt(unittest.TestCase):
     def test_functionality(self):
         
         self.nace.run()
-        sys_print(self.nace)
+        #sys_print(self.nace)
         
         self.assertEqual(round(self.nace.nacelle_mass,1), 170990.5)
 
