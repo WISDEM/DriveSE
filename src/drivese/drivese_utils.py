@@ -598,7 +598,7 @@ def fatigue2_for_bearings(D_shaft,type,Fx,n_Fx,Fy_Fy,n_Fy,Fz_Fz,n_Fz,Fz_My,n_My,
   C_min = P_eq*(life_bearing/1e6)**(1./p)/1000 #kN
 
   # print ''
-  print 'loadrating (kN):', C_min
+  # print 'loadrating (kN):', C_min
 
   subset = TABLE[TABLE['C'] >= C_min] #all bearings above load rating
   # print''
