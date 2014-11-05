@@ -16,7 +16,7 @@ import scipy as scp
 import scipy.optimize as opt
 from scipy import integrate
 
-from drivese_utils import seed_bearing_table, fatigue_for_bearings, fatigue2_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb
+from drivese_utils import fatigue_for_bearings, fatigue2_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb
 
 
 #-------------------------------------------------------------------------------
