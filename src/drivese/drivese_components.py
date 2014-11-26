@@ -701,102 +701,102 @@ class LowSpeedShaft_drive4pt(Component):
               [D_max_a,FW_max,bearing1mass] = fatigue_for_bearings(D_max, Fr1_range, Fa1_range, N_bearings, life_bearing, self.mb1Type)
               [D_med_a,FW_med,bearing2mass] = fatigue_for_bearings(D_med, Fr2_range, Fa2_range, N_bearings, life_bearing, self.mb2Type)  
 
-          elif check_fatigue == 2:
-            Fx = self.rotor_thrust_distribution
-            n_Fx = self.rotor_thrust_count
-            Fy = self.rotor_Fy_distribution
-            n_Fy = self.rotor_Fy_count
-            Fz = self.rotor_Fz_distribution
-            n_Fz = self.rotor_Fz_count
-            Mx = self.rotor_torque_distribution
-            n_Mx = self.rotor_torque_count
-            My = self.rotor_My_distribution
-            n_My = self.rotor_My_count
-            Mz = self.rotor_Mz_distribution
-            n_Mz = self.rotor_Mz_count
+          # elif check_fatigue == 2:
+          #   Fx = self.rotor_thrust_distribution
+          #   n_Fx = self.rotor_thrust_count
+          #   Fy = self.rotor_Fy_distribution
+          #   n_Fy = self.rotor_Fy_count
+          #   Fz = self.rotor_Fz_distribution
+          #   n_Fz = self.rotor_Fz_count
+          #   Mx = self.rotor_torque_distribution
+          #   n_Mx = self.rotor_torque_count
+          #   My = self.rotor_My_distribution
+          #   n_My = self.rotor_My_count
+          #   Mz = self.rotor_Mz_distribution
+          #   n_Mz = self.rotor_Mz_count
 
-            print n_Fx
-            print Fx*.5
-            print Mx*.5
-            print -1/SN_b
+          #   print n_Fx
+          #   print Fx*.5
+          #   print Mx*.5
+          #   print -1/SN_b
 
-            def Ninterp(L_ult,L_range,m):
-                return (L_ult/(.5*L_range))**m #TODO double-check that the input will be the load RANGE instead of load amplitudes. May also include means
+          #   def Ninterp(L_ult,L_range,m):
+          #       return (L_ult/(.5*L_range))**m #TODO double-check that the input will be the load RANGE instead of load amplitudes. May also include means
 
-            #upwind bearing calcs
-            diameter_limit = 5.0
-            iterationstep=0.01
-            #upwind bearing calcs
-            while True:
-                Damage = 0
-                Fx_ult = SN_a*(pi/4.*(D_max**2-D_in**2))
-                Fyz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)/L_rb
-                Mx_ult = SN_a*(pi*(D_max**4-D_in**4))/(32*(3)**.5*D_max)
-                Myz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)
-                if Fx_ult !=0 and np.all(n_Fx) != 0:
-                    Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
-                if Fyz_ult !=0:
-                    if np.all(n_Fy) != 0:
-                        Damage+=scp.integrate.simps(abs(n_Fy/Ninterp(Fyz_ult,Fy,-1/SN_b)),x=n_Fy,even = 'avg')
-                    if np.all(n_Fz) != 0:
-                        Damage+=scp.integrate.simps(abs(n_Fz/Ninterp(Fyz_ult,Fz,-1/SN_b)),x=n_Fz,even = 'avg')
-                if Mx_ult !=0 and np.all(n_Mx) != 0:
-                    Damage+=scp.integrate.simps(abs(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b)),x=n_Mx,even = 'avg')
-                if Myz_ult!=0:
-                    if np.all(n_My) != 0:
-                        Damage+=scp.integrate.simps(abs(n_My/Ninterp(Myz_ult,My,-1/SN_b)),x=n_My,even = 'avg')
-                    if np.all(n_Mz) != 0:
-                        Damage+=scp.integrate.simps(abs(n_Mz/Ninterp(Myz_ult,Mz,-1/SN_b)),x=n_Mz,even = 'avg')
+          #   #upwind bearing calcs
+          #   diameter_limit = 5.0
+          #   iterationstep=0.01
+          #   #upwind bearing calcs
+          #   while True:
+          #       Damage = 0
+          #       Fx_ult = SN_a*(pi/4.*(D_max**2-D_in**2))
+          #       Fyz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)/L_rb
+          #       Mx_ult = SN_a*(pi*(D_max**4-D_in**4))/(32*(3)**.5*D_max)
+          #       Myz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)
+          #       if Fx_ult !=0 and np.all(n_Fx) != 0:
+          #           Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
+          #       if Fyz_ult !=0:
+          #           if np.all(n_Fy) != 0:
+          #               Damage+=scp.integrate.simps(abs(n_Fy/Ninterp(Fyz_ult,Fy,-1/SN_b)),x=n_Fy,even = 'avg')
+          #           if np.all(n_Fz) != 0:
+          #               Damage+=scp.integrate.simps(abs(n_Fz/Ninterp(Fyz_ult,Fz,-1/SN_b)),x=n_Fz,even = 'avg')
+          #       if Mx_ult !=0 and np.all(n_Mx) != 0:
+          #           Damage+=scp.integrate.simps(abs(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b)),x=n_Mx,even = 'avg')
+          #       if Myz_ult!=0:
+          #           if np.all(n_My) != 0:
+          #               Damage+=scp.integrate.simps(abs(n_My/Ninterp(Myz_ult,My,-1/SN_b)),x=n_My,even = 'avg')
+          #           if np.all(n_Mz) != 0:
+          #               Damage+=scp.integrate.simps(abs(n_Mz/Ninterp(Myz_ult,Mz,-1/SN_b)),x=n_Mz,even = 'avg')
 
-                print 'Upwind Bearing Diameter:', D_max
-                print 'Damage:', Damage
+          #       print 'Upwind Bearing Diameter:', D_max
+          #       print 'Damage:', Damage
 
-                if Damage <= 1 or D_max >= diameter_limit:
-                    # print 'Upwind Bearing Diameter:', D_max
-                    # print 'Damage:', Damage
-                    #print (time.time() - start_time), 'seconds of total simulation time'
-                    break
-                else:
-                    D_max+=iterationstep
-            #downwind bearing calcs
-            while True:
-                Damage = 0
-                Fx_ult = SN_a*(pi/4.*(D_med**2-D_in**2))
-                Mx_ult = SN_a*(pi*(D_med**4-D_in**4))/(32*(3)**.5*D_med)
-                if Fx_ult !=0:
-                    Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
-                if Mx_ult !=0:
-                    Damage+=scp.integrate.simps(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b),x=n_Mx,even = 'avg')
-                print 'Downwind Bearing Diameter:', D_med
-                print 'Damage:', Damage
+          #       if Damage <= 1 or D_max >= diameter_limit:
+          #           # print 'Upwind Bearing Diameter:', D_max
+          #           # print 'Damage:', Damage
+          #           #print (time.time() - start_time), 'seconds of total simulation time'
+          #           break
+          #       else:
+          #           D_max+=iterationstep
+          #   #downwind bearing calcs
+          #   while True:
+          #       Damage = 0
+          #       Fx_ult = SN_a*(pi/4.*(D_med**2-D_in**2))
+          #       Mx_ult = SN_a*(pi*(D_med**4-D_in**4))/(32*(3)**.5*D_med)
+          #       if Fx_ult !=0:
+          #           Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
+          #       if Mx_ult !=0:
+          #           Damage+=scp.integrate.simps(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b),x=n_Mx,even = 'avg')
+          #       print 'Downwind Bearing Diameter:', D_med
+          #       print 'Damage:', Damage
 
-                if Damage <= 1 or D_med>= diameter_limit:
-                    # print 'Upwind Bearing Diameter:', D_max
-                    # print 'Damage:', Damage
-                    #print (time.time() - start_time), 'seconds of total simulation time'
-                    break
-                else:
-                    D_med+=iterationstep
+          #       if Damage <= 1 or D_med>= diameter_limit:
+          #           # print 'Upwind Bearing Diameter:', D_max
+          #           # print 'Damage:', Damage
+          #           #print (time.time() - start_time), 'seconds of total simulation time'
+          #           break
+          #       else:
+          #           D_med+=iterationstep
 
-            #bearing calcs
-            if self.availability != 0 and rotor_freq != 0 and T_life != 0 and V_f != 0 and weibullA != 0:
-                N_rotations = self.availability*rotor_freq/60.*(T_life*365*24*60*60)*exp(-(V_0/weibullA)**weibullk)-exp(-(V_f/weibullA)**weibullk)
-            elif np.max(n_Fx > 1e6):
-                N_rotations = np.max(n_Fx)/blade_number
-            elif np.max(n_My > 1e6):
-                N_rotations = np.max(n_My)/blade_number
-            # print 'Upwind bearing calcs'
-            Fz1_Fz = Fz*(L_mb+L_rb)/L_mb
-            Fz1_My = My/L_mb
-            Fy1_Fy = -Fy*(L_mb+L_rb)/L_mb
-            Fy1_Mz = Mz/L_mb
-            [D_max_a,FW_max,bearing1mass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
-            # print 'Downwind bearing calcs'
-            Fz2_Fz = Fz*L_rb/L_mb
-            Fz2_My = My/L_mb
-            Fy2_Fy = Fy*L_rb/L_mb
-            Fy2_Mz = Mz/L_mb
-            [D_med_a,FW_med,bearing2mass] = fatigue2_for_bearings(D_med,self.mb2Type,Fx,n_Fx/blade_number,Fy2_Fy,n_Fy/blade_number,Fz2_Fz,n_Fz/blade_number,Fz2_My,n_My/blade_number,Fy2_Mz,n_Mz/blade_number,N_rotations)
+          #   #bearing calcs
+          #   if self.availability != 0 and rotor_freq != 0 and T_life != 0 and V_f != 0 and weibullA != 0:
+          #       N_rotations = self.availability*rotor_freq/60.*(T_life*365*24*60*60)*exp(-(V_0/weibullA)**weibullk)-exp(-(V_f/weibullA)**weibullk)
+          #   elif np.max(n_Fx > 1e6):
+          #       N_rotations = np.max(n_Fx)/blade_number
+          #   elif np.max(n_My > 1e6):
+          #       N_rotations = np.max(n_My)/blade_number
+          #   # print 'Upwind bearing calcs'
+          #   Fz1_Fz = Fz*(L_mb+L_rb)/L_mb
+          #   Fz1_My = My/L_mb
+          #   Fy1_Fy = -Fy*(L_mb+L_rb)/L_mb
+          #   Fy1_Mz = Mz/L_mb
+          #   [D_max_a,FW_max,bearing1mass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
+          #   # print 'Downwind bearing calcs'
+          #   Fz2_Fz = Fz*L_rb/L_mb
+          #   Fz2_My = My/L_mb
+          #   Fy2_Fy = Fy*L_rb/L_mb
+          #   Fy2_Mz = Mz/L_mb
+          #   [D_med_a,FW_med,bearing2mass] = fatigue2_for_bearings(D_med,self.mb2Type,Fx,n_Fx/blade_number,Fy2_Fy,n_Fy/blade_number,Fz2_Fz,n_Fz/blade_number,Fz2_My,n_My/blade_number,Fy2_Mz,n_Mz/blade_number,N_rotations)
 
         else: #if fatigue_check is not true, resize based on diameter
             [D_max_a,FW_max,bearing1mass] = resize_for_bearings(D_max,  self.mb1Type)
@@ -1338,78 +1338,78 @@ class LowSpeedShaft_drive3pt(Component):
 
               [D_max_a,FW_max,bearingmass] = fatigue_for_bearings(D_max, Fr_range, Fa_range, N_bearings, life_bearing, self.mb1Type)
 
-          elif check_fatigue == 2:
-            Fx = self.rotor_thrust_distribution
-            n_Fx = self.rotor_thrust_count
-            Fy = self.rotor_Fy_distribution
-            n_Fy = self.rotor_Fy_count
-            Fz = self.rotor_Fz_distribution
-            n_Fz = self.rotor_Fz_count
-            Mx = self.rotor_torque_distribution
-            n_Mx = self.rotor_torque_count
-            My = self.rotor_My_distribution
-            n_My = self.rotor_My_count
-            Mz = self.rotor_Mz_distribution
-            n_Mz = self.rotor_Mz_count
+          # elif check_fatigue == 2:
+          #   Fx = self.rotor_thrust_distribution
+          #   n_Fx = self.rotor_thrust_count
+          #   Fy = self.rotor_Fy_distribution
+          #   n_Fy = self.rotor_Fy_count
+          #   Fz = self.rotor_Fz_distribution
+          #   n_Fz = self.rotor_Fz_count
+          #   Mx = self.rotor_torque_distribution
+          #   n_Mx = self.rotor_torque_count
+          #   My = self.rotor_My_distribution
+          #   n_My = self.rotor_My_count
+          #   Mz = self.rotor_Mz_distribution
+          #   n_Mz = self.rotor_Mz_count
 
-            # print n_Fx
-            # print Fx*.5
-            # print Mx*.5
-            # print -1/SN_b
+          #   # print n_Fx
+          #   # print Fx*.5
+          #   # print Mx*.5
+          #   # print -1/SN_b
 
-            def Ninterp(L_ult,L_range,m):
-                return (L_ult/(.5*L_range))**m #TODO double-check that the input will be the load RANGE instead of load amplitudes. Also, may include means?
+          #   def Ninterp(L_ult,L_range,m):
+          #       return (L_ult/(.5*L_range))**m #TODO double-check that the input will be the load RANGE instead of load amplitudes. Also, may include means?
 
-            #upwind bearing calcs
-            diameter_limit = 5.0
-            iterationstep=0.01
-            #upwind bearing calcs
-            while True:
-                Damage = 0
-                Fx_ult = SN_a*(pi/4.*(D_max**2-D_in**2))
-                Fyz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*32*L_rb)
-                Mx_ult = SN_a*(pi*(D_max**4-D_in**4))/(32*(3.**.5)*D_max)
-                Myz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)
-                if Fx_ult and np.all(n_Fx):
-                    Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
-                if Fyz_ult:
-                    if np.all(n_Fy):
-                        Damage+=scp.integrate.simps(abs(n_Fy/Ninterp(Fyz_ult,Fy,-1/SN_b)),x=n_Fy,even = 'avg')
-                    if np.all(n_Fz):
-                        Damage+=scp.integrate.simps(abs(n_Fz/Ninterp(Fyz_ult,Fz,-1/SN_b)),x=n_Fz,even = 'avg')
-                if Mx_ult and np.all(n_Mx):
-                    Damage+=scp.integrate.simps(abs(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b)),x=n_Mx,even = 'avg')
-                if Myz_ult:
-                    if np.all(n_My):
-                        Damage+=scp.integrate.simps(abs(n_My/Ninterp(Myz_ult,My,-1/SN_b)),x=n_My,even = 'avg')
-                    if np.all(n_Mz):
-                        Damage+=scp.integrate.simps(abs(n_Mz/Ninterp(Myz_ult,Mz,-1/SN_b)),x=n_Mz,even = 'avg')
+          #   #upwind bearing calcs
+          #   diameter_limit = 5.0
+          #   iterationstep=0.01
+          #   #upwind bearing calcs
+          #   while True:
+          #       Damage = 0
+          #       Fx_ult = SN_a*(pi/4.*(D_max**2-D_in**2))
+          #       Fyz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*32*L_rb)
+          #       Mx_ult = SN_a*(pi*(D_max**4-D_in**4))/(32*(3.**.5)*D_max)
+          #       Myz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)
+          #       if Fx_ult and np.all(n_Fx):
+          #           Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
+          #       if Fyz_ult:
+          #           if np.all(n_Fy):
+          #               Damage+=scp.integrate.simps(abs(n_Fy/Ninterp(Fyz_ult,Fy,-1/SN_b)),x=n_Fy,even = 'avg')
+          #           if np.all(n_Fz):
+          #               Damage+=scp.integrate.simps(abs(n_Fz/Ninterp(Fyz_ult,Fz,-1/SN_b)),x=n_Fz,even = 'avg')
+          #       if Mx_ult and np.all(n_Mx):
+          #           Damage+=scp.integrate.simps(abs(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b)),x=n_Mx,even = 'avg')
+          #       if Myz_ult:
+          #           if np.all(n_My):
+          #               Damage+=scp.integrate.simps(abs(n_My/Ninterp(Myz_ult,My,-1/SN_b)),x=n_My,even = 'avg')
+          #           if np.all(n_Mz):
+          #               Damage+=scp.integrate.simps(abs(n_Mz/Ninterp(Myz_ult,Mz,-1/SN_b)),x=n_Mz,even = 'avg')
 
-                print 'Upwind Bearing Diameter:', D_max
-                print 'Damage:', Damage
+          #       print 'Upwind Bearing Diameter:', D_max
+          #       print 'Damage:', Damage
 
-                if Damage <= 1 or D_max >= diameter_limit:
-                    # print 'Upwind Bearing Diameter:', D_max
-                    # print 'Damage:', Damage
-                    #print (time.time() - start_time), 'seconds of total simulation time'
-                    break
-                else:
-                    D_max+=iterationstep
+          #       if Damage <= 1 or D_max >= diameter_limit:
+          #           # print 'Upwind Bearing Diameter:', D_max
+          #           # print 'Damage:', Damage
+          #           #print (time.time() - start_time), 'seconds of total simulation time'
+          #           break
+          #       else:
+          #           D_max+=iterationstep
 
-            #bearing calcs
-            if self.availability != 0 and rotor_freq != 0 and T_life != 0 and V_f != 0 and weibullA != 0:
-                N_rotations = self.availability*rotor_freq/60.*(T_life*365*24*60*60)*exp(-(V_0/weibullA)**weibullk)-exp(-(V_f/weibullA)**weibullk)
-            elif np.max(n_Fx > 1e6):
-                N_rotations = np.max(n_Fx)/blade_number
-            elif np.max(n_My > 1e6):
-                N_rotations = np.max(n_My)/blade_number
+          #   #bearing calcs
+          #   if self.availability != 0 and rotor_freq != 0 and T_life != 0 and V_f != 0 and weibullA != 0:
+          #       N_rotations = self.availability*rotor_freq/60.*(T_life*365*24*60*60)*exp(-(V_0/weibullA)**weibullk)-exp(-(V_f/weibullA)**weibullk)
+          #   elif np.max(n_Fx > 1e6):
+          #       N_rotations = np.max(n_Fx)/blade_number
+          #   elif np.max(n_My > 1e6):
+          #       N_rotations = np.max(n_My)/blade_number
 
-            # Fz1 = (Fz*(L_ms+L_rb)+My)/L_ms
-            Fz1_Fz = Fz*(L_ms+L_rb)/L_ms #force in z direction due to Fz
-            Fz1_My = My/L_ms #force in z direction due to My
-            Fy1_Fy = -Fy*(L_ms+L_rb)/L_ms
-            Fy1_Mz = Mz/L_ms
-            [D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
+          #   # Fz1 = (Fz*(L_ms+L_rb)+My)/L_ms
+          #   Fz1_Fz = Fz*(L_ms+L_rb)/L_ms #force in z direction due to Fz
+          #   Fz1_My = My/L_ms #force in z direction due to My
+          #   Fy1_Fy = -Fy*(L_ms+L_rb)/L_ms
+          #   Fy1_Mz = Mz/L_ms
+          #   [D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
          
         #resize bearing if no fatigue check
         if check_fatigue == 0:
