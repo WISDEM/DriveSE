@@ -55,7 +55,8 @@ class Drive3pt(Assembly):
     generator_mass = Float(iotype='out', units='kg', desc='component mass')
     bedplate_mass = Float(iotype='out', units='kg', desc='component mass')
     yaw_system_mass = Float(iotype='out', units='kg', desc='component mass')
-    
+    transformer_mass = Float(iotype='out', units='kg', desc='component mass')
+
     # outputs for hub CM calcuations
     MB1_location = Array(iotype = 'out', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')    
 
@@ -216,6 +217,7 @@ class Drive3pt(Assembly):
         self.connect('highSpeedSide.mass', ['bedplate.hss_mass','above_yaw_massAdder.hss_mass', 'nacelleSystem.hss_mass'])
         self.connect('generator.mass', ['bedplate.generator_mass','above_yaw_massAdder.generator_mass', 'nacelleSystem.generator_mass'])
         self.connect('bedplate.mass', ['above_yaw_massAdder.bedplate_mass', 'nacelleSystem.bedplate_mass'])
+        self.connect('transformer.mass', 'above_yaw_massAdder.transformer_mass')
         self.connect('above_yaw_massAdder.mainframe_mass', 'nacelleSystem.mainframe_mass')
         self.connect('yawSystem.mass', ['nacelleSystem.yawMass'])
         self.connect('above_yaw_massAdder.above_yaw_mass', ['yawSystem.above_yaw_mass', 'nacelleSystem.above_yaw_mass'])
@@ -296,6 +298,7 @@ class Drive4pt(Assembly):
     gear_ratio = Float(iotype='in', desc='overall gearbox ratio')
     tower_top_diameter = Float(iotype='in', units='m', desc='diameter of tower top')
     rotor_bending_moment = Float(iotype='in', units='N*m', desc='maximum aerodynamic bending moment')
+    transformer_mass = Float(iotype='out', units='kg', desc='component mass')
 
     # parameters
     drivetrain_design = Enum('geared', ('geared', 'single_stage', 'multi_drive', 'pm_direct_drive'), iotype='in')
@@ -476,6 +479,7 @@ class Drive4pt(Assembly):
         self.connect('highSpeedSide.mass', ['bedplate.hss_mass','above_yaw_massAdder.hss_mass', 'nacelleSystem.hss_mass'])
         self.connect('generator.mass', ['bedplate.generator_mass','above_yaw_massAdder.generator_mass', 'nacelleSystem.generator_mass'])
         self.connect('bedplate.mass', ['above_yaw_massAdder.bedplate_mass', 'nacelleSystem.bedplate_mass'])
+        self.connect('transformer.mass', 'above_yaw_massAdder.transformer_mass')
         self.connect('above_yaw_massAdder.mainframe_mass', 'nacelleSystem.mainframe_mass')
         self.connect('yawSystem.mass', ['nacelleSystem.yawMass'])
         self.connect('above_yaw_massAdder.above_yaw_mass', ['yawSystem.above_yaw_mass', 'nacelleSystem.above_yaw_mass'])
@@ -772,7 +776,7 @@ def nacelle_example_5MW_baseline_4pt():
     nace.Np = [3,3,1]
     nace.ratio_type = 'optimal'
     nace.shaft_type = 'normal'
-    nace.uptower_transformer=False
+    nace.uptower_transformer=True
     nace.shrink_disc_mass = 333.3*nace.machine_rating/1000.0 # estimated
     nace.carrier_mass = 8000.0 # estimated
     nace.mb1Type = 'CARB'
@@ -1190,11 +1194,11 @@ if __name__ == '__main__':
 
     nacelle_example_5MW_baseline_4pt()
 
-    nacelle_example_1p5MW_3pt()
+    # nacelle_example_1p5MW_3pt()
 
-    nacelle_example_1p5MW_4pt()
+    # nacelle_example_1p5MW_4pt()
 
-    nacelle_example_p75_3pt()
+    # nacelle_example_p75_3pt()
 
-    nacelle_example_p75_4pt()
+    # nacelle_example_p75_4pt()
 

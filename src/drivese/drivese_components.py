@@ -2143,8 +2143,8 @@ class Bedplate_drive(Component):
         stressTol = 5e5
         deflTol = 1e-4
         counter = 0
-        defl_denom = 1000 #factor in deflection check
-        stress_mult = 6 #modified to fit industry data
+        defl_denom = 1500 #factor in deflection check
+        stress_mult = 8 #modified to fit industry data
 
         stressMax = 620e6 #yeild of alloy steel
         deflMax = rearTotalLength/defl_denom
@@ -2610,6 +2610,7 @@ class AboveYawMassAdder_drive(Component):
     bedplate_mass = Float(iotype = 'in', units='kg', desc='component mass')
     bedplate_length = Float(iotype = 'in', units='m', desc='component length')
     bedplate_width = Float(iotype = 'in', units='m', desc='component width')
+    transformer_mass = Float(iotype = 'in', units='kg', desc='component mass')
 
     # parameters
     crane = Bool(iotype='in', desc='flag for presence of crane')
@@ -2668,6 +2669,7 @@ class AboveYawMassAdder_drive(Component):
                     self.hss_mass + \
                     self.generator_mass + \
                     self.mainframe_mass + \
+                    self.transformer_mass + \
                     self.electrical_mass + \
                     self.vs_electronics_mass + \
                     self.hvac_mass + \
