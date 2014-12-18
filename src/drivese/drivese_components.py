@@ -135,7 +135,7 @@ class LowSpeedShaft_drive4pt(Component):
           rotor_mass = get_rotor_mass(self.machine_rating)
 
         if self.flange_length == 0:
-            flange_length = 0.9918*exp(.0068*self.rotor_diameter)
+            flange_length = 0.3044*exp(.0068*self.rotor_diameter)
         else:
             flange_length = self.flange_length
                 
@@ -954,7 +954,7 @@ class LowSpeedShaft_drive3pt(Component):
 
         #input parameters
         if self.flange_length ==0:
-            flange_length = 0.9918*exp(.0068*self.rotor_diameter)
+            flange_length = 0.3044*exp(.0068*self.rotor_diameter)
         else:
             flange_length = self.flange_length
 
