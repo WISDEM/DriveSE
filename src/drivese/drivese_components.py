@@ -16,7 +16,7 @@ import scipy as scp
 import scipy.optimize as opt
 from scipy import integrate
 
-from drivese_utils import fatigue_for_bearings, fatigue2_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb
+from drivese_utils import fatigue_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb #, fatigue2_for_bearings
 
 
 #-------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ class LowSpeedShaft_drive4pt(Component):
           rotor_mass = get_rotor_mass(self.machine_rating)
 
         if self.flange_length == 0:
-            flange_length = 0.9918*exp(.0068*self.rotor_diameter)
+            flange_length = 0.3*(self.rotor_diameter/100.0)**2.0 - 0.1 * (self.rotor_diameter / 100.0) + 0.4
         else:
             flange_length = self.flange_length
                 
@@ -954,7 +954,7 @@ class LowSpeedShaft_drive3pt(Component):
 
         #input parameters
         if self.flange_length ==0:
-            flange_length = 0.9918*exp(.0068*self.rotor_diameter)
+            flange_length = 0.3*(self.rotor_diameter/100.0)**2.0 - 0.1 * (self.rotor_diameter / 100.0) + 0.4
         else:
             flange_length = self.flange_length
 
