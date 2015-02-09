@@ -11,412 +11,29 @@ from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
 import scipy as scp
 
-#---------global functions-----------#
+# returns FW, mass for bearings without fatigue analysis
+def resize_for_bearings(D_shaft,type):
+# assume low load rating for bearing
+  if type == 'CARB': #p = Fr, so X=1, Y=0
+    return [D_shaft,.2663*D_shaft+.0435,1561.4*D_shaft**2.6007]
 
-#bearing table seeding
-def seed_bearing_table(bearing_type):
-  if bearing_type == 'CARB':
-    TABLE = np.zeros(50,dtype = [('d','f8'),('D','f8'),('B','f8'),('C','f8'),('C0','f8'),('mass','f8')])
-    #bore diameter(m),  outer diameter(m), facewidth(m), C(kN), C0(kN), mass(kg)
-    TABLE [0] = (.3,.5,.16,3250,5200,120)
-    TABLE [1] = (.3,.46,.16,2900,4900,95.5)
-    TABLE [2] = (.32,.48,.121,2280,4000,76.5)
-    TABLE [3] = (.32,.54,.176,4150,6300,160)
-    TABLE [4] = (.34,.52,.133,2900,5000,100)
-    TABLE [5] = (.34,.58,.19,4900,7500,205)
-    TABLE [6] = (.36,.54,.134,2900,5000,105)
-    TABLE [7] = (.36,.6,.192,5000,8000,215)
-    TABLE [8] = (.38,.56,.135,2000,5200,110)
-    TABLE [9] = (.38,.62,.194,4400,7200,243)
-    TABLE [10] = (.4,.6,.148,3650,6200,145)
-    TABLE [11] = (.4,.65,.2,4800,8300,258)
-    TABLE [12] = (.42,.72,.15,3800,6400,150)
-    TABLE [13] = (.42,.7,.224,6000,10400,340)
-    TABLE [14] = (.44,.65,.157,3750,6400,185)
-    TABLE [15] = (.44,.72,.226,6700,11400,385)
-    TABLE [16] = (.46,.68,.163,4000,7500,200)
-    TABLE [17] = (.46,.76,.24,6800,12000,430)
-    TABLE [18] = (.48,.7,.165,4050,7800,210)
-    TABLE [19] = (.48,.79,.248,6950,12500,523)
-    TABLE [20] = (.5,.72,.167,4250,8300,225)
-    TABLE [21] = (.5,.83,.246,7500,12700,550)
-    TABLE [22] = (.53,.78,.185,5100,9500,295)
-    TABLE [23] = (.53,.87,.272,8800,15600,630)
-    TABLE [24] = (.56,.82,.195,5600,11000,345)
-    TABLE [25] = (.56,.92,.28,9500,17000,750)
-    TABLE [26] = (.6,.87,.2,6300,12200,390)
-    TABLE [27] = (.6,.98,.3,10200,18000,929)
-    TABLE [28] = (.63,.92,.212,6800,12900,465)
-    TABLE [29] = (.63,1.03,.315,11800,20800,1089)
-    TABLE [30] = (.67,.98,.23,8150,16300,580)
-    TABLE [31] = (.67,1.09,.336,12000,22000,1230)
-    TABLE [32] = (.71,1.03,.315,20600,21600,860)
-    TABLE [33] = (.71,1.15,.345,12700,24000,1410)
-    TABLE [34] = (.75,1.09,.25,9500,19300,838)
-    TABLE [35] = (.75,1.22,.365,13700,20500,1802)
-    TABLE [36] = (.8,1.15,.258,9150,18600,860)
-    TABLE [37] = (.8,1.28,.375,15600,30500,1870)
-    TABLE [38] = (.85,1.22,.272,11600,24500,1105)
-    TABLE [39] = (.85,1.36,.4,16000,32000,2260)
-    TABLE [40] = (.9,1.18,.206,8150,18000,580)
-    TABLE [41] = (.9,1.28,.28,12700,26500,1200)
-    TABLE [42] = (.95,1.25,.224,9300,22000,745)
-    TABLE [43] = (.95,1.36,.3,12900,27500,1410)
-    TABLE [44] = (1.,1.42,.308,13400,29000,1570)
-    TABLE [45] = (1.,1.58,.462,22800,45500,3470)
-    TABLE [46] = (1.06,1.4,.25,11000,26000,1120)
-    TABLE [47] = (1.18,1.54,.272,13400,33500,1400)
-    TABLE [48] = (1.25,1.75,.375,20400,45000,2740) 
+  elif type == 'SRB':
+    return [D_shaft,.2762*D_shaft,876.7*D_shaft**1.7195]
 
-  elif bearing_type == 'SRB':
-    TABLE = np.zeros(82,dtype = [('d','f8'),('D','f8'),('B','f8'),('C','f8'),('C0','f8'),('mass','f8')])
-    TABLE [0] = (.3,.46,.16,2700,4750,97)
-    TABLE [1] = (.3,.5,.16,3200,5100,120)
-    TABLE [2] = (.32,.48,.16,2850,5100,100)
-    TABLE [3] = (.32,.54,.176,3750,6000,160)
-    TABLE [4] = (.32,.58,.15,4400,6700,240)
-    TABLE [5] = (.34,.52,.18,3450,6200,140)
-    TABLE [6] = (.34,.58,.19,4259,6800,210)
-    TABLE [7] = (.34,.62,.224,5100,7800,295)
-    TABLE [8] = (.36,.54,.134,2750,4800,110)
-    TABLE [9] = (.36,.6,.192,4300,6950,220)
-    TABLE [10] = (.36,.65,.232,5400,8300,335)
-    TABLE [11] = (.38,.56,.135,2900,5000,115)
-    TABLE [12] = (.38,.62,.194,4400,7100,230)
-    TABLE [13] = (.38,.68,.24,5850,9150,375)
-    TABLE [14] = (.4,.6,.148,3250,5850,150)
-    TABLE [15] = (.4,.65,.2,4650,7650,265)
-    TABLE [16] = (.4,.72,.256,6550,10400,450)
-    TABLE [17] = (.4,.82,.243,7500,20400,650)
-    TABLE [18] = (.42,.62,.2,4400,8300,205)
-    TABLE [19] = (.42,.7,.28,7350,12600,445)
-    TABLE [20] = (.44,.65,.157,3650,6550,180)
-    TABLE [21] = (.44,.72,.226,6000,10000,360)
-    TABLE [22] = (.44,.72,.28,7500,13200,460)
-    TABLE [23] = (.46,.62,.118,2500,5000,100)
-    TABLE [24] = (.46,.68,.218,5200,10000,275)
-    TABLE [25] = (.46,.76,.3,8300,14600,560)
-    TABLE [26] = (.48,.7,.165,3900,6800,210)
-    TABLE [27] = (.48,.79,.308,9000,15600,605)
-    TABLE [28] = (.5,.72,.218,5500,11000,295)
-    TABLE [29] = (.5,.83,.325,9800,17000,700)
-    TABLE [30] = (.5,.92,.336,10600,17300,985)
-    TABLE [31] = (.53,.71,.136,3200,6700,155)
-    TABLE [32] = (.53,.78,.25,6700,13200,410)
-    TABLE [33] = (.53,.87,.335,10600,19000,830)
-    TABLE [34] = (.53,.98,.335,12700,20400,1200)
-    TABLE [35] = (.56,.82,.258,7350,14600,465)
-    TABLE [36] = (.56,.92,.335,12000,21600,985)
-    TABLE [37] = (.6,.87,.272,8150,17000,520)
-    TABLE [38] = (.6,.98,.375,13200,23600,1200)
-    TABLE [39] = (.6,1.09,.388,15000,25500,1600)
-    TABLE [40] = (.63,.85,.165,4650,9800,270)
-    TABLE [41] = (.63,.92,.29,8800,18000,645)
-    TABLE [42] = (.63,1.03,.4,14600,27000,1400)
-    TABLE [43] = (.67,.9,.17,5000,10800,315)
-    TABLE [44] = (.67,.98,.308,10000,20400,790)
-    TABLE [45] = (.67,1.09,.412,16000,29000,1600)
-    TABLE [46] = (.71,.95,.18,5600,12000,355)
-    TABLE [47] = (.71,1.03,.236,8300,16300,650)
-    TABLE [48] = (.71,1.15,.345,14000,26000,1405)
-    TABLE [49] = (.71,1.28,.45,20400,34500,2610)
-    TABLE [50] = (.75,1.,.185,6000,13200,405)
-    TABLE [51] = (.75,1.09,.25,9650,18600,795)
-    TABLE [52] = (.75,1.22,.365,15600,29000,1650)
-    TABLE [53] = (.75,1.36,.475,21600,36500,3050)
-    TABLE [54] = (.8,1.06,.195,6400,14300,455)
-    TABLE [55] = (.8,1.15,.258,10000,20000,865)
-    TABLE [56] = (.8,1.28,.375,17300,31500,1920)
-    TABLE [57] = (.85,1.12,.272,9300,22800,740)
-    TABLE [58] = (.85,1.360,.500,23200,45000,2710)
-    TABLE [59] = (.9,1.118,.206,7500,17000,585)
-    TABLE [60] = (.9,1.280,.28,11600,23200,1200)
-    TABLE [61] = (.9,1.42,.515,24500,49000,3350)
-    TABLE [62] = (.95,1.25,.3,10600,26000,995)
-    TABLE [63] = (.95,1.36,.412,17000,39000,1990)
-    TABLE [64] = (.95,1.5,.545,27000,55000,3475)
-    TABLE [65] = (1.,1.32,.315,11800,29000,1200)
-    TABLE [66] = (1.,1.42,.412,17600,40500,2140)
-    TABLE [67] = (1.,1.58,.462,24500,48000,3390)
-    TABLE [68] = (1.06,1.28,.218,6950,20000,570)
-    TABLE [69] = (1.06,1.4,.25,11000,26000,1065)
-    TABLE [70] = (1.06,1.5,.325,16000,30500,2190)
-    TABLE [71] = (1.12,1.46,.335,13700,34500,1475)
-    TABLE [72] = (1.12,1.58,.462,21200,50000,2825)
-    TABLE [73] = (1.12,2.58,.462,21200,50000,2925)
-    TABLE [74] = (1.18,1.42,.243,8800,27000,770)
-    TABLE [75] = (1.18,1.42,.243,8800,27000,755)
-    TABLE [76] = (1.18,1.54,.355,15600,40500,1770)
-    TABLE [77] = (1.25,1.75,.375,20400,45000,2840)
-    TABLE [78] = (1.32,1.6,.28,11200,33500,1160)
-    TABLE [79] = (1.32,1.72,.4,18600,49000,2455)
-    TABLE [80] = (1.5,1.82,.315,14600,45000,1710)
-    TABLE [81] = (1.8,2.18,.375,20000,63000,2900) 
-    
-  elif bearing_type == 'TRB1':   
-    TABLE = np.zeros(47,dtype = [('d','f8'),('D','f8'),('B','f8'),('C','f8'),('C0','f8'),('mass','f8')]) #for TRBs, mass is all over the place. maybe pick one with lowest mass here...
-    TABLE [0] = (.3,.46,.1,140,3000,58)
-    TABLE [1] = (.3,.54,.149,2750,4750,140)
-    TABLE [2] = (.32,.48,.1,1540,3100,64)
-    TABLE [3] = (.32,.62,.141,2810,4650,180)
-    TABLE [4] = (.34,.46,.076,1080,2400,35)
-    TABLE [5] = (.3556,.482,.06032,572,1200,26.5)
-    TABLE [6] = (.36,.68,.165,3690,6300,260)
-    TABLE [7] = (.36,.48,.076,1120,2550,37)
-    TABLE [8] = (.381,.479425,.0492,594,1500,20)
-    TABLE [9] = (.4064,.508,.0619,825,2120,26.5)
-    TABLE [10] = (.4064,.762,.181,3690,610,320)
-    TABLE [11] = (.416,.590,.1143,2120,4800,120)
-    TABLE [12] = (.4302,.60325,.0762,1100,2320,59)
-    TABLE [13] = (.4319,.6857,.1778,3910,8650,253)
-    TABLE [14] = (.4477,.635,.12065,2380,5500,120)
-    TABLE [15] = (.4572,.603,.0857,1450,3400,61.5)
-    TABLE [16] = (.4572,.61595,.08573,1470,3800,72)
-    TABLE [17] = (.479425,.795,.12859,2750,6300,145)
-    TABLE [18] = (.48,.95,.24,7040,12700,760)
-    TABLE [19] = (.4985,.63487,.0809,1470,3650,59.5)
-    TABLE [20] = (.5207,.7366,.0889,1650,3350,100)
-    TABLE [21] = (.5366,.82,.152,3910,7800,272)
-    TABLE [22] = (.5398,.635,.0508,781,2160,27)
-    TABLE [23] = (.5493,.69215,.08096,1340,3450,67)
-    TABLE [24] = (.5588,.7366,.1048,2330,5700,115)
-    TABLE [26] = (.56,1.08,.265,8970,16000,1060)
-    TABLE [27] = (.60772,.7874,.09366,2160,5300,110)
-    TABLE [28] = (.635,.7366,.05715,858,2650,37)
-    TABLE [29] = (.6604,.9398,.1365,3740,8150,287)
-    TABLE [30] = (.68,1.,.19,5610,12700,485)
-    TABLE [31] = (.68,.901,.1429,3580,9000,242)
-    TABLE [32] = (.71,.95,.113,2860,6550,200)
-    TABLE [30] = (.724,.914,.0841,1050,4900,115)
-    TABLE [34] = (.737,.8255,.0318,429,1370,22.5)
-    TABLE [35] = (.7493,.9906,.1595,4570,12000,330)
-    TABLE [36] = (.76,.889,.06985,1230,3800,67.5)
-    TABLE [37] = (.76,.889,.0889,1870,5850,94)
-    TABLE [38] = (.774,.965,.0937,1940,4900,131)
-    TABLE [39] = (.8,.914,.0587,1100,3550,53.5)
-    TABLE [40] = (.838,1.041,.09366,1900,4800,160)
-    TABLE [41] = (.857,1.092,.1207,2810,7350,245)
-    TABLE [42] = (.9,1.18,.122,3960,9150,340)
-    TABLE [43] = (.978,1.13,.0667,1450,4400,100)
-    TABLE [44] = (1.016, 1.270,.1016,250,750,275)
-    TABLE [45] = (1.27,1.465,.073,2120,6950,153)
-    TABLE [46] = (1.27,1.465,.1,3190,10800,265)
+  elif type == 'TRB1':
+    return [D_shaft,.0740,92.863*D_shaft**.8399]
 
-  elif bearing_type == 'CRB':
-    TABLE = np.zeros(80,dtype = [('d','f8'),('D','f8'),('B','f8'),('C','f8'),('C0','f8'),('mass','f8')])
-    TABLE [0] = (.3,.46,.074,858,1370,47)
-    TABLE [1] = (.3,.54,.085,1420,2120,89.5)
-    TABLE [2] = (.3,.54,.14,2090,3450,145)
-    TABLE [3] = (.32,.4,.048,495,1060,14.5)
-    TABLE [4] = (.32,.44,.072,765,1500,34.5)
-    TABLE [5] = (.32,.58,.15,3190,5000,180)
-    TABLE [6] = (.34,.46,.056,1020,2040,37)
-    TABLE [7] = (.34,.58,.19,3190,5700,210)
-    TABLE [8] = (.35,.48,.085,1060,2160,48)
-    TABLE [9] = (.36,.54,.106,1940,3600,88.5)
-    TABLE [10] = (.36,.6,.192,4310,5700,225)
-    TABLE [11] = (.38,.48,.046,539,1060,23)
-    TABLE [12] = (.38,.56,.106,1980,3750,92.5)
-    TABLE [13] = (.38,.68,.175,3960,6400,275)
-    TABLE [14] = (.4,.54,.082,1190,2500,54.5)
-    TABLE [15] = (.4,.6,.118,220,4750,120)
-    TABLE [16] = (.42,.56,.082,1210,2550,59)
-    TABLE [17] = (.42,.62,.15,2920,5400,160)
-    TABLE [18] = (.44,.6,.095,1720,3600,84)
-    TABLE [19] = (.44,.65,.122,2550,4900,145)
-    TABLE [20] = (.44,.72,.226,5120,9650,395)
-    TABLE [21] = (.46,.58,.72,1080,2400,48)
-    TABLE [22] = (.46,.68,.128,2810,5400,165)
-    TABLE [23] = (.46,.83,.165,4180,6800,415)
-    TABLE [24] = (.48,.6,.072,1100,2450,47.5)
-    TABLE [25] = (.48,.65,.078,1170,2240,78.)
-    TABLE [26] = (.48,.7,.128,2860,5600,170)
-    TABLE [27] = (.5,.67,.128,2330,5200,130)
-    TABLE [28] = (.5,.72,.128,2920,5850,180)
-    TABLE [29] = (.5,.83,.264,6440,12000,595)
-    TABLE [30] = (.53,.710,.106,2380,5000,120)
-    TABLE [31] = (.53,.78,.145,3740,7350,225)
-    TABLE [32] = (.53,.87,.272,7480,14600,660)
-    TABLE [33] = (.56,.68,.056,809,1830,44.5)
-    TABLE [34] = (.56,.75,.112,2460,5400,145)
-    TABLE [35] = (.56,.82,.15,3800,7650,290)
-    TABLE [36] = (.56,1.03,.206,7210,11200,805)
-    TABLE [37] = (.6,.8,.09,1900,3800,135)
-    TABLE [38] = (.6,.87,.118,2750,5100,245)
-    TABLE [39] = (.6,1.09,.155,5610,9800,710)
-    TABLE [40] = (.63,.78,.088,1570,3900,100)
-    TABLE [41] = (.63,.85,.128,3410,6200,285)
-    TABLE [42] = (.63,.92,.212,6440,14300,490)
-    TABLE [43] = (.6604,.8636,.10795,3080,6550,177)
-    TABLE [44] = (.67,.9,.103,2330,4750,195)
-    TABLE [45] = (.67,.98,.18,5390,11000,480)
-    TABLE [46] = (.71,.95,.14,3740,8300,300)
-    TABLE [47] = (.71, 1.03,.185,5940,12000,540)
-    TABLE [48] = (.75,1.,.112,2810,5850,265)
-    TABLE [49] = (.75,1.09,.195,7040,14600,635)
-    TABLE [50] = (.8,1.15,.2,7040,14600,715)
-    TABLE [51] = (.8,.98,.082,1720,4150,145)
-    TABLE [52] = (.82,.99,.072,858,1960,100)
-    TABLE [53] = (.85,1.03,.106,2120,6000,195)
-    TABLE [54] = (.85,1.12,.118,3190,6950,330)
-    TABLE [55] = (.9,1.09,.112,2700,7200,240)
-    TABLE [56] = (.9,1.180,.165,5830,14000,560)
-    TABLE [57] = (.95,1.25,.175,5830,14000,745)
-    TABLE [58] = (.95,1.150,.09,1340,3100,170)
-    TABLE [59] = (1.,1.22,.128,3690,10000,350)
-    TABLE [60] = (1.,1.32,.185,7040,17300,700)
-    TABLE [61] = (1.03,1.250,.1,1510,3450,230)
-    TABLE [62] = (1.06,1.28,.128,3580,10400,360)
-    TABLE [63] = (1.06,1.4,.195,7210,17300,870)
-    TABLE [64] = (1.06,1.5,.325,13000,32500,1900)
-    TABLE [65] = (1.12,1.36,.106,3410,8650,335)
-    TABLE [66] = (1.12,1.58,.345,15700,39000,2150)
-    TABLE [67] = (1.18,1.42,.106,3030,7800,350)
-    TABLE [68] = (1.18,1.54,.206,8970,21600,1050)
-    TABLE [69] = (1.18,1.54,.272,11200,29000,1400)
-    TABLE [70] = (1.25,1.5,.106,1720,4150,330)
-    TABLE [71] = (1.25,1.75,.29,12800,30500,2320)
-    TABLE [72] = (1.32,1.6,.122,3800,10000,530)
-    TABLE [73] = (1.32,1.72,.3,13200,34000,1900)
-    TABLE [74] = (1.32,1.85,.4,21600,55000,3550)
-    TABLE [75] = (1.4,1.2,.175,6600,18300,860)
-    TABLE [76] = (1.5,1.82,.14,3300,8000,665)
-    TABLE [77] = (1.7,2.06,.16,3690,9150,925)
-    TABLE [78] = (1.7,2.06,.16,7210,19300,1150)
-    TABLE [79] = (1.7,2.06,.16,3690,9150,935)
+  elif type == 'CRB':
+    return [D_shaft,.1136*D_shaft,304.19*D_shaft**1.8885]
 
-  elif bearing_type == 'TRB2':
-    TABLE = np.zeros(42,dtype = [('d','f8'),('D','f8'),('B','f8'),('C','f8'),('C0','f8'),('mass','f8')])
-    TABLE [0] = (.3,.5,.203,2810,5100,140)
-    TABLE [1] = (.3175,.447675,.181,2330,5400,84)
-    TABLE [2] = (.3302,.482,.1778,2240,5000,100)
-    TABLE [3] = (.34,.46,.16,2050,4900,71)
-    TABLE [4] = (.34,.5334,.174625,2380,4400,130)
-    TABLE [5] = (.3556,.444,.1365,1250,3650,46)
-    TABLE [6] = (.3556,.5017,.1556,1830,4250,87)
-    TABLE [7] = (.368,.524,.214,3140,7500,140)
-    TABLE [8] = (.38,.52,.148,2160,4500,80.2)
-    TABLE [9] = (.38,.66,.38,7650,16000,520)
-    TABLE [10] = (.384,.5461,.2223,3470,8300,161)
-    TABLE [11] = (.431,.5715,.1556,1980,5100,100)
-    TABLE [12] = (.431,.5715,.1921,2640,6950,125)
-    TABLE [13] = (.4477,.635,.2572,4400,11000,245)
-    TABLE [14] = (.4985,.635,.1778,2750,7350,125)
-    TABLE [15] = (.508,.8382,.3048,6440,14000,630)
-    TABLE [16] = (.5366,.762,.311,6270,16000,430)
-    TABLE [17] = (.5588,.7366,.1873,3410,8300,190)
-    TABLE [18] = (.5715,.8128,.1905,3580,8800,250)
-    TABLE [19] = (.6096,.787,.206,4020,10600,232)
-    TABLE [20] = (.635,.990,.339,8090,16000,840)
-    TABLE [21] = (.6858,.8763,.2,3910,11000,270)
-    TABLE [22] = (.711,.9144,.1905,3800,9650,265)
-    TABLE [23] = (.7239,.9144,.1873,3800,9650,250)
-    TABLE [24] = (.775,.965,.187,3580,10200,350)
-    TABLE [25] = (.775,1.016,.2267,6440,17000,525)
-    TABLE [26] = (.8128,1.016,.190,3580,10200,350)
-    TABLE [27] = (.8636,1.371,.4699,14700,32000,2250)
-    TABLE [28] = (.9144,1.066,.1397,2600,8000,190)
-    TABLE [29] = (.9398,1.27,.457,9680,29000,1540)
-    TABLE [30] = (1.12,1.48,.4,13400,38000,1900)
-    TABLE [31] = (1.16,1.54,.4,14200,38000,1900)
-    TABLE [32] = (1.25,1.5,.25,7370,2240,795)
-    TABLE [33] = (1.321,1.727,.41275,14000,40500,2325)
-    TABLE [34] = (1.562,1.8066,.2794,7210,28000,1045)
-    TABLE [35] = (1.778,2.159,.3937,15400,53000,2750)
-    TABLE [36] = (2,2.5,.32,7810,33500,3040)
-    TABLE [37] = (2.134,2.8194,.742,34700,10800,11600)
-    TABLE [38] = (2.1844,2.527,.3048,3950,37500,2230)
-    TABLE [39] = (2.616,3.048,.381,12300,53000,4485)
-    TABLE [40] = (3.3782,3.835,.3937,15100,63000,6380)
-    TABLE [41] = (3.811,4.216,.419,19400,108000,6315)
+  elif type == 'TRB2':
+    return [D_shaft,.1499*D_shaft,543.01*D_shaft**1.9043]
 
-  elif bearing_type == 'RB':
-    TABLE = np.zeros(75,dtype = [('d','f8'),('D','f8'),('B','f8'),('C','f8'),('C0','f8'),('mass','f8')])
-    TABLE [0] = (.3,.42,.056,270,375,24.5)
-    TABLE [1] = (.3,.46,.074,358,500,44)
-    TABLE [2] = (.3,.54,.085,462,670,88.5)
-    TABLE [3] = (.32,.44,.056,276,400,25.5)
-    TABLE [4] = (.32,.48,.074,371,540,46)
-    TABLE [5] = (.33,.46,.056,281,425,26.5)
-    TABLE [6] = (.34,.48,.06,291,430,36)
-    TABLE [7] = (.34,.52,.082, 423,640,62)
-    TABLE [8] = (.34,.62,.092,559,900,110)
-    TABLE [9] = (.35,.5,.07,319,475,46)
-    TABLE [10] = (.36,.48,.056,291,450,28,)
-    TABLE [11] = (.36,.54,.082,462,735,64.5)
-    TABLE [12] = (.38,.48,.046,242,390,20)
-    TABLE [13] = (.38,.56,.057,.377,.62,51)
-    TABLE [14] = (.4,.54,.065,345,570,41.5)
-    TABLE [15] = (.4,.6,.09,520,.865,87.5)
-    TABLE [16] = (.4,.72,.13,663,1160,235)
-    TABLE [17] = (.42,.56,.065,351,600,43)
-    TABLE [18] = (.42,.62,.09,507,880,91.5)
-    TABLE [19] = (.46,.62,.074,423,750,62.5)
-    TABLE [20] = (.46,.68,.1,582,1060,120)
-    TABLE [21] = (.48,.65,.078,449,815,74)
-    TABLE [22] = (.48,.7,.1,618,1140,125)
-    TABLE [23] = (.5,.62,.056,332,620,40)
-    TABLE [24] = (.5,.689,.100,475,865,77)
-    TABLE [25] = (.5,.72,.1,605,1140,135)
-    TABLE [26] = (.53,.71,.082,488,930,90.5)
-    TABLE [27] = (.53,.76,.1,585,1120,150)
-    TABLE [28] = (.53,.78,.112,650,1270,185)
-    TABLE [29] = (.56,.68,.056,345,695,42)
-    TABLE [30] = (.56,.82,.115,663,1470,210)
-    TABLE [31] = (.6,.8,.09,585,1220,125)
-    TABLE [32] = (.6,.87,.118,728,1500,230)
-    TABLE [33] = (.63,.78,.069,442,965,73)
-    TABLE [34] = (.63,.92,.128,819,1760,285)
-    TABLE [35] = (.67,.82,.069,442,1000,800)
-    TABLE [36] = (.67,.9,.103,676,1500,185)
-    TABLE [37] = (.67,.98,.136,904,2040,345)
-    TABLE [38] = (.71,1.,.14,832,1900,335)
-    TABLE [39] = (.71,1.08,.16,1040,2400,505)
-    TABLE [40] = (.73,.94,.1,650,1500,175)
-    TABLE [41] = (.75,1,.112,761,1800,255)
-    TABLE [42] = (.75,1.09,.15,995,2360,485)
-    TABLE [43] = (.76,1.08,.15,923,2200,430)
-    TABLE [44] = (.8,1.08,.115,819,2040,320)
-    TABLE [45] = (.8,1.15,.155,1010,2550,535)
-    TABLE [46] = (.85,1.03,.082,559,1430,140)
-    TABLE [47] = (.85,1.22,.165,1120,2900,630)
-    TABLE [48] = (.9,1.18,.122,852,2280,350)
-    TABLE [49] = (.9,1.28,.17,1140,3100,720)
-    TABLE [50] = (.95,1.25,.132,1010,2800,390)
-    TABLE [51] = (.95,1.36,.18,1170,3250,860)
-    TABLE [52] = (.97,1.125,.075,488,1340,125)
-    TABLE [53] = (1,1.32,.103,819,2360,410)
-    TABLE [54] = (1,1.42,.185,1350,3900,930)
-    TABLE [55] = (1.06,1.28,.1,728,2120,240)
-    TABLE [56] = (1.06,1.5,.195,1350,3900,1080)
-    TABLE [57] = (1.12,1.36,.106,761,2360,330)
-    TABLE [58] = (1.12,1.58,.2,1460,4400,1250)
-    TABLE [59] = (1.12,1.46,.15,1040,3100,650)
-    TABLE [60] = (1.18,1.42,.106,761,2360,330)
-    TABLE [61] = (1.18,1.54,.160,1140,4400,1250)
-    TABLE [62] = (1.25,1.5,.112,852,2750,385)
-    TABLE [63] = (1.32,1.6,.122,956,3150,500)
-    TABLE [64] = (1.32,1.72,.128,1210,4050,830)
-    TABLE [65] = (1.4,1.82,.185,1590,5500,1250)
-    TABLE [66] = (1.5,1.82,.14,1210,4400,690)
-    TABLE [67] = (1.5,1.95,.195,1720,6100,1500)
-    TABLE [68] = (1.6,1.95,.155,1270,4800,965)
-    TABLE [69] = (1.6,2.06,.2,1860,6950,1650)
-    TABLE [70] = (1.7,2.06,.16,1270,4900,1100)
-    TABLE [71] = (1.7,2.18,.212,1990,7650,1950)
-    TABLE [72] = (1.8,2,.1,715,2850,325)
-    TABLE [73] = (2,2.2,.075,936,4500,290)
-    TABLE [74] = (2.39,2.69,.12,1300,6200,975)
-  else:
-    print 'Invalid bearing type!'
-    TABLE = np.zeros(1, dtype = [('d','f8'),('D','f8'),('B','f8'),('C','f8'),('C0','f8'),('mass','f8')])
-
-  return TABLE
+  elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality
+    return [D_shaft,.0839,229.47*D_shaft**1.8036]
 
 # fatigue analysis for bearings
 def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
-
-  TABLE = seed_bearing_table(type)
 
   if type == 'CARB': #p = Fr, so X=1, Y=0
     if (np.max(F_a)) > 0:
@@ -429,6 +46,11 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
       X2 = 1.
       Y2 = 0.
       p = 10./3
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+    if C_min > 13980*D_shaft**1.5602:
+        return [D_shaft,0.4299*D_shaft+0.0382,3682.8*D_shaft**2.7676]
+    else:
+        return [D_shaft,.2663*D_shaft+.0435,1561.4*D_shaft**2.6007]
 
   elif type == 'SRB':
     e = 0.32
@@ -436,6 +58,11 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     X2 = 0.67
     Y2 = 3.1
     p = 10./3
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+    if C_min >  13878*D_shaft**1.0796:
+        return [D_shaft,.4801*D_shaft,2688.3*D_shaft**1.8877]
+    else:
+        return [D_shaft,.2762*D_shaft,876.7*D_shaft**1.7195]
 
   elif type == 'TRB1':
     e = .37
@@ -443,6 +70,11 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     X2 = .4
     Y2 = 1.6
     p = 10./3
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+    if C_min >  670*D_shaft+1690:
+        return [D_shaft,.1335,269.83*D_shaft**.441]
+    else:
+        return [D_shaft,.0740,92.863*D_shaft**.8399]
 
   elif type == 'CRB':
     if (np.max(F_a)/np.max(F_r)>=.5) or (np.min(F_a)/(np.min(F_r))>=.5):
@@ -455,6 +87,11 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
         X2 = 0.92
         Y2 = 0.6
         p = 10./3
+        C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+        if C_min > 4526.5*D_shaft**.9556 :
+            return [D_shaft,.2603*D_shaft,1070.8*D_shaft**1.8278]
+        else:
+            return [D_shaft,.1136*D_shaft,304.19*D_shaft**1.8885]
 
   elif type == 'TRB2':
     e = 0.4
@@ -462,6 +99,11 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     X2 = 0.4
     Y2 = 1.75
     p = 10./3
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+    if C_min > 6579.9*D_shaft**.8592 :
+        return [D_shaft,.3689*D_shaft,1442.6*D_shaft**1.8932]
+    else:
+        return [D_shaft,.1499*D_shaft,543.01*D_shaft**1.9043]
 
   elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality
     e = 0.4
@@ -469,8 +111,16 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     X2 = 0.75
     Y2 = 2.15
     p = 3.
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2)
+    if C_min > 884.5*D_shaft**.9964 :
+        return [D_shaft,.1571,646.46*D_shaft**2.]
+    else:
+        return [D_shaft,.0839,229.47*D_shaft**1.8036]
 
-  #calculate required dynamic load rating, C
+
+
+#calculate required dynamic load rating, C
+def C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing):
   Fa_ref = np.max(F_a) #used in comparisons Fa/Fr <e
   Fr_ref = np.max(F_r)
 
@@ -481,188 +131,128 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
 
   P_eq = ((scp.integrate.simps((P**p),x=N_array,even='avg'))/(N_array[-1]-N_array[0]))**(1/p)
   C_min = P_eq*(life_bearing/1e6)**(1./p)/1000 #kN
-
-  # print ''
-  # print 'loadrating (kN):', C_min
-
-  subset = TABLE[TABLE['C'] >= C_min] #all bearings above load rating
-  # print''
-  # print 'after C check:'
-  # print subset
-  subset =  subset[subset['d'] >= D_shaft] #all of those bearings above bore diameter
-  # print''
-  # print 'after D check:'
-  # print subset
-  # print ''
-  if len(subset)>=1:
-    index = np.argmin(subset['d']) #select bearing with lowest diameter (what if multiple with same d?)
-    bearing = subset[index]
-    # print 'final bearing selection (d,D,FW,C,C0,mass):'
-    # print bearing
-    # print ''
-    return [bearing['d'],bearing['B'],bearing['mass']] #add outer diameter output for calculating housing mass?
-
-  else:
-    #Suitable not found in table
-    print 'SUITABLE BEARING NOT FOUND IN LOOKUP TABLE... INTERPOLATING'
-    D_shaft = ceil(D_shaft*50.0)/50 #round up to nearest .02m bore diameter (standard size) before interpolation
-    if type == 'CARB':
-        return [D_shaft,(0.3609*D_shaft**0.764),(2173.7*D_shaft**2.5601)]
-    elif type == 'SRB':
-        return [D_shaft,(0.3319*D_shaft**0.4987),(1479.9*D_shaft**1.805)]
-    elif type == 'TRB1':
-        return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
-    elif type == 'CRB':
-        return [D_shaft,(0.156*D_shaft**0.3879),(535*D_shaft**1.7248)]
-    elif type == 'TRB2':
-        return [D_shaft,(0.281*D_shaft**0.3938),(813.25*D_shaft**1.8754)]
-    elif type == 'RB':
-        return [D_shaft,(0.1237*D_shaft**0.4776),(415.82*D_shaft**1.9128)]
+  return C_min
 
 
 # -------------------------------------------------
 
-def fatigue2_for_bearings(D_shaft,type,Fx,n_Fx,Fy_Fy,n_Fy,Fz_Fz,n_Fz,Fz_My,n_My,Fy_Mz,n_Mz,life_bearing):
-#takes in the effects of individual forces and moments on the radial and axial bearing forces, computes C from sum of bearing life reductions
-  TABLE = seed_bearing_table(type)
+# def fatigue2_for_bearings(D_shaft,type,Fx,n_Fx,Fy_Fy,n_Fy,Fz_Fz,n_Fz,Fz_My,n_My,Fy_Mz,n_Mz,life_bearing):
+# #takes in the effects of individual forces and moments on the radial and axial bearing forces, computes C from sum of bearing life reductions
 
-  if type == 'CARB': #p = Fr, so X=1, Y=0
-    e = 1
-    Y1 = 0.
-    X2 = 1.
-    Y2 = 0.
-    p = 10./3
+#   if type == 'CARB': #p = Fr, so X=1, Y=0
+#     e = 1
+#     Y1 = 0.
+#     X2 = 1.
+#     Y2 = 0.
+#     p = 10./3
 
-  elif type == 'SRB':
-    e = 0.32
-    Y1 = 2.1
-    X2 = 0.67
-    Y2 = 3.1
-    p = 10./3
+#   elif type == 'SRB':
+#     e = 0.32
+#     Y1 = 2.1
+#     X2 = 0.67
+#     Y2 = 3.1
+#     p = 10./3
 
-  elif type == 'TRB1':
-    e = .37
-    Y1 = 0
-    X2 = .4
-    Y2 = 1.6
-    p = 10./3
+#   elif type == 'TRB1':
+#     e = .37
+#     Y1 = 0
+#     X2 = .4
+#     Y2 = 1.6
+#     p = 10./3
 
-  elif type == 'CRB':
-    e = 0.2
-    Y1 = 0
-    X2 = 0.92
-    Y2 = 0.6
-    p = 10./3
+#   elif type == 'CRB':
+#     e = 0.2
+#     Y1 = 0
+#     X2 = 0.92
+#     Y2 = 0.6
+#     p = 10./3
 
-  elif type == 'TRB2':
-    e = 0.4
-    Y1 = 2.5
-    X2 = 0.4
-    Y2 = 1.75
-    p = 10./3
+#   elif type == 'TRB2':
+#     e = 0.4
+#     Y1 = 2.5
+#     X2 = 0.4
+#     Y2 = 1.75
+#     p = 10./3
 
-  elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality?
-  #idea: select bearing based off of bore, then calculate Fa/C0, see if life is feasible, if not, iterate?
-    e = 0.4
-    Y1 = 1.6
-    X2 = 0.75
-    Y2 = 2.15
-    p = 3.
+#   elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality?
+#   #idea: select bearing based off of bore, then calculate Fa/C0, see if life is feasible, if not, iterate?
+#     e = 0.4
+#     Y1 = 1.6
+#     X2 = 0.75
+#     Y2 = 2.15
+#     p = 3.
 
-  #Dynamic load rating calculation:
-  #reference axial and radial force to find which calculation factor to use-- assume this ratio is relatively consistent across bearing life
-  Fa_ref = np.max(Fx)
-  Fr_ref = ((np.max(Fy_Fy)+np.max(Fy_Mz))**2+(np.max(Fz_Fz)+np.max(Fz_My))**2)**.5
+#   #Dynamic load rating calculation:
+#   #reference axial and radial force to find which calculation factor to use-- assume this ratio is relatively consistent across bearing life
+#   Fa_ref = np.max(Fx)
+#   Fr_ref = ((np.max(Fy_Fy)+np.max(Fy_Mz))**2+(np.max(Fz_Fz)+np.max(Fz_My))**2)**.5
 
-  if Fa_ref/Fr_ref <=e:
-    #P = F_r + Y1*F_a
-    P_fx =Y1*Fx #equivalent P due to Fx
-    P_fy =Fy_Fy #equivalent P due to Fy... etc
-    P_fz =Fz_Fz
-    P_my =Fz_My
-    P_mz =Fy_Mz
-  else:
-    #P = X2*F_r + Y2*F_a
-    P_fx =Y2*Fx #equivalent P due to Fx
-    P_fy =X2*Fy_Fy #equivalent P due to Fy... etc
-    P_fz =X2*Fz_Fz
-    P_my =X2*Fz_My
-    P_mz =X2*Fy_Mz
+#   if Fa_ref/Fr_ref <=e:
+#     #P = F_r + Y1*F_a
+#     P_fx =Y1*Fx #equivalent P due to Fx
+#     P_fy =Fy_Fy #equivalent P due to Fy... etc
+#     P_fz =Fz_Fz
+#     P_my =Fz_My
+#     P_mz =Fy_Mz
+#   else:
+#     #P = X2*F_r + Y2*F_a
+#     P_fx =Y2*Fx #equivalent P due to Fx
+#     P_fy =X2*Fy_Fy #equivalent P due to Fy... etc
+#     P_fz =X2*Fz_Fz
+#     P_my =X2*Fz_My
+#     P_mz =X2*Fy_Mz
 
-  P_eq = ((scp.integrate.simps((P_fx**p),x=n_Fx,even='avg'))/(np.max(n_Fx)-np.min(n_Fx)))**(1/p)\
-  +((scp.integrate.simps((P_fy**p),x=n_Fy,even='avg'))/(np.max(n_Fy)-np.min(n_Fy)))**(1/p)\
-  +((scp.integrate.simps((P_fz**p),x=n_Fz,even='avg'))/(np.max(n_Fz)-np.min(n_Fz)))**(1/p)\
-  +((scp.integrate.simps((P_my**p),x=n_My,even='avg'))/(np.max(n_My)-np.min(n_My)))**(1/p)\
-  +((scp.integrate.simps((P_mz**p),x=n_Mz,even='avg'))/(np.max(n_Mz)-np.min(n_Mz)))**(1/p)
+#   P_eq = ((scp.integrate.simps((P_fx**p),x=n_Fx,even='avg'))/(np.max(n_Fx)-np.min(n_Fx)))**(1/p)\
+#   +((scp.integrate.simps((P_fy**p),x=n_Fy,even='avg'))/(np.max(n_Fy)-np.min(n_Fy)))**(1/p)\
+#   +((scp.integrate.simps((P_fz**p),x=n_Fz,even='avg'))/(np.max(n_Fz)-np.min(n_Fz)))**(1/p)\
+#   +((scp.integrate.simps((P_my**p),x=n_My,even='avg'))/(np.max(n_My)-np.min(n_My)))**(1/p)\
+#   +((scp.integrate.simps((P_mz**p),x=n_Mz,even='avg'))/(np.max(n_Mz)-np.min(n_Mz)))**(1/p)
 
-  C_min = P_eq*(life_bearing/1e6)**(1./p)/1000 #kN
+#   C_min = P_eq*(life_bearing/1e6)**(1./p)/1000 #kN
 
-  # print ''
-  print 'loadrating (kN):', C_min
 
-  subset = TABLE[TABLE['C'] >= C_min] #all bearings above load rating
-  # print''
-  # print 'after C check:'
-  # print subset
-  subset =  subset[subset['d'] >= D_shaft] #all of those bearings above bore diameter
-  # print''
-  # print 'after D check:'
-  # print subset
-  # print ''
-  if len(subset)>=1:
-    index = np.argmin(subset['d']) #select bearing with lowest diameter (what if multiple with same d?)
-    bearing = subset[index]
-    # print 'final bearing selection (d,D,FW,C,C0,mass):'
-    # print bearing
-    # print ''
-    return [bearing['d'],bearing['B'],bearing['mass']] #add outer diameter output for calculating housing mass?
+#   if type == 'CARB': #p = Fr, so X=1, Y=0
+#     if C_min > 13980*D_shaft**1.5602:
+#         return [D_shaft,0.4299*D_shaft+0.0382,3682.8*D_shaft**2.7676]
+#     else:
+#         return [D_shaft,.2663*D_shaft+.0435,1561.4*D_shaft**2.6007]
 
-  else:
-    #Suitable not found in table
-    print 'SUITABLE BEARING NOT FOUND IN LOOKUP TABLE... INTERPOLATING'
-    D_shaft = ceil(D_shaft*50.0)/50 #round up to nearest .02m bore diameter (standard size) before interpolation
-    if type == 'CARB':
-        return [D_shaft,(0.3609*D_shaft**0.764),(2173.7*D_shaft**2.5601)]
-    elif type == 'SRB':
-        return [D_shaft,(0.3319*D_shaft**0.4987),(1479.9*D_shaft**1.805)]
-    elif type == 'TRB1':
-        return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
-    elif type == 'CRB':
-        return [D_shaft,(0.156*D_shaft**0.3879),(535*D_shaft**1.7248)]
-    elif type == 'TRB2':
-        return [D_shaft,(0.281*D_shaft**0.3938),(813.25*D_shaft**1.8754)]
-    elif type == 'RB':
-        return [D_shaft,(0.1237*D_shaft**0.4776),(415.82*D_shaft**1.9128)]
+#   elif type == 'SRB':
+#     if C_min >  13878*D_shaft**1.0796:
+#         return [D_shaft,.4801*D_shaft,2688.3*D_shaft**1.8877]
+#     else:
+#         return [D_shaft,.2762*D_shaft,876.7*D_shaft**1.7195]
 
+#   elif type == 'TRB1':
+#     if C_min >  670*D_shaft+1690:
+#         return [D_shaft,.1335,269.83*D_shaft**.441]
+#     else:
+#         return [D_shaft,.0740,92.863*D_shaft**.8399]
+
+#   elif type == 'CRB':
+#     if C_min > 4526.5*D_shaft**.9556 :
+#         return [D_shaft,.2603*D_shaft,1070.8*D_shaft**1.8278]
+#     else:
+#         return [D_shaft,.1136*D_shaft,304.19*D_shaft**1.8885]
+
+#   elif type == 'TRB2':
+#     if C_min > 6579.9*D_shaft**.8592 :
+#         return [D_shaft,.3689*D_shaft,1442.6*D_shaft**1.8932]
+#     else:
+#         return [D_shaft,.1499*D_shaft,543.01*D_shaft**1.9043]
+
+#   elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality
+#     if C_min > 884.5*D_shaft**.9964:
+#         return [D_shaft,.1571,646.46*D_shaft**2.]
+#     else:
+#         return [D_shaft,.0839,229.47*D_shaft**1.8036]
 
 # -------------------------------------------------
 
-def resize_for_bearings(D_shaft,type):
-
-  TABLE = seed_bearing_table(type)
-  bearing = TABLE[TABLE['d']>=D_shaft]
-  if bearing.size>=1:
-    bearing = bearing[np.argmin(bearing['d'])]
-    return [bearing['d'],bearing['B'],bearing['mass']]
-  else:
-    #Suitable not found in table
-    print 'SUITABLE BEARING NOT FOUND IN LOOKUP TABLE... INTERPOLATING'
-    D_shaft = ceil(D_shaft*50.0)/50 #round up to nearest .02m bore diameter (standard size) before interpolation
-    if type == 'CARB':
-        return [D_shaft,(0.3609*D_shaft**0.764),(2173.7*D_shaft**2.5601)]
-    elif type == 'SRB':
-        return [D_shaft,(0.3319*D_shaft**0.4987),(1479.9*D_shaft**1.805)]
-    elif type == 'TRB1':
-        return [D_shaft,(0.092),(1479.9*D_shaft**1.805)]
-    elif type == 'CRB':
-        return [D_shaft,(0.156*D_shaft**0.3879),(535*D_shaft**1.7248)]
-    elif type == 'TRB2':
-        return [D_shaft,(0.281*D_shaft**0.3938),(813.25*D_shaft**1.8754)]
-    elif type == 'RB':
-        return [D_shaft,(0.1237*D_shaft**0.4776),(415.82*D_shaft**1.9128)]
 
 def get_rotor_mass(machine_rating): #if user inputs forces and zero rotor mass
     return 23.566*machine_rating
+
 
 def get_L_rb(rotor_diameter):
     return 0.007835*rotor_diameter+0.9642
