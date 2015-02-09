@@ -23,7 +23,7 @@ codeName = u'DriveSE'
 authorName = u'Yi Guo and Taylor Parsons'
 copyright = u'2014, NREL'
 version = '0.1'
-release = '0.1.0'
+release = '0.1.1'
 
 # -- General configuration -----------------------------------------------------
 
