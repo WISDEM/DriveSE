@@ -97,10 +97,7 @@ class Hub_drive(Component):
     '''
 
     # variables
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
     blade_root_diameter = Float(iotype='in', units='m', desc='blade root diameter')
-    L_rb = Float(iotype='in', units = 'm', desc = 'distance between hub center and upwind main bearing')
-    gamma = Float(iotype = 'in', units = 'deg', desc = 'shaft angle')
     MB1_location = Array(iotype = 'in', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
     machine_rating = Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
     
@@ -110,7 +107,6 @@ class Hub_drive(Component):
     # outputs
     diameter = Float(0.0, iotype='out', units='m', desc='hub diameter')
     mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
     I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
     
     def __init__(self):
@@ -127,10 +123,6 @@ class Hub_drive(Component):
         else:
             blade_root_diameter = 2.659*self.machine_rating**.3254
 
-        if self.L_rb:
-            L_rb = self.L_rb
-        else:
-            L_rb = get_L_rb(self.rotor_diameter)
 
         #Model hub as a cyclinder with holes for blade root and nacelle flange.
         rCyl=1.1*blade_root_diameter/2.0
@@ -147,12 +139,6 @@ class Hub_drive(Component):
         # calculate mass properties
         self.diameter=2*rCyl
         self.thickness=castThickness
-                    
-        cm = np.array([0.0,0.0,0.0])
-        cm[0]     = self.MB1_location[0] - L_rb
-        cm[1]     = 0.0
-        cm[2]     = self.MB1_location[2] + L_rb*sin(radians(self.gamma))
-        self.cm = (cm)
 
         I = np.array([0.0, 0.0, 0.0])
 

@@ -17,7 +17,7 @@ from scipy import integrate
 from fusedwind.interface import implement_base
 from drivewpact.drive import NacelleBase
 from drivese_components import LowSpeedShaft_drive, Gearbox_drive, MainBearing_drive, SecondBearing_drive, Bedplate_drive, YawSystem_drive, LowSpeedShaft_drive3pt, \
-    LowSpeedShaft_drive4pt, Transformer_drive, HighSpeedSide_drive, Generator_drive, NacelleSystemAdder_drive, AboveYawMassAdder_drive, RNASystemAdder_drive
+    LowSpeedShaft_drive4pt, Transformer_drive, HighSpeedSide_drive, Generator_drive, NacelleSystemAdder_drive, AboveYawMassAdder_drive, RNASystemAdder_drive, GetHubCM_drive
 
 @implement_base(NacelleBase)
 class Drive3pt(Assembly):
@@ -57,8 +57,9 @@ class Drive3pt(Assembly):
     yaw_system_mass = Float(iotype='out', units='kg', desc='component mass')
     transformer_mass = Float(iotype='out', units='kg', desc='component mass')
 
-    # outputs for hub CM calcuations
+    # outputs for hub CM calcuations kept because spinner and others stil use
     MB1_location = Array(iotype = 'out', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')    
+    Hub_cm = Array(iotype = 'out', units = 'm', desc = 'center of mass of hub in [x,y,z] for an arbitrary coordinate system') 
 
     # new variables
     rotor_bending_moment_x = Float(iotype='in', units='N*m', desc='The bending moment about the x axis')
@@ -131,13 +132,14 @@ class Drive3pt(Assembly):
         self.add('yawSystem', YawSystem_drive())
         self.add('transformer',Transformer_drive())
         self.add('rna', RNASystemAdder_drive())
+        self.add('GetHubCM', GetHubCM_drive())
 
         # workflow
         self.driver.workflow.add(['above_yaw_massAdder', 'nacelleSystem', 'lowSpeedShaft', 'mainBearing', 'secondBearing', 'gearbox', 'highSpeedSide', 'transformer','generator', 'bedplate', 'yawSystem','rna'])
 
         # connect inputs
         self.connect('rotor_diameter', ['lowSpeedShaft.rotor_diameter', 'mainBearing.rotor_diameter', 'secondBearing.rotor_diameter', 'gearbox.rotor_diameter', 'highSpeedSide.rotor_diameter', \
-                     'generator.rotor_diameter', 'bedplate.rotor_diameter', 'yawSystem.rotor_diameter','transformer.rotor_diameter'])
+                     'generator.rotor_diameter', 'bedplate.rotor_diameter', 'yawSystem.rotor_diameter','transformer.rotor_diameter','GetHubCM.rotor_diameter'])
         self.connect('rotor_bending_moment_x', ['lowSpeedShaft.rotor_bending_moment_x'])
         self.connect('rotor_bending_moment_y', ['bedplate.rotor_bending_moment_y','lowSpeedShaft.rotor_bending_moment_y'])
         self.connect('rotor_bending_moment_z', 'lowSpeedShaft.rotor_bending_moment_z')
@@ -153,7 +155,7 @@ class Drive3pt(Assembly):
         self.connect('gear_ratio', ['gearbox.gear_ratio', 'generator.gear_ratio', 'highSpeedSide.gear_ratio'])
         self.connect('gear_configuration', 'gearbox.gear_configuration')
         self.connect('crane', 'above_yaw_massAdder.crane')
-        self.connect('shaft_angle', 'lowSpeedShaft.shaft_angle')
+        self.connect('shaft_angle', ['lowSpeedShaft.shaft_angle','GetHubCM.shaft_angle'])
         self.connect('shaft_ratio', 'lowSpeedShaft.shaft_ratio')
         self.connect('shrink_disc_mass', 'lowSpeedShaft.shrink_disc_mass')
         self.connect('carrier_mass', 'lowSpeedShaft.carrier_mass')
@@ -165,7 +167,7 @@ class Drive3pt(Assembly):
         self.connect('flange_length', ['bedplate.flange_length','lowSpeedShaft.flange_length'])
         self.connect('overhang',['lowSpeedShaft.overhang','bedplate.overhang'])
         self.connect('hss_length', 'highSpeedSide.length_in')
-        self.connect('L_rb', ['lowSpeedShaft.L_rb','bedplate.L_rb'])
+        self.connect('L_rb', ['lowSpeedShaft.L_rb','bedplate.L_rb','GetHubCM.L_rb'])
 
 
         self.connect('check_fatigue', 'lowSpeedShaft.check_fatigue')
@@ -225,7 +227,7 @@ class Drive3pt(Assembly):
         self.connect('lowSpeedShaft.bearing_location2', 'secondBearing.location')
         self.connect('lowSpeedShaft.bearing_location1', 'mainBearing.location')
         self.connect('lowSpeedShaft.cm', ['nacelleSystem.lss_cm'])
-        self.connect('mainBearing.cm', 'nacelleSystem.main_bearing_cm')
+        self.connect('mainBearing.cm', ['nacelleSystem.main_bearing_cm','GetHubCM.MB1_location'])
         self.connect('secondBearing.cm', 'nacelleSystem.second_bearing_cm')
         self.connect('gearbox.cm', ['nacelleSystem.gearbox_cm'])
         self.connect('highSpeedSide.cm', ['nacelleSystem.hss_cm','generator.highSpeedSide_cm'])
@@ -277,8 +279,9 @@ class Drive3pt(Assembly):
         self.connect('nacelleSystem.nacelle_cm', 'nacelle_cm')
         self.connect('nacelleSystem.nacelle_I', 'nacelle_I')
         
-        # passthroughs for hub
-        self.connect('mainBearing.cm','MB1_location')
+        # passthroughs for hub components
+        self.connect('mainBearing.cm','MB1_location') #kept here because spinner and other components still use
+        self.connect('GetHubCM.cm','Hub_cm')
 
 #------------------------------------------------------------------
 @implement_base(NacelleBase)
@@ -321,6 +324,7 @@ class Drive4pt(Assembly):
 
     # outputs for hub CM calcuations
     MB1_location = Array(iotype = 'out', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+    Hub_cm = Array(iotype = 'out', units = 'm', desc = 'center of mass of hub in [x,y,z] for an arbitrary coordinate system') 
 
     # new variables
     rotor_bending_moment_x = Float(iotype='in', units='N*m', desc='The bending moment about the x axis')
@@ -393,13 +397,14 @@ class Drive4pt(Assembly):
         self.add('yawSystem', YawSystem_drive())
         self.add('transformer', Transformer_drive())
         self.add('rna', RNASystemAdder_drive())
+        self.add('GetHubCM', GetHubCM_drive())
 
         # workflow
         self.driver.workflow.add(['above_yaw_massAdder', 'nacelleSystem', 'lowSpeedShaft', 'mainBearing', 'secondBearing', 'gearbox', 'highSpeedSide', 'generator', 'bedplate', 'yawSystem','transformer','rna'])
 
         # connect inputs
         self.connect('rotor_diameter', ['lowSpeedShaft.rotor_diameter', 'mainBearing.rotor_diameter', 'secondBearing.rotor_diameter', 'gearbox.rotor_diameter', 'highSpeedSide.rotor_diameter', \
-                     'generator.rotor_diameter', 'bedplate.rotor_diameter', 'yawSystem.rotor_diameter','transformer.rotor_diameter'])
+                     'generator.rotor_diameter', 'bedplate.rotor_diameter', 'yawSystem.rotor_diameter','transformer.rotor_diameter','GetHubCM.rotor_diameter'])
         self.connect('rotor_bending_moment_x', ['lowSpeedShaft.rotor_bending_moment_x'])
         self.connect('rotor_bending_moment_y', ['bedplate.rotor_bending_moment_y','lowSpeedShaft.rotor_bending_moment_y'])
         self.connect('rotor_bending_moment_z', 'lowSpeedShaft.rotor_bending_moment_z')
@@ -415,7 +420,7 @@ class Drive4pt(Assembly):
         self.connect('gear_ratio', ['gearbox.gear_ratio', 'generator.gear_ratio', 'highSpeedSide.gear_ratio'])
         self.connect('gear_configuration', 'gearbox.gear_configuration')
         self.connect('crane', 'above_yaw_massAdder.crane')
-        self.connect('shaft_angle', ['lowSpeedShaft.shaft_angle'])
+        self.connect('shaft_angle', ['lowSpeedShaft.shaft_angle','GetHubCM.shaft_angle'])
         self.connect('shaft_ratio', 'lowSpeedShaft.shaft_ratio')
         self.connect('shrink_disc_mass', 'lowSpeedShaft.shrink_disc_mass')
         self.connect('carrier_mass', 'lowSpeedShaft.carrier_mass')
@@ -425,7 +430,7 @@ class Drive4pt(Assembly):
         self.connect('ratio_type', 'gearbox.ratio_type')
         self.connect('shaft_type', 'gearbox.shaft_type')
         self.connect('flange_length', ['bedplate.flange_length','lowSpeedShaft.flange_length'])
-        self.connect('L_rb', ['lowSpeedShaft.L_rb','bedplate.L_rb'])
+        self.connect('L_rb', ['lowSpeedShaft.L_rb','bedplate.L_rb','GetHubCM.L_rb'])
         self.connect('gearbox_cm','gearbox.cm_input')
         self.connect('hss_length', 'highSpeedSide.length_in')
         self.connect('availability', 'lowSpeedShaft.availability')
@@ -540,7 +545,8 @@ class Drive4pt(Assembly):
         self.connect('nacelleSystem.nacelle_I', 'nacelle_I')
 
         # passthroughs for hub
-        self.connect('mainBearing.cm','MB1_location')
+        self.connect('mainBearing.cm',['MB1_location','GetHubCM.MB1_location'])
+        self.connect('GetHubCM.cm','Hub_cm')
 
 #------------------------------------------------------------------
 #NacelleSE drive with simplified low speed shaft and windpact models

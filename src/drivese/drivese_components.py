@@ -2597,6 +2597,44 @@ class Generator_drive(Component):
 
 #-------------------------------------------------------------------------------
 
+class GetHubCM_drive(Component):
+    ''' Get_hub_cm class
+          The Get_hub_cm class is used to pass the hub cm data to upper level models. This model is outdated and does not contain fatigue analysis
+          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+    '''
+
+    # variables
+    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
+    L_rb = Float(iotype='in', units = 'm', desc = 'distance between hub center and upwind main bearing')
+    shaft_angle = Float(iotype = 'in', units = 'deg', desc = 'shaft angle')
+    MB1_location = Array(iotype = 'in', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+
+    # outputs
+    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+
+    def __init__(self):
+        ''' Initialize Get_hub_cm component
+        '''
+
+        super(GetHubCM_drive, self).__init__()
+
+        #controls what happens if derivatives are missing
+        self.missing_deriv_policy = 'assume_zero'
+
+    def execute(self):
+        if self.L_rb>0:
+            L_rb = self.L_rb
+        else:
+            L_rb = get_L_rb(self.rotor_diameter)
+
+        cm = np.array([0.0,0.0,0.0])
+        cm[0]     = self.MB1_location[0] - L_rb
+        cm[1]     = 0.0
+        cm[2]     = self.MB1_location[2] + L_rb*sin(radians(self.gamma))
+        self.cm = (cm)
+
+#-------------------------------------------------------------------------------
+
 class AboveYawMassAdder_drive(Component):
 
     # variables
