@@ -16,7 +16,7 @@ import scipy as scp
 import scipy.optimize as opt
 from scipy import integrate
 
-from drivese_utils import fatigue_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb #, fatigue2_for_bearings
+from drivese_utils import fatigue_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb, get_My, get_Mz #, fatigue2_for_bearings
 
 
 #-------------------------------------------------------------------------------
@@ -159,6 +159,13 @@ class LowSpeedShaft_drive4pt(Component):
           L_rb = 0.007835*rotor_diameter+0.9642
         else:
           L_rb = self.L_rb
+
+        #If user does not know important moments, crude approx
+        if self.rotor_mass > 0 and M_r_y == 0: 
+            M_r_y=get_My(self.rotor_mass,L_rb)
+
+        if self.rotor_mass > 0 and M_r_z == 0:
+            M_r_z=get_Mz(self.rotor_mass,L_rb)
 
         L_bg = 6.11-L_rb    #distance from first main bearing to gearbox yokes  # to add as an input
         L_as = L_ms/2.0     #distance from main bearing to shaft center
@@ -962,6 +969,13 @@ class LowSpeedShaft_drive3pt(Component):
             L_rb = 0.007835*self.rotor_diameter+0.9642
         else:
             L_rb = self.L_rb
+
+        #If user does not know important moments, crude approx
+        if self.rotor_mass > 0 and M_r_y == 0: 
+            M_r_y=get_My(self.rotor_mass,L_rb)
+
+        if self.rotor_mass > 0 and M_r_z == 0:
+            M_r_z=get_Mz(self.rotor_mass,L_rb)
 
         gamma=self.shaft_angle #deg LSS angle wrt horizontal
 
@@ -2113,6 +2127,10 @@ class Bedplate_drive(Component):
         rotorLoc = mb1_location + L_rb
         rotorFz=abs(self.rotor_force_z)
         rotorMy=abs(self.rotor_bending_moment_y)
+
+        #If user does not know important moment, crude approx
+        if self.rotor_mass > 0 and rotorMy == 0: 
+            rotorMy=get_My(self.rotor_mass,L_rb)
 
         #initial I-beam dimensions
         tf = 0.01905

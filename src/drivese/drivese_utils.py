@@ -256,3 +256,13 @@ def get_rotor_mass(machine_rating): #if user inputs forces and zero rotor mass
 
 def get_L_rb(rotor_diameter):
     return 0.007835*rotor_diameter+0.9642
+
+def get_My(rotor_mass,L_rb): #moments taken to scale approximately with force (rotor mass) and distance (L_rb)
+    if L_rb == 0:
+      L_rb = get_L_rb((rotor_mass+49089)/1170.6) #approximate rotor diameter from rotor mass
+    return 59.7*rotor_mass*L_rb
+
+def get_Mz(rotor_mass,L_rb): #moments taken to scale roughly with force (rotor mass) and distance (L_rb)
+    if L_rb == 0:
+      L_rb = get_L_rb((rotor_mass-49089)/1170.6) #approximate rotor diameter from rotor mass
+    return 53.846*rotor_mass*L_rb
