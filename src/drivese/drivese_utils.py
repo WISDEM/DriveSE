@@ -11,6 +11,28 @@ from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
 import scipy as scp
 
+def blade_moment_transform(bladeMx,bladeMy,bladeMz,pitch_angle,cone_angle):
+
+  #nested function for transformations
+  def trans(alpha,con,phi,bMx,bMy,bMz):
+    Mx = bMx*cos(con)*cos(alpha) - bMy*(sin(con)*cos(alpha)*sin(phi)-sin(alpha)*cos(phi)) + bMz*(sin(con)*cos(alpha)*cos(phi)-sin(alpha)*sin(phi))
+    My = bMx*cos(con)*sin(alpha) - bMy*(sin(con)*sin(alpha)*sin(phi)+cos(alpha)*cos(phi)) + bMz*(sin(con)*sin(alpha)*cos(phi)+cos(alpha)*sin(phi))
+    Mz = bMx*(-sin(alpha)) - bMy*(-cos(alpha)*sin(phi)) + bMz*(cos(alpha)*cos(phi))
+    return [Mx,My,Mz]
+
+  #blade 1 is defined as blade with maximum moments for each case
+  [b1Mx,b1My,b1Mz] = trans(0,pitch_angle,cone_angle,bladeMx,bladeMy,bladeMz)
+
+  #TODO check that blades are oriented at 120 and 240 degrees
+  [b2Mx,b2My,b2Mz] = trans(radians(120),pitch_angle,cone_angle,bladeMx*,bladeMy*,bladeMz*)
+  [b3Mx,b3My,b3Mz] = trans(radians(240),pitch_angle,cone_angle,bladeMx*,bladeMy*,bladeMz*)
+
+  Mx = b1Mx + b2Mx + b3Mx
+  My = b1My + b2My + b3My
+  Mz = b1Mz + b2Mz + b3Mz
+
+  return [My,Mz,Mx] #note:Mx is already givn by rotor model. Calculated here to check if numbers nearly equal
+
 # returns FW, mass for bearings without fatigue analysis
 def resize_for_bearings(D_shaft,type):
 # assume low load rating for bearing
