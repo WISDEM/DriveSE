@@ -476,7 +476,10 @@ class LowSpeedShaft_drive4pt(Component):
           Se=C_size*C_surf*C_temp*C_reliab*C_envir*.5*Sut #modified endurance limit for infinite life (should be Sf)\
 
           if self.fatigue_exponent!=0:
-            SN_b = -1/self.fatigue_exponent
+            if self.fatigue_exponent > 0:
+                SN_b = - self.fatigue_exponent
+            else
+                SN_b = self.fatigue_exponent
           else:
             Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
             z=log10(1e3)-log10(Nfinal)  #assuming no endurance limit (high strength steel)
@@ -1190,7 +1193,10 @@ class LowSpeedShaft_drive3pt(Component):
           Se=C_size*C_surf*C_temp*C_reliab*C_envir*.5*Sut #modified endurance limit for infinite life
 
           if self.fatigue_exponent!=0:
-            SN_b = -1/self.fatigue_exponent
+            if self.fatigue_exponent > 0:
+                SN_b = - self.fatigue_exponent
+            else
+                SN_b = self.fatigue_exponent
           else:
             Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
             z=log10(1e3)-log10(Nfinal)  #assuming no endurance limit (high strength steel)

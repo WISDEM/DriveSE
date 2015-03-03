@@ -1088,9 +1088,9 @@ def nacelle_example_p75_4pt():
     nace.rotor_thrust = 143000.0 #
     nace.rotor_mass = 0.0 #
     nace.rotor_speed = 22.0 #rpm
-    nace.rotor_bending_moment = 495.6e3 #
+    nace.rotor_bending_moment = 459.6e3 #
     nace.rotor_bending_moment_x = 401.0e3 #
-    nace.rotor_bending_moment_y = 495.6e3 #
+    nace.rotor_bending_moment_y = 459.6e3 #
     nace.rotor_bending_moment_z = -443.0e3 #
     nace.rotor_force_x = 143000.0 #
     nace.rotor_force_y = -12600.0 #
