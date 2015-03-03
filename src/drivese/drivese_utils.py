@@ -11,7 +11,7 @@ from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
 import scipy as scp
 
-def blade_moment_transform(bladeMx,bladeMy,bladeMz,pitch_angle,cone_angle): #ensure angles are in radians
+def blade_moment_transform(bladeMx,bladeMy,bladeMz,pitch_angle,cone_angle,azimuth_angle): #ensure angles are in radians, give 3 element arrays
 
   #nested function for transformations
   def trans(alpha,con,phi,bMx,bMy,bMz):
@@ -21,15 +21,11 @@ def blade_moment_transform(bladeMx,bladeMy,bladeMz,pitch_angle,cone_angle): #ens
     return [Mx,My,Mz]
 
   #blade 1 is defined as blade with maximum moments for each case
-  [b1Mx,b1My,b1Mz] = trans(0.,pitch_angle,cone_angle,bladeMx,bladeMy,bladeMz)
+  [bMx,bMy,bMz] = trans(azimuth_angle,pitch_angle,cone_angle,bladeMx,bladeMy,bladeMz)
 
-  #TODO check that blades are oriented at 120 and 240 degrees
-  [b2Mx,b2My,b2Mz] = trans(radians(120.),pitch_angle,cone_angle,bladeMx,bladeMy,bladeMz)
-  [b3Mx,b3My,b3Mz] = trans(radians(240.),pitch_angle,cone_angle,bladeMx,bladeMy,bladeMz)
-
-  Mx = b1Mx + b2Mx + b3Mx
-  My = b1My + b2My + b3My
-  Mz = b1Mz + b2Mz + b3Mz
+  Mx = np.sum(bMx)
+  My = np.sum(bMy)
+  Mz = np.sum(bMz)
 
   return [My,Mz,Mx] #note:Mx is already givn by rotor model. Calculated here to check if numbers nearly equal
 
