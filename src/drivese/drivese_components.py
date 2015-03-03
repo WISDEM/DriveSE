@@ -478,7 +478,7 @@ class LowSpeedShaft_drive4pt(Component):
           if self.fatigue_exponent!=0:
             if self.fatigue_exponent > 0:
                 SN_b = - self.fatigue_exponent
-            else
+            else:
                 SN_b = self.fatigue_exponent
           else:
             Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
@@ -1195,7 +1195,7 @@ class LowSpeedShaft_drive3pt(Component):
           if self.fatigue_exponent!=0:
             if self.fatigue_exponent > 0:
                 SN_b = - self.fatigue_exponent
-            else
+            else:
                 SN_b = self.fatigue_exponent
           else:
             Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
