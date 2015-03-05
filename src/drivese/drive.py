@@ -1197,7 +1197,7 @@ def sys_print(nace):
 if __name__ == '__main__':
     ''' Main runs through tests of several drivetrain configurations with known component masses and dimensions '''
 
-    nacelle_example_5MW_baseline_3pt()
+    # nacelle_example_5MW_baseline_3pt()
 
     nacelle_example_5MW_baseline_4pt()
 

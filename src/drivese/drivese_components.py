@@ -584,7 +584,7 @@ class LowSpeedShaft_drive4pt(Component):
               #upwind bearing calculations
               iterationstep=0.01
               diameter_limit = 5.0
-              print ''
+              # print ''
               while True:
                   D_in=sR*D_max
                   D_max = (D_max**4 + D_in**4)**0.25
