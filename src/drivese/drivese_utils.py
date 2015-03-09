@@ -6,28 +6,52 @@ Created by Taylor Parsons 2013. Edited by Taylor Parsons 2014
 Copyright (c) NREL. All rights reserved.
 """
 
+from openmdao.main.api import Component
+from openmdao.main.datatypes.api import Float, Array
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
 import scipy as scp
 
-def blade_moment_transform(bladeMx,bladeMy,bladeMz,pitch_angle,cone_angle,azimuth_angle): #ensure angles are in radians, give 3 element arrays
+class blade_moment_transform(Component): 
+    ''' Blade_Moment_Transform class          
+          The Blade_Moment_Transform class is used to transform moments from the WISDEM rotor models.
+    '''
+    # variables
+    # ensure angles are in radians. Azimuth is 3-element array with blade azimuths; b1, b2, b3 are 3-element arrays for each blade moment (Mx, My, Mz); pitch and cone are floats
+    azimuth_angle = Array(np.array([0,2*pi/3,-2*pi/3]),iotype='in',units='rad',desc='azimuth angles for each blade')
+    pitch_angle = Float(iotype ='in', units = 'rad', desc = 'pitch angle at each blade, assumed same')
+    cone_angle = Float(iotype='in', units='rad', desc='cone angle at each blade, assumed same')
+    b1 = Array(iotype='in', units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
+    b2 = Array(iotype='in', units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
+    b3 = Array(iotype='in', units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
 
-  #nested function for transformations
-  def trans(alpha,con,phi,bMx,bMy,bMz):
-    Mx = bMx*cos(con)*cos(alpha) - bMy*(sin(con)*cos(alpha)*sin(phi)-sin(alpha)*cos(phi)) + bMz*(sin(con)*cos(alpha)*cos(phi)-sin(alpha)*sin(phi))
-    My = bMx*cos(con)*sin(alpha) - bMy*(sin(con)*sin(alpha)*sin(phi)+cos(alpha)*cos(phi)) + bMz*(sin(con)*sin(alpha)*cos(phi)+cos(alpha)*sin(phi))
-    Mz = bMx*(-sin(alpha)) - bMy*(-cos(alpha)*sin(phi)) + bMz*(cos(alpha)*cos(phi))
-    return [Mx,My,Mz]
+    # returns
+    Mx = Float(iotype='out',units='N*m', desc='rotor moment in x-direction')
+    My = Float(iotype='out',units='N*m', desc='rotor moment in y-direction')
+    Mz = Float(iotype='out',units='N*m', desc='rotor moment in z-direction')
+    
+    def __init__(self):
+        
+        super(blade_moment_transform, self).__init__()
+    
+    def execute(self):
 
-  #blade 1 is defined as blade with maximum moments for each case
-  [bMx,bMy,bMz] = trans(azimuth_angle,pitch_angle,cone_angle,bladeMx,bladeMy,bladeMz)
+        #nested function for transformations
+        def trans(alpha,con,phi,bMx,bMy,bMz):
+            Mx = bMx*cos(con)*cos(alpha) - bMy*(sin(con)*cos(alpha)*sin(phi)-sin(alpha)*cos(phi)) + bMz*(sin(con)*cos(alpha)*cos(phi)-sin(alpha)*sin(phi))
+            My = bMx*cos(con)*sin(alpha) - bMy*(sin(con)*sin(alpha)*sin(phi)+cos(alpha)*cos(phi)) + bMz*(sin(con)*sin(alpha)*cos(phi)+cos(alpha)*sin(phi))
+            Mz = bMx*(-sin(alpha)) - bMy*(-cos(alpha)*sin(phi)) + bMz*(cos(alpha)*cos(phi))
+            return [Mx,My,Mz]
 
-  Mx = np.sum(bMx)
-  My = np.sum(bMy)
-  Mz = np.sum(bMz)
+        [b1Mx,b1My,b1Mz] = trans(pitch_angle,cone_angle,azimuth_angle[0],b1[0],b1[1],b1[2])
+        [b2Mx,b2My,b2Mz] = trans(pitch_angle,cone_angle,azimuth_angle[1],b2[0],b2[1],b2[2])
+        [b3Mx,b3My,b3Mz] = trans(pitch_angle,cone_angle,azimuth_angle[2],b3[0],b3[1],b3[2])
 
-  return [My,Mz,Mx] #note:Mx is already givn by rotor model. Calculated here to check if numbers nearly equal
+        self.Mx = b1Mx+b2Mx+b3Mx
+        self.My = b1My+b2My+b3My
+        self.Mz = b1Mz+b2Mz+b3Mz
+
 
 # returns FW, mass for bearings without fatigue analysis
 def resize_for_bearings(D_shaft,type):
