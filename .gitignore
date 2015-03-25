@@ -1,8 +1,5 @@
 *.py[cod]
 
-# Directories
-DriveSEDocs/
-
 # OpenMDAO
 openmdao_log.txt
 
