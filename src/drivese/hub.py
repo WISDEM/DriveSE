@@ -58,17 +58,17 @@ class HubSE(Assembly):
         self.connect('blade_mass', ['pitchSystem.blade_mass'])
         self.connect('rotor_bending_moment', ['pitchSystem.rotor_bending_moment'])
         self.connect('blade_number', ['hub.blade_number', 'pitchSystem.blade_number'])
-        self.connect('rotor_diameter', ['hub.rotor_diameter', 'pitchSystem.rotor_diameter', 'spinner.rotor_diameter'])
+        #self.connect('rotor_diameter', ['hub.rotor_diameter', 'pitchSystem.rotor_diameter', 'spinner.rotor_diameter'])
         self.connect('hub.diameter', ['pitchSystem.hub_diameter', 'spinner.hub_diameter'])
         self.connect('blade_root_diameter', 'hub.blade_root_diameter')
-        self.connect('L_rb',['hub.L_rb','pitchSystem.L_rb','spinner.L_rb'])
-        self.connect('gamma',['hub.gamma','pitchSystem.gamma','spinner.gamma'])
+        self.connect('L_rb',['pitchSystem.L_rb','spinner.L_rb']) #'hub.L_rb',
+        self.connect('gamma',['pitchSystem.gamma','spinner.gamma']) # 'hub.gamma',
         self.connect('MB1_location',['hub.MB1_location','pitchSystem.MB1_location','spinner.MB1_location'])
         self.connect('machine_rating','hub.machine_rating')
 
         # connect components
         self.connect('hub.mass', 'hubSystem.hub_mass')
-        self.connect('hub.cm', 'hubSystem.hub_cm')
+        #self.connect('hub.cm', 'hubSystem.hub_cm')
         self.connect('hub.I', 'hubSystem.hub_I')
         self.connect('pitchSystem.mass', 'hubSystem.pitch_system_mass')
         self.connect('pitchSystem.cm', 'hubSystem.pitch_system_cm')
