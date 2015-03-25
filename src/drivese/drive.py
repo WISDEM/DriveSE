@@ -89,9 +89,9 @@ class Drive3pt(Assembly):
     mb2Type = Str(iotype='in',desc= 'Carrier bearing type: CRB, TRB or RB')
 
     #Fatigue Parameters
-    check_fatigue = Int(iotype = 'in', desc = 'turns on and off fatigue check. 0 if no fatigue check, 1 if unknown loads, 2 if known loads')
+    check_fatigue = Int(0,iotype = 'in', desc = 'turns on and off fatigue check. 0 if no fatigue check, 1 if unknown loads, 2 if known loads')
     fatigue_exponent = Float(iotype = 'in', desc = 'fatigue exponent of material')
-    S_ut = Float(iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of shaft material')
+    S_ut = Float(700e6,iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of shaft material')
     weibull_A = Float(iotype = 'in', desc = 'weibull scale parameter "A" of 10-minute windspeed probability distribution')
     weibull_k = Float(iotype = 'in', desc = 'weibull shape parameter "k" of 10-minute windspeed probability distribution')
     blade_number = Int(3,iotype = 'in', desc = 'number of blades on rotor, 2 or 3')
@@ -354,9 +354,9 @@ class Drive4pt(Assembly):
     hss_length = Float(iotype = 'in', units = 'm', desc = 'high speed shaft length determined by user. Default 0.5m')
 
     # fatigue check
-    check_fatigue = Int(iotype = 'in', desc = 'turns on and off fatigue check. 0 if no fatigue check, 1 if unknown loads, 2 if known loads')
+    check_fatigue = Int(0,iotype = 'in', desc = 'turns on and off fatigue check. 0 if no fatigue check, 1 if unknown loads, 2 if known loads')
     fatigue_exponent = Float(iotype = 'in', desc = 'fatigue exponent of shaft material')
-    S_ut = Float(iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of shaft material')
+    S_ut = Float(700.0e6,iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of shaft material')
     weibull_A = Float(iotype = 'in', desc = 'weibull scale parameter "A" of 10-minute windspeed probability distribution')
     weibull_k = Float(iotype = 'in', desc = 'weibull shape parameter "k" of 10-minute windspeed probability distribution')
     blade_number = Int(3,iotype = 'in', desc = 'number of blades on rotor, 2 or 3')

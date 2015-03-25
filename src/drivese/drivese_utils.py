@@ -1,8 +1,8 @@
 """
-driveSE_components.py
-New components for hub, low speed shaft, main bearings, gearbox, bedplate and yaw bearings, as well as modified components from NacelleSE
+driveSE_utilis.py
+Utilities and functions used in DriveSE
 
-Created by Taylor Parsons 2013. Edited by Taylor Parsons 2014
+Created by Taylor Parsons 2014.
 Copyright (c) NREL. All rights reserved.
 """
 

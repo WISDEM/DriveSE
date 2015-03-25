@@ -57,7 +57,7 @@ class LowSpeedShaft_drive4pt(Component):
     L_rb = Float(iotype='in', units='m', desc='distance between hub center and upwind main bearing')
     check_fatigue = Int(iotype = 'in', desc = 'turns on and off fatigue check')
     fatigue_exponent = Float(0,iotype = 'in', desc = 'fatigue exponent of material')
-    S_ut = Float(iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of material')
+    S_ut = Float(700e6,iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of material')
     weibull_A = Float(iotype = 'in', units = 'm/s', desc = 'weibull scale parameter "A" of 10-minute windspeed probability distribution')
     weibull_k = Float(iotype = 'in', desc = 'weibull shape parameter "k" of 10-minute windspeed probability distribution')
     blade_number = Float(iotype = 'in', desc = 'number of blades on rotor, 2 or 3')
@@ -106,6 +106,7 @@ class LowSpeedShaft_drive4pt(Component):
         super(LowSpeedShaft_drive4pt, self).__init__()
     
     def execute(self):
+
         #Hub Forces
         F_r_x = self.rotor_force_x            #External F_x
         F_r_y = self.rotor_force_y                 #External F_y
@@ -179,7 +180,7 @@ class LowSpeedShaft_drive4pt(Component):
         E=2.1e11
         density=7800.0
         n_safety = 2.5 # According to AGMA, takes into account the peak load safety factor
-        Sy = 66000 #psi
+        Sy = 66000*self.S_ut/700e6 #66000 #psi
 
         #unit conversion
         u_knm_inlb = 8850.745454036
@@ -460,7 +461,6 @@ class LowSpeedShaft_drive4pt(Component):
           E=2.1e11
           density=7800.0
           n_safety = 2.5
-          Sy = 490.0e6 # Pa
           if self.S_ut > 0:
             Sut = self.S_ut
           else:
@@ -480,11 +480,13 @@ class LowSpeedShaft_drive4pt(Component):
                 SN_b = - self.fatigue_exponent
             else:
                 SN_b = self.fatigue_exponent
+
           else:
             Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
             z=log10(1e3)-log10(Nfinal)  #assuming no endurance limit (high strength steel)
             SN_b=1/z*log10(Sm/Se)
           SN_a=Sm/(1000.**SN_b)
+          print 'fatigue_exponent:',SN_b
           # print 'm:', -1/SN_b
           # print 'a:', SN_a
           if check_fatigue == 1:
@@ -582,7 +584,7 @@ class LowSpeedShaft_drive4pt(Component):
               # print 'occurance:', np.min(N)
 
               #upwind bearing calculations
-              iterationstep=0.01
+              iterationstep=0.001
               diameter_limit = 5.0
               # print ''
               while True:
@@ -637,7 +639,7 @@ class LowSpeedShaft_drive4pt(Component):
 
               #downwind bearing calculations
               diameter_limit = 5.0
-              iterationstep=0.01
+              iterationstep=0.001
 
               while True:
                   I=(pi/64.0)*(D_med**4-D_in**4)
@@ -735,7 +737,7 @@ class LowSpeedShaft_drive4pt(Component):
 
           #   #upwind bearing calcs
           #   diameter_limit = 5.0
-          #   iterationstep=0.01
+          #   iterationstep=0.001
           #   #upwind bearing calcs
           #   while True:
           #       Damage = 0
@@ -905,7 +907,7 @@ class LowSpeedShaft_drive3pt(Component):
     L_rb = Float(iotype='in', units='m', desc='distance between hub center and upwind main bearing')
     check_fatigue = Int(iotype = 'in', desc = 'turns on and off fatigue check')
     fatigue_exponent = Float(iotype = 'in', desc = 'fatigue exponent of material')
-    S_ut = Float(iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of material')
+    S_ut = Float(700e6,iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of material')
     weibull_A = Float(iotype = 'in', units = 'm/s', desc = 'weibull scale parameter "A" of 10-minute windspeed probability distribution')
     weibull_k = Float(iotype = 'in', desc = 'weibull shape parameter "k" of 10-minute windspeed probability distribution')
     blade_number = Float(iotype = 'in', desc = 'number of blades on rotor, 2 or 3')
@@ -1020,7 +1022,7 @@ class LowSpeedShaft_drive3pt(Component):
         TRB1_limit=3.0/60.0/180.0*pi;
         n_safety_brg = 1.0
         n_safety=2.5
-        Sy = 66000.0 #psi
+        Sy = 66000*self.S_ut/700e6 #psi
         E=2.1e11  
         N_count=50    
           
@@ -1179,7 +1181,6 @@ class LowSpeedShaft_drive3pt(Component):
           E=2.1e11
           density=7800.0
           n_safety = 2.5
-          Sy = 490.0e6 # Pa
           if self.S_ut > 0:
             Sut = self.S_ut
           else:
@@ -1293,7 +1294,7 @@ class LowSpeedShaft_drive3pt(Component):
               # print 'occurance:', np.min(N)
 
               #upwind bearing calculations
-              iterationstep=0.01
+              iterationstep=0.001
               diameter_limit = 1.5
               while True:
                   D_in=sR*D_max
@@ -1382,7 +1383,7 @@ class LowSpeedShaft_drive3pt(Component):
 
           #   #upwind bearing calcs
           #   diameter_limit = 5.0
-          #   iterationstep=0.01
+          #   iterationstep=0.001
           #   #upwind bearing calcs
           #   while True:
           #       Damage = 0
