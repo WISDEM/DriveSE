@@ -14,7 +14,6 @@ from fusedwind.interface import implement_base
 from drivewpact.hub import HubBase#, HubSystemAdder
 from drivese.drivese_utils import get_L_rb
 
-@implement_base(HubBase)
 class Hub_System_Adder_drive(Component):
     ''' Get_hub_cm class
           The Get_hub_cm class is used to pass the hub cm data to upper level models.
@@ -102,7 +101,7 @@ class Hub_System_Adder_drive(Component):
 
 #-------------------------------------------------------------------------------
 
-
+@implement_base(HubBase)
 class HubSE(Assembly):
     '''
        HubWPACT class
@@ -139,7 +138,6 @@ class HubSE(Assembly):
         self.connect('blade_mass', ['pitchSystem.blade_mass'])
         self.connect('rotor_bending_moment', ['pitchSystem.rotor_bending_moment'])
         self.connect('blade_number', ['hub.blade_number', 'pitchSystem.blade_number'])
-<<<<<<< HEAD
         self.connect('rotor_diameter', ['hub.rotor_diameter', 'pitchSystem.rotor_diameter', 'spinner.rotor_diameter'])
         self.connect('blade_root_diameter', 'hub.blade_root_diameter')
         self.connect('machine_rating','hub.machine_rating')
@@ -148,26 +146,6 @@ class HubSE(Assembly):
         # self.connect('hub.mass', 'hubSystem.hub_mass')
         # self.connect('pitchSystem.mass', 'hubSystem.pitch_system_mass')
         # self.connect('spinner.mass', 'hubSystem.spinner_mass')
-=======
-        #self.connect('rotor_diameter', ['hub.rotor_diameter', 'pitchSystem.rotor_diameter', 'spinner.rotor_diameter'])
-        self.connect('hub.diameter', ['pitchSystem.hub_diameter', 'spinner.hub_diameter'])
-        self.connect('blade_root_diameter', 'hub.blade_root_diameter')
-        self.connect('L_rb',['pitchSystem.L_rb','spinner.L_rb']) #'hub.L_rb',
-        self.connect('gamma',['pitchSystem.gamma','spinner.gamma']) # 'hub.gamma',
-        self.connect('MB1_location',['hub.MB1_location','pitchSystem.MB1_location','spinner.MB1_location'])
-        self.connect('machine_rating','hub.machine_rating')
-
-        # connect components
-        self.connect('hub.mass', 'hubSystem.hub_mass')
-        #self.connect('hub.cm', 'hubSystem.hub_cm')
-        self.connect('hub.I', 'hubSystem.hub_I')
-        self.connect('pitchSystem.mass', 'hubSystem.pitch_system_mass')
-        self.connect('pitchSystem.cm', 'hubSystem.pitch_system_cm')
-        self.connect('pitchSystem.I', 'hubSystem.pitch_system_I')
-        self.connect('spinner.mass', 'hubSystem.spinner_mass')
-        self.connect('spinner.cm', 'hubSystem.spinner_cm')
-        self.connect('spinner.I', 'hubSystem.spinner_I')
->>>>>>> 9a82e41bd146e2d851ea60d0b5e80785dea1eff8
 
         # connect outputs
         self.connect('hub.mass', 'hub_mass')
