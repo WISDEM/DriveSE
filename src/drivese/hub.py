@@ -32,7 +32,7 @@ class Hub_System_Adder_drive(Component):
     spinner_mass = Float(iotype='in', units='kg',desc='mass of spinner')
 
     # outputs
-    hub_system_cm = Array(iotype='out', desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+    hub_system_cm = Array(iotype='out', units='m',desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
     hub_system_I = Array(iotype='out', desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
     hub_system_mass = Float(iotype='out', units='kg',desc='mass of hub system')
 
@@ -122,11 +122,13 @@ class HubSE(Assembly):
     hub_mass = Float(0.0, iotype='out', units='kg')
     pitch_system_mass = Float(0.0, iotype='out', units='kg')
     spinner_mass = Float(0.0, iotype='out', units='kg')
+    hub_system_mass = Float(0.0, iotype='out', units='kg')
+    hub_system_cm = Array(np.array([0.0,0.0,0.0]), iotype='out', units='m')
+    hub_system_I =  Array(np.array([0.0,0.0,0.0]), iotype='out')
 
     def configure(self):
 
         # select components
-        self.add('hubSystem', HubSystemAdder())
         self.add('hub', Hub_drive())
         self.add('pitchSystem', PitchSystem_drive())
         self.add('spinner', Spinner_drive())
@@ -138,7 +140,7 @@ class HubSE(Assembly):
         self.connect('blade_mass', ['pitchSystem.blade_mass'])
         self.connect('rotor_bending_moment', ['pitchSystem.rotor_bending_moment'])
         self.connect('blade_number', ['hub.blade_number', 'pitchSystem.blade_number'])
-        self.connect('rotor_diameter', ['hub.rotor_diameter', 'pitchSystem.rotor_diameter', 'spinner.rotor_diameter'])
+        self.connect('rotor_diameter','spinner.rotor_diameter')
         self.connect('blade_root_diameter', 'hub.blade_root_diameter')
         self.connect('machine_rating','hub.machine_rating')
 
@@ -218,7 +220,6 @@ class PitchSystem_drive(Component):
     # variables
     blade_mass = Float(iotype='in', units='kg', desc='mass of one blade')
     rotor_bending_moment = Float(iotype='in', units='N*m', desc='flapwise bending moment at blade root')
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
 
     # parameters
     blade_number = Int(3, iotype='in', desc='number of turbine blades')
@@ -302,9 +303,6 @@ def example_5MW_4pt():
     RatedWindSpeed = 11.05 # m/s
     hub.rotor_bending_moment = (3.06 * pi / 8) * AirDensity * (RatedWindSpeed ** 2) * (Solidity * (hub.rotor_diameter ** 3)) / hub.blade_number
 
-    hub.gamma = 5.0
-    hub.MB1_location = np.array([-3.2, 0.0, 1.0])
-
     hub.run()
 
     print "NREL 5 MW turbine test"
@@ -332,9 +330,6 @@ def example_1p5MW_4pt():
     Solidity  = 0.065
     RatedWindSpeed = 12.12
     hub.rotor_bending_moment = (3.06 * pi / 8) * AirDensity * (RatedWindSpeed ** 2) * (Solidity * (hub.rotor_diameter ** 3)) / hub.blade_number
-
-    hub.gamma = 5.0
-    hub.MB1_location = np.array([-2.2, 0.0, 0.5])
 
     hub.run()
 
@@ -364,9 +359,6 @@ def example_750kW_4pt():
     Solidity = 0.07 # uknown value
     RatedWindSpeed = 16.0
     hub.rotor_bending_moment = (3.06 * pi / 8) * AirDensity * (RatedWindSpeed ** 2) * (Solidity * (hub.rotor_diameter ** 3)) / hub.blade_number
-
-    hub.gamma = 5.0
-    hub.MB1_location = np.array([-1.2, 0.0, 0.4])
 
     hub.run()
 
