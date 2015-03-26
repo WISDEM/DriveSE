@@ -40,7 +40,7 @@ class Hub_System_Adder_drive(Component):
         ''' Initialize Get_hub_cm component
         '''
 
-        super(GetHubCM_drive, self).__init__()
+        super(Hub_System_Adder_drive, self).__init__()
 
         #controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
@@ -54,7 +54,7 @@ class Hub_System_Adder_drive(Component):
         cm = np.array([0.0,0.0,0.0])
         cm[0]     = self.MB1_location[0] - L_rb
         cm[1]     = 0.0
-        cm[2]     = self.MB1_location[2] + L_rb*sin(radians(self.gamma))
+        cm[2]     = self.MB1_location[2] + L_rb*sin(radians(self.shaft_angle))
         self.hub_system_cm = (cm)
 
         self.hub_system_mass = self.hub_mass + self.pitch_system_mass + self.spinner_mass
@@ -67,7 +67,7 @@ class Hub_System_Adder_drive(Component):
         hub_I[2] = hub_I[1]
 
         pitch_system_I = np.array([0.0, 0.0, 0.0])
-        pitch_system_I[0] = self.pitch_system_mass * (self.diameter ** 2) / 4
+        pitch_system_I[0] = self.pitch_system_mass * (self.hub_diameter ** 2) / 4
         pitch_system_I[1] = pitch_system_I[0]
         pitch_system_I[2] = pitch_system_I[1]
 
@@ -122,6 +122,10 @@ class HubSE(Assembly):
     hub_mass = Float(0.0, iotype='out', units='kg')
     pitch_system_mass = Float(0.0, iotype='out', units='kg')
     spinner_mass = Float(0.0, iotype='out', units='kg')
+    hub_diameter = Float(iotype='out', units='m', desc='hub diameter')
+    hub_thickness = Float(iotype='out', units='m', desc='hub thickness')
+
+    #DUMMY OUTPUTS DO NOT USE. Calculated in hubsystemadderdrive
     hub_system_mass = Float(0.0, iotype='out', units='kg')
     hub_system_cm = Array(np.array([0.0,0.0,0.0]), iotype='out', units='m')
     hub_system_I =  Array(np.array([0.0,0.0,0.0]), iotype='out')
@@ -153,6 +157,8 @@ class HubSE(Assembly):
         self.connect('hub.mass', 'hub_mass')
         self.connect('pitchSystem.mass', 'pitch_system_mass')
         self.connect('spinner.mass', 'spinner_mass')
+        self.connect('hub.thickness','hub_thickness')
+        self.connect('hub.diameter','hub_diameter')
 
 #-------------------------------------------------------------------------------
 

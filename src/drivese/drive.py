@@ -58,8 +58,7 @@ class Drive3pt(Assembly):
     transformer_mass = Float(iotype='out', units='kg', desc='component mass')
 
     # outputs for hub CM calcuations kept because spinner and others stil use
-    MB1_location = Array(iotype = 'out', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')    
-    Hub_cm = Array(iotype = 'out', units = 'm', desc = 'center of mass of hub in [x,y,z] for an arbitrary coordinate system') 
+    MB1_location = Array(iotype = 'out', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
 
     # new variables
     rotor_bending_moment_x = Float(iotype='in', units='N*m', desc='The bending moment about the x axis')
@@ -277,6 +276,7 @@ class Drive3pt(Assembly):
         self.connect('nacelleSystem.nacelle_mass', 'nacelle_mass')
         self.connect('nacelleSystem.nacelle_cm', 'nacelle_cm')
         self.connect('nacelleSystem.nacelle_I', 'nacelle_I')
+        self.connect('mainBearing.cm','MB1_location')
         
 
 #------------------------------------------------------------------
@@ -320,7 +320,6 @@ class Drive4pt(Assembly):
 
     # outputs for hub CM calcuations
     MB1_location = Array(iotype = 'out', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
-    Hub_cm = Array(iotype = 'out', units = 'm', desc = 'center of mass of hub in [x,y,z] for an arbitrary coordinate system') 
 
     # new variables
     rotor_bending_moment_x = Float(iotype='in', units='N*m', desc='The bending moment about the x axis')
@@ -538,6 +537,7 @@ class Drive4pt(Assembly):
         self.connect('nacelleSystem.nacelle_mass', 'nacelle_mass')
         self.connect('nacelleSystem.nacelle_cm', 'nacelle_cm')
         self.connect('nacelleSystem.nacelle_I', 'nacelle_I')
+        self.connect('mainBearing.cm','MB1_location')
 
 #------------------------------------------------------------------
 #NacelleSE drive with simplified low speed shaft and windpact models
