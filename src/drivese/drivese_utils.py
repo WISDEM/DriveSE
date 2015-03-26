@@ -15,11 +15,11 @@ import scipy as scp
 
 class blade_moment_transform(Component): 
     ''' Blade_Moment_Transform class          
-          The Blade_Moment_Transform class is used to transform moments from the WISDEM rotor models.
+          The Blade_Moment_Transform class is used to transform moments from the WISDEM rotor models to driveSE.
     '''
     # variables
     # ensure angles are in radians. Azimuth is 3-element array with blade azimuths; b1, b2, b3 are 3-element arrays for each blade moment (Mx, My, Mz); pitch and cone are floats
-    azimuth_angle = Array(np.array([0,2*pi/3,-2*pi/3]),iotype='in',units='rad',desc='azimuth angles for each blade')
+    azimuth_angle = Array(np.array([0,2*pi/3,4*pi/3]),iotype='in',units='rad',desc='azimuth angles for each blade')
     pitch_angle = Float(iotype ='in', units = 'rad', desc = 'pitch angle at each blade, assumed same')
     cone_angle = Float(iotype='in', units='rad', desc='cone angle at each blade, assumed same')
     b1 = Array(iotype='in', units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
@@ -36,21 +36,46 @@ class blade_moment_transform(Component):
         super(blade_moment_transform, self).__init__()
     
     def execute(self):
+        print "input blade loads:"
+        i=0
+        while i<3:
+          print 'b1:', self.b1[i]
+          print 'b2:', self.b2[i]
+          print 'b3:', self.b3[i]
+          i+=1
 
         #nested function for transformations
         def trans(alpha,con,phi,bMx,bMy,bMz):
             Mx = bMx*cos(con)*cos(alpha) - bMy*(sin(con)*cos(alpha)*sin(phi)-sin(alpha)*cos(phi)) + bMz*(sin(con)*cos(alpha)*cos(phi)-sin(alpha)*sin(phi))
             My = bMx*cos(con)*sin(alpha) - bMy*(sin(con)*sin(alpha)*sin(phi)+cos(alpha)*cos(phi)) + bMz*(sin(con)*sin(alpha)*cos(phi)+cos(alpha)*sin(phi))
             Mz = bMx*(-sin(alpha)) - bMy*(-cos(alpha)*sin(phi)) + bMz*(cos(alpha)*cos(phi))
+            print 
+            print Mx
+            print My
+            print Mz
+            print
             return [Mx,My,Mz]
 
-        [b1Mx,b1My,b1Mz] = trans(pitch_angle,cone_angle,azimuth_angle[0],b1[0],b1[1],b1[2])
-        [b2Mx,b2My,b2Mz] = trans(pitch_angle,cone_angle,azimuth_angle[1],b2[0],b2[1],b2[2])
-        [b3Mx,b3My,b3Mz] = trans(pitch_angle,cone_angle,azimuth_angle[2],b3[0],b3[1],b3[2])
+        cone_angle=self.cone_angle
+        self.pitch_angle=10./180.*pi
+
+        [b1Mx,b1My,b1Mz] = trans(self.pitch_angle,cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1],self.b1[2])
+        [b2Mx,b2My,b2Mz] = trans(self.pitch_angle,cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1],self.b2[2])
+        [b3Mx,b3My,b3Mz] = trans(self.pitch_angle,cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1],self.b3[2])
 
         self.Mx = b1Mx+b2Mx+b3Mx
         self.My = b1My+b2My+b3My
         self.Mz = b1Mz+b2Mz+b3Mz
+
+        print 'azimuth:', self.azimuth_angle/pi*180.
+        print 'pitch:', self.pitch_angle/pi*180.
+        print 'cone:', self.cone_angle/pi*180.
+
+        print "Total Moments:"
+        print self.Mx
+        print self.My
+        print self.Mz
+        print
 
 
 # returns FW, mass for bearings without fatigue analysis

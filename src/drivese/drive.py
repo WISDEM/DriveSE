@@ -1182,6 +1182,10 @@ def sys_print(nace):
     print 'Yaw system      %8.1f kg' % (nace.yawSystem.mass )
     print 'Overall nacelle:  %8.1f kg .cm %6.2f %6.2f %6.2f I %6.2f %6.2f %6.2f' % (nace.nacelle_mass, nace.nacelle_cm[0], nace.nacelle_cm[1], nace.nacelle_cm[2], nace.nacelle_I[0], nace.nacelle_I[1], nace.nacelle_I[2]  )
     print
+    print 'Mx:', nace.rotor_torque
+    print 'My:',nace.rotor_bending_moment_y
+    print 'Mz:',nace.rotor_bending_moment_z
+    print 
 
 
 
