@@ -36,46 +36,44 @@ class blade_moment_transform(Component):
         super(blade_moment_transform, self).__init__()
     
     def execute(self):
-        print "input blade loads:"
-        i=0
-        while i<3:
-          print 'b1:', self.b1[i]
-          print 'b2:', self.b2[i]
-          print 'b3:', self.b3[i]
-          i+=1
+        # print "input blade loads:"
+        # i=0
+        # while i<3:
+        #   print 'b1:', self.b1[i]
+        #   print 'b2:', self.b2[i]
+        #   print 'b3:', self.b3[i]
+        #   i+=1
+        # print
 
         #nested function for transformations
         def trans(alpha,con,phi,bMx,bMy,bMz):
             Mx = bMx*cos(con)*cos(alpha) - bMy*(sin(con)*cos(alpha)*sin(phi)-sin(alpha)*cos(phi)) + bMz*(sin(con)*cos(alpha)*cos(phi)-sin(alpha)*sin(phi))
             My = bMx*cos(con)*sin(alpha) - bMy*(sin(con)*sin(alpha)*sin(phi)+cos(alpha)*cos(phi)) + bMz*(sin(con)*sin(alpha)*cos(phi)+cos(alpha)*sin(phi))
             Mz = bMx*(-sin(alpha)) - bMy*(-cos(alpha)*sin(phi)) + bMz*(cos(alpha)*cos(phi))
-            print 
-            print Mx
-            print My
-            print Mz
-            print
+            # print 
+            # print Mx
+            # print My
+            # print Mz
+            # print
             return [Mx,My,Mz]
 
-        cone_angle=self.cone_angle
-        self.pitch_angle=10./180.*pi
-
-        [b1Mx,b1My,b1Mz] = trans(self.pitch_angle,cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1],self.b1[2])
-        [b2Mx,b2My,b2Mz] = trans(self.pitch_angle,cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1],self.b2[2])
-        [b3Mx,b3My,b3Mz] = trans(self.pitch_angle,cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1],self.b3[2])
+        [b1Mx,b1My,b1Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1],self.b1[2])
+        [b2Mx,b2My,b2Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1],self.b2[2])
+        [b3Mx,b3My,b3Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1],self.b3[2])
 
         self.Mx = b1Mx+b2Mx+b3Mx
         self.My = b1My+b2My+b3My
         self.Mz = b1Mz+b2Mz+b3Mz
 
-        print 'azimuth:', self.azimuth_angle/pi*180.
-        print 'pitch:', self.pitch_angle/pi*180.
-        print 'cone:', self.cone_angle/pi*180.
+        # print 'azimuth:', self.azimuth_angle/pi*180.
+        # print 'pitch:', self.pitch_angle/pi*180.
+        # print 'cone:', self.cone_angle/pi*180.
 
-        print "Total Moments:"
-        print self.Mx
-        print self.My
-        print self.Mz
-        print
+        # print "Total Moments:"
+        # print self.Mx
+        # print self.My
+        # print self.Mz
+        # print
 
 
 # returns FW, mass for bearings without fatigue analysis
