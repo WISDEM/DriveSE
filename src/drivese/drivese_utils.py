@@ -57,9 +57,11 @@ class blade_moment_transform(Component):
             # print
             return [Mx,My,Mz]
 
-        [b1Mx,b1My,b1Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1],self.b1[2])
-        [b2Mx,b2My,b2Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1],self.b2[2])
-        [b3Mx,b3My,b3Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1],self.b3[2])
+        C_moment = 1.1 #scaling factor based off of IEC recommendation. Set to operational conditions
+
+        [b1Mx,b1My,b1Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1]*C_moment,self.b1[2]*C_moment)
+        [b2Mx,b2My,b2Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1]*C_moment,self.b2[2]*C_moment)
+        [b3Mx,b3My,b3Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1]*C_moment,self.b3[2]*C_moment)
 
         self.Mx = b1Mx+b2Mx+b3Mx
         self.My = b1My+b2My+b3My
