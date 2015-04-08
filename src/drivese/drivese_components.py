@@ -102,31 +102,20 @@ class LowSpeedShaft_drive4pt(Component):
     bearing_location2 = Array(np.array([0,0,0]),iotype='out', units = 'm', desc = 'main bearing 2 center of mass')
 
     def __init__(self):
-        '''
-        '''
 
         super(LowSpeedShaft_drive4pt, self).__init__()
     
     def execute(self):
 
         #input parameters
-        g=9.81
-        PSF=1
-        check_fatigue = self.check_fatigue
-        blade_number = self.blade_number
-        V_0 = self.cut_in
-        V_f = self.cut_out
-        V_rated = self.Vrated
-        T_life =self.T_life
-        IEC_Class_Letter = self.IEC_Class
-        rotor_mass = self.rotor_mass
+        self.g=9.81
         rotor_diameter = self.rotor_diameter
         machine_rating = self.machine_rating
         DrivetrainEfficiency = self.DrivetrainEfficiency
         rotor_freq = self.rotor_freq
 
-        if rotor_mass ==0:
-          [rotor_mass] = get_rotor_mass(self.machine_rating,False)
+        if self.rotor_mass ==0:
+          [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
 
         if self.flange_length == 0:
             self.flange_length = 0.3*(self.rotor_diameter/100.0)**2.0 - 0.1 * (self.rotor_diameter / 100.0) + 0.4
@@ -196,12 +185,12 @@ class LowSpeedShaft_drive4pt(Component):
             L_cd = L_cu + 0.5   #distance from upwind main bearing to downwind carrier bearing 0.5 meter is an estimation # to add as an input
 
             #Weight properties
-            rotorWeight=self.rotor_mass*g                             #rotor weight
-            lssWeight = pi/3.0*(D_max**2 + D_min**2 + D_max*D_min)*L_ms*density*g/4.0 ##
-            lss_mass = lssWeight/g
-            gbxWeight = self.gearbox_mass*g                               #gearbox weight
-            carrierWeight = self.carrier_mass*g                       #carrier weight
-            shrinkDiscWeight = self.shrink_disc_mass*g
+            rotorWeight=self.rotor_mass*self.g                             #rotor weight
+            lssWeight = pi/3.0*(D_max**2 + D_min**2 + D_max*D_min)*L_ms*density*self.g/4.0 ##
+            lss_mass = lssWeight/self.g
+            gbxWeight = self.gearbox_mass*self.g                               #gearbox weight
+            carrierWeight = self.carrier_mass*self.g                       #carrier weight
+            shrinkDiscWeight = self.shrink_disc_mass*self.g
 
             #define LSS
             x_ms = np.linspace(self.L_rb, L_ms+self.L_rb, len_pts)
@@ -249,7 +238,7 @@ class LowSpeedShaft_drive4pt(Component):
             D_max = (D_max**4 + D_in**4)**0.25
             D_min = (D_min**4 + D_in**4)**0.25
            
-            lssWeight_new=((pi/3)*(D_max**2+D_min**2+D_max*D_min)*(L_ms)*density/4+(-pi/4*(D_in**2)*density*(L_ms)))*g
+            lssWeight_new=((pi/3)*(D_max**2+D_min**2+D_max*D_min)*(L_ms)*density/4+(-pi/4*(D_in**2)*density*(L_ms)))*self.g
 
             def deflection(F_z,W_r,gamma,M_y,f_mb_z,L_rb,W_ms,L_ms,z):
                 return -F_z*z**3/6.0 + W_r*cos(gamma)*z**3/6.0 - M_y*z**2/2.0 - f_mb_z*(z-self.L_rb)**3/6.0 + W_ms/(L_ms + L_rb)/24.0*z**4
@@ -317,7 +306,7 @@ class LowSpeedShaft_drive4pt(Component):
                 L_cd = L_cu + 0.5
 
                 #Weight
-                lssWeight_new=((pi/3)*(D_max**2+D_min**2+D_max*D_min)*(L_ms_gb + L_mb)*density/4+(-pi/4*(D_in**2)*density*(L_ms_gb + L_mb)))*g
+                lssWeight_new=((pi/3)*(D_max**2+D_min**2+D_max*D_min)*(L_ms_gb + L_mb)*density/4+(-pi/4*(D_in**2)*density*(L_ms_gb + L_mb)))*self.g
 
                 #define LSS
                 x_ms = np.linspace(self.L_rb + L_mb, L_ms_gb + L_mb +self.L_rb, len_pts)
@@ -380,7 +369,7 @@ class LowSpeedShaft_drive4pt(Component):
                 D_min = (D_min**4 + D_in**4)**0.25
                 D_med = (D_med**4 + D_in**4)**0.25
 
-                lssWeight_new = (density*pi/12.0*L_mb*(D_max**2+D_med**2 + D_max*D_med) - density*pi/4.0*D_in**2*L_mb)*g
+                lssWeight_new = (density*pi/12.0*L_mb*(D_max**2+D_med**2 + D_max*D_med) - density*pi/4.0*D_in**2*L_mb)*self.g
 
                 #deflection between mb1 and mb2
                 def deflection1(F_r_z,W_r,gamma,M_y,f_mb1_z,L_rb,W_ms,L_ms,L_mb,z):
@@ -434,18 +423,18 @@ class LowSpeedShaft_drive4pt(Component):
                     L_mb_new = L_mb + dL_ms
 
         # fatigue check Taylor Parsons 6/14
-        if check_fatigue == 1 or check_fatigue == 2:
+        if self.check_fatigue == 1 or self.check_fatigue == 2:
           #start_time = time.time()
 
           #checks to make sure all inputs are reasonable
-          if rotor_mass < 100:
-              [rotor_mass] = get_rotor_mass(self.machine_rating)
+          # if self.rotor_mass < 100:
+          #     [self.rotor_mass] = get_rotor_mass(self.machine_rating)
 
           #Weibull Parameters
           weibullA=self.weibull_A
           weibullk=self.weibull_k
 
-          g=9.81 
+          self.g=9.81 
           #material properties 34CrNiMo6 steel +QT, large diameter
           E=2.1e11
           density=7800.0
@@ -478,22 +467,22 @@ class LowSpeedShaft_drive4pt(Component):
           print 'fatigue_exponent:',SN_b
           # print 'm:', -1/SN_b
           # print 'a:', SN_a
-          if check_fatigue == 1:
+          if self.check_fatigue == 1:
               #Rotor Loads calculations using DS472
               R=rotor_diameter/2.0
               rotor_torque = (machine_rating * 1000 / DrivetrainEfficiency) / (rotor_freq * (pi/30))
-              Tip_speed_ratio= rotor_freq/30.*pi*R/V_rated
+              Tip_speed_ratio= rotor_freq/30.*pi*R/self.V_rated
               rho_air= 1.225 #kg/m^3 density of air
-              p_o = 4./3*rho_air*((4*pi*rotor_freq/60*R/3)**2+V_rated**2)*(pi*R/(blade_number*Tip_speed_ratio*(Tip_speed_ratio**2+1)**(.5)))
+              p_o = 4./3*rho_air*((4*pi*rotor_freq/60*R/3)**2+self.V_rated**2)*(pi*R/(self.blade_number*Tip_speed_ratio*(Tip_speed_ratio**2+1)**(.5)))
               # print 'po:',p_o
-              n_c=blade_number*rotor_freq/60 #characteristic frequency on rotor from turbine of given blade number [Hz]
-              N_f=self.availability*n_c*(T_life*365*24*60*60)*exp(-(V_0/weibullA)**weibullk)-exp(-(V_f/weibullA)**weibullk) #number of rotor rotations based off of weibull curve. .827 comes from lower rpm than rated at lower wind speeds
+              n_c=self.blade_number*rotor_freq/60 #characteristic frequency on rotor from turbine of given blade number [Hz]
+              N_f=self.availability*n_c*(self.T_life*365*24*60*60)*exp(-(self.cut_in/weibullA)**weibullk)-exp(-(self.cut_out/weibullA)**weibullk) #number of rotor rotations based off of weibull curve. .827 comes from lower rpm than rated at lower wind speeds
 
               k_b= 2.5 #calculating rotor pressure from all three blades. Use kb=1 for individual blades
 
-              if IEC_Class_Letter == 'A': # From IEC 61400-1 TODO consider calculating based off of 10-minute windspeed and weibull parameters, include neighboring wake effects?
+              if self.IEC_Class_Letter == 'A': # From IEC 61400-1 TODO consider calculating based off of 10-minute windspeed and weibull parameters, include neighboring wake effects?
                 I_t=0.18 
-              elif IEC_Class_Letter == 'B':
+              elif self.IEC_Class_Letter == 'B':
                 I_t=0.14
               else:
                 I_t=0.12
@@ -562,9 +551,9 @@ class LowSpeedShaft_drive4pt(Component):
               def Goodman(S_alt,S_mean,Sut):
                   return S_alt/(1-(S_mean/Sut))
 
-              Fx_mean=0.5*p_o*R*blade_number*Fx_factor
+              Fx_mean=0.5*p_o*R*self.blade_number*Fx_factor
               Mx_mean=0.5*rotor_torque*Mx_factor
-              rotorWeight=rotor_mass*g
+              rotorWeight=self.rotor_mass*self.g
 
               # print 'Fx_max:', np.max(Fx_stoch) + Fx_mean
               # print 'Mx_max:', np.max(Mx_stoch) + Mx_mean
@@ -685,7 +674,7 @@ class LowSpeedShaft_drive4pt(Component):
                       D_med+=iterationstep
 
               #begin bearing calculations
-              N_bearings = N/blade_number #counts per rotation (not defined by characteristic frequency 3n_rotor)
+              N_bearings = N/self.blade_number #counts per rotation (not defined by characteristic frequency 3n_rotor)
 
               Fr1_range = ((abs(Fz1stoch)+abs(Fz1determ))**2 +Fy1stoch**2)**.5 #radial stochastic + deterministic mean
               Fa1_range = np.zeros(len(Fy1stoch))
@@ -697,12 +686,12 @@ class LowSpeedShaft_drive4pt(Component):
               Fr2_range = (Fy2stoch**2+(Fz2stoch+abs(-rotorWeight*self.L_rb + 0.5*lss_weight+gbxWeight*L_gb/L_mb))**2)**0.5
               Fa2_range = Fx_stoch*cos(self.shaft_angle) + (rotorWeight+LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
 
-              life_bearing = N_f/blade_number
+              life_bearing = N_f/self.blade_number
 
               [D_max_a,FW_max,bearing1mass] = fatigue_for_bearings(D_max, Fr1_range, Fa1_range, N_bearings, life_bearing, self.mb1Type,False)
               [D_med_a,FW_med,bearing2mass] = fatigue_for_bearings(D_med, Fr2_range, Fa2_range, N_bearings, life_bearing, self.mb2Type,False)  
 
-          # elif check_fatigue == 2: # untested and not used currently
+          # elif self.check_fatigue == 2: # untested and not used currently
           #   Fx = self.rotor_thrust_distribution
           #   n_Fx = self.rotor_thrust_count
           #   Fy = self.rotor_Fy_distribution
@@ -780,24 +769,24 @@ class LowSpeedShaft_drive4pt(Component):
           #           D_med+=iterationstep
 
           #   #bearing calcs
-          #   if self.availability != 0 and rotor_freq != 0 and T_life != 0 and V_f != 0 and weibullA != 0:
-          #       N_rotations = self.availability*rotor_freq/60.*(T_life*365*24*60*60)*exp(-(V_0/weibullA)**weibullk)-exp(-(V_f/weibullA)**weibullk)
+          #   if self.availability != 0 and rotor_freq != 0 and self.T_life != 0 and self.cut_out != 0 and weibullA != 0:
+          #       N_rotations = self.availability*rotor_freq/60.*(self.T_life*365*24*60*60)*exp(-(self.cut_in/weibullA)**weibullk)-exp(-(self.cut_out/weibullA)**weibullk)
           #   elif np.max(n_Fx > 1e6):
-          #       N_rotations = np.max(n_Fx)/blade_number
+          #       N_rotations = np.max(n_Fx)/self.blade_number
           #   elif np.max(n_My > 1e6):
-          #       N_rotations = np.max(n_My)/blade_number
+          #       N_rotations = np.max(n_My)/self.blade_number
           #   # print 'Upwind bearing calcs'
           #   Fz1_Fz = Fz*(L_mb+self.L_rb)/L_mb
           #   Fz1_My = My/L_mb
           #   Fy1_Fy = -Fy*(L_mb+self.L_rb)/L_mb
           #   Fy1_Mz = Mz/L_mb
-          #   [D_max_a,FW_max,bearing1mass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
+          #   [D_max_a,FW_max,bearing1mass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/self.blade_number,Fz1_Fz,n_Fz/self.blade_number,Fz1_My,n_My/self.blade_number,Fy1_Mz,n_Mz/self.blade_number,N_rotations)
           #   # print 'Downwind bearing calcs'
           #   Fz2_Fz = Fz*self.L_rb/L_mb
           #   Fz2_My = My/L_mb
           #   Fy2_Fy = Fy*self.L_rb/L_mb
           #   Fy2_Mz = Mz/L_mb
-          #   [D_med_a,FW_med,bearing2mass] = fatigue2_for_bearings(D_med,self.mb2Type,Fx,n_Fx/blade_number,Fy2_Fy,n_Fy/blade_number,Fz2_Fz,n_Fz/blade_number,Fz2_My,n_My/blade_number,Fy2_Mz,n_Mz/blade_number,N_rotations)
+          #   [D_med_a,FW_med,bearing2mass] = fatigue2_for_bearings(D_med,self.mb2Type,Fx,n_Fx/self.blade_number,Fy2_Fy,n_Fy/self.blade_number,Fz2_Fz,n_Fz/self.blade_number,Fz2_My,n_My/self.blade_number,Fy2_Mz,n_Mz/self.blade_number,N_rotations)
 
         else: #if fatigue_check is not true, resize based on diameter            
             [D_max_a,FW_max,bearing1mass] = resize_for_bearings(D_max,  self.mb1Type,False)
@@ -960,21 +949,12 @@ class LowSpeedShaft_drive3pt(Component):
         if self.rotor_mass > 0 and self.rotor_bending_moment_z == 0:
             self.rotor_bending_moment_z=get_Mz(self.rotor_mass,self.L_rb)
 
-        check_fatigue = self.check_fatigue
-        blade_number = self.blade_number
-        V_0 = self.cut_in
-        V_f = self.cut_out
-        V_rated = self.Vrated
-        T_life =self.T_life
-        IEC_Class_Letter = self.IEC_Class
-        rotor_mass = self.rotor_mass
         rotor_diameter = self.rotor_diameter
         machine_rating = self.machine_rating
         rotor_freq = self.rotor_freq
         DrivetrainEfficiency = self.DrivetrainEfficiency
 
-        g = 9.81 #m/s
-        PSF = 1.0
+        self.g = 9.81 #m/s
         density = 7850.0
 
 
@@ -1026,10 +1006,10 @@ class LowSpeedShaft_drive3pt(Component):
             #Weight properties
             weightRotor=0     # Yi modified to remove rotor overhung weight, considered in the load analysis                        #rotor weight accounted for in F_z
             massLSS = pi/3*(D_max**2.0 + D_min**2.0 + D_max*D_min)*L_ms*density/4.0
-            weightLSS = massLSS*g       #LSS weight
-            weightShrinkDisc = self.shrink_disc_mass*g                #shrink disc weight
-            weightGbx = self.gearbox_mass*g                              #gearbox weight
-            weightCarrier = self.carrier_mass*g
+            weightLSS = massLSS*self.g       #LSS weight
+            weightShrinkDisc = self.shrink_disc_mass*self.g                #shrink disc weight
+            weightGbx = self.gearbox_mass*self.g                              #gearbox weight
+            weightCarrier = self.carrier_mass*self.g
 
             len_pts=101;
             x_ms = np.linspace(self.L_rb, L_ms+self.L_rb, len_pts)
@@ -1111,8 +1091,8 @@ class LowSpeedShaft_drive3pt(Component):
             
 
             weightLSS_new = (density*pi/12.0*L_ms*(D_max**2.0 + D_min**2.0 + D_max*D_min) - density*pi/4.0*D_in**2.0*L_ms + \
-                              density*pi/4.0*D_max**2*self.L_rb)*g
-            massLSS_new = weightLSS_new/g
+                              density*pi/4.0*D_max**2*self.L_rb)*self.g
+            massLSS_new = weightLSS_new/self.g
 
             #print 'Old LSS mass kg:' 
             #print massLSS
@@ -1149,10 +1129,8 @@ class LowSpeedShaft_drive3pt(Component):
             L_ms_new = L_ms + dL        
 
         # fatigue check Taylor Parsons 6/2014
-        if check_fatigue == 1 or 2:
+        if self.check_fatigue == 1 or 2:
           #start_time = time.time()
-
-          g=9.81 
           #material properties 34CrNiMo6 steel +QT, large diameter
           E=2.1e11
           density=7800.0
@@ -1186,27 +1164,27 @@ class LowSpeedShaft_drive3pt(Component):
           weibullA=self.weibull_A
           weibullk=self.weibull_k
 
-          if check_fatigue == 1:
+          if self.check_fatigue == 1:
               #checks to make sure all inputs are reasonable
-              if rotor_mass < 100:
-                  [rotor_mass] = get_rotor_mass(self.machine_rating)
+              if self.rotor_mass < 100:
+                  [self.rotor_mass] = get_rotor_mass(self.machine_rating)
 
               #Rotor Loads calculations using DS472
               R=rotor_diameter/2.0
               rotor_torque = (machine_rating * 1000 / DrivetrainEfficiency) / (rotor_freq * (pi/30))
-              Tip_speed_ratio= rotor_freq/30.*pi*R/V_rated
+              Tip_speed_ratio= rotor_freq/30.*pi*R/self.V_rated
               rho_air= 1.225 #kg/m^3 density of air
-              p_o = 4./3*rho_air*((4*pi*rotor_freq/60*R/3)**2+V_rated**2)*(pi*R/(blade_number*Tip_speed_ratio*(Tip_speed_ratio**2+1)**(.5)))
+              p_o = 4./3*rho_air*((4*pi*rotor_freq/60*R/3)**2+self.V_rated**2)*(pi*R/(self.blade_number*Tip_speed_ratio*(Tip_speed_ratio**2+1)**(.5)))
 
-              n_c=blade_number*rotor_freq/60 #characteristic frequency on rotor from turbine of given blade number [Hz]
-              N_f=self.availability*n_c*(T_life*365*24*60*60)*exp(-(V_0/weibullA)**weibullk)-exp(-(V_f/weibullA)**weibullk) #number of rotor rotations based off of weibull curve. .827 comes from lower rpm than rated at lower wind speeds
+              n_c=self.blade_number*rotor_freq/60 #characteristic frequency on rotor from turbine of given blade number [Hz]
+              N_f=self.availability*n_c*(self.T_life*365*24*60*60)*exp(-(self.cut_in/weibullA)**weibullk)-exp(-(self.cut_out/weibullA)**weibullk) #number of rotor rotations based off of weibull curve. .827 comes from lower rpm than rated at lower wind speeds
 
 
               k_b= 2.5 #calculating rotor pressure from all three blades. Use kb=1 for individual blades
 
-              if IEC_Class_Letter == 'A': # From IEC 61400-1 TODO consider calculating based off of 10-minute windspeed and weibull parameters, include neighboring wake effects?
+              if self.IEC_Class_Letter == 'A': # From IEC 61400-1 TODO consider calculating based off of 10-minute windspeed and weibull parameters, include neighboring wake effects?
                 I_t=0.18 
-              elif IEC_Class_Letter == 'B':
+              elif self.IEC_Class_Letter == 'B':
                 I_t=0.14
               else:
                 I_t=0.12
@@ -1259,9 +1237,9 @@ class LowSpeedShaft_drive3pt(Component):
               def Goodman(S_alt,S_mean,Sut):
                   return S_alt/(1-(S_mean/Sut))
 
-              Fx_mean=0.5*p_o*R*blade_number*Fx_factor
+              Fx_mean=0.5*p_o*R*self.blade_number*Fx_factor
               Mx_mean=0.5*rotor_torque*Mx_factor
-              rotorWeight=rotor_mass*g
+              rotorWeight=self.rotor_mass*self.g
 
               # print 'Fx_max:', np.max(Fx_stoch) + Fx_mean
               # print 'Mx_max:', np.max(Mx_stoch) + Mx_mean
@@ -1322,7 +1300,7 @@ class LowSpeedShaft_drive3pt(Component):
                       D_max+=iterationstep
 
               #begin bearing calculations
-              N_bearings = N/blade_number #rotation number
+              N_bearings = N/self.blade_number #rotation number
 
               Fz1stoch = (-My_stoch)/(L_ms)
               Fy1stoch = Mz_stoch/L_ms
@@ -1331,11 +1309,11 @@ class LowSpeedShaft_drive3pt(Component):
               Fr_range = ((abs(Fz1stoch)+abs(Fz1determ))**2 +Fy1stoch**2)**.5 #radial stochastic + deterministic mean
               Fa_range = Fx_stoch*cos(self.shaft_angle) + (rotorWeight+LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
 
-              life_bearing = N_f/blade_number
+              life_bearing = N_f/self.blade_number
 
               [D_max_a,FW_max,bearingmass] = fatigue_for_bearings(D_max, Fr_range, Fa_range, N_bearings, life_bearing, self.mb1Type)
 
-          # elif check_fatigue == 2:
+          # elif self.check_fatigue == 2:
           #   Fx = self.rotor_thrust_distribution
           #   n_Fx = self.rotor_thrust_count
           #   Fy = self.rotor_Fy_distribution
@@ -1394,22 +1372,22 @@ class LowSpeedShaft_drive3pt(Component):
           #           D_max+=iterationstep
 
           #   #bearing calcs
-          #   if self.availability != 0 and rotor_freq != 0 and T_life != 0 and V_f != 0 and weibullA != 0:
-          #       N_rotations = self.availability*rotor_freq/60.*(T_life*365*24*60*60)*exp(-(V_0/weibullA)**weibullk)-exp(-(V_f/weibullA)**weibullk)
+          #   if self.availability != 0 and rotor_freq != 0 and self.T_life != 0 and self.cut_out != 0 and weibullA != 0:
+          #       N_rotations = self.availability*rotor_freq/60.*(self.T_life*365*24*60*60)*exp(-(self.cut_in/weibullA)**weibullk)-exp(-(self.cut_out/weibullA)**weibullk)
           #   elif np.max(n_Fx > 1e6):
-          #       N_rotations = np.max(n_Fx)/blade_number
+          #       N_rotations = np.max(n_Fx)/self.blade_number
           #   elif np.max(n_My > 1e6):
-          #       N_rotations = np.max(n_My)/blade_number
+          #       N_rotations = np.max(n_My)/self.blade_number
 
           #   # Fz1 = (Fz*(L_ms+self.L_rb)+My)/L_ms
           #   Fz1_Fz = Fz*(L_ms+self.L_rb)/L_ms #force in z direction due to Fz
           #   Fz1_My = My/L_ms #force in z direction due to My
           #   Fy1_Fy = -Fy*(L_ms+self.L_rb)/L_ms
           #   Fy1_Mz = Mz/L_ms
-          #   [D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/blade_number,Fz1_Fz,n_Fz/blade_number,Fz1_My,n_My/blade_number,Fy1_Mz,n_Mz/blade_number,N_rotations)
+          #   [D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/self.blade_number,Fz1_Fz,n_Fz/self.blade_number,Fz1_My,n_My/self.blade_number,Fy1_Mz,n_Mz/self.blade_number,N_rotations)
          
         #resize bearing if no fatigue check
-        if check_fatigue == 0:
+        if self.check_fatigue == 0:
             [D_max_a,FW_max,bearingmass] = resize_for_bearings(D_max,  self.mb1Type,False)
 
         [D_min_a,FW_min,trash] = resize_for_bearings(D_min,  self.mb2Type,False) #mb2 is a representation of the gearbox connection
