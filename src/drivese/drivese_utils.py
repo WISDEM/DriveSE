@@ -13,6 +13,94 @@ from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
 import scipy as scp
 
+def add_AboveYawMass(self):
+  # electronic systems, hydraulics and controls
+  self.electrical_mass = 0.0
+
+  self.vs_electronics_mass = 0 #2.4445*self.machine_rating + 1599.0 accounted for in transformer calcs
+
+  self.hvac_mass = 0.08 * self.machine_rating
+
+  self.controls_mass     = 0.0
+
+  # mainframe system including bedplate, platforms, crane and miscellaneous hardware
+  self.platforms_mass = 0.125 * self.bedplate_mass
+
+  if (self.crane):
+      self.crane_mass =  3000.0
+  else:
+      self.crane_mass = 0.0
+
+  self.mainframe_mass  = self.bedplate_mass + self.crane_mass + self.platforms_mass
+
+  nacelleCovArea      = 2 * (self.bedplate_length ** 2)              # this calculation is based on Sunderland
+  self.cover_mass = (84.1 * nacelleCovArea) / 2          # this calculation is based on Sunderland - divided by 2 in order to approach CSM
+
+  # yaw system weight calculations based on total system mass above yaw system
+  self.above_yaw_mass =  self.lss_mass + \
+              self.main_bearing_mass + self.second_bearing_mass + \
+              self.gearbox_mass + \
+              self.hss_mass + \
+              self.generator_mass + \
+              self.mainframe_mass + \
+              self.transformer_mass + \
+              self.electrical_mass + \
+              self.vs_electronics_mass + \
+              self.hvac_mass + \
+              self.cover_mass
+
+  self.length      = self.bedplate_length                              # nacelle length [m] based on bedplate length
+  self.width       = self.bedplate_width                        # nacelle width [m] based on bedplate width
+  self.height      = (2.0 / 3.0) * self.length                         # nacelle height [m] calculated based on cladding area
+
+def add_Nacelle(self):
+  # aggregation of nacelle mass
+  self.nacelle_mass = (self.above_yaw_mass + self.yawMass)
+
+  # calculation of mass center and moments of inertia
+  cm = np.array([0.0,0.0,0.0])
+  for i in (range(0,3)):
+      # calculate center of mass (use mainframe_mass in place of bedplate_mass - assume lumped around bedplate_cm)
+      cm[i] = (self.lss_mass * self.lss_cm[i] + self.transformer_cm[i] * self.transformer_mass + \
+              self.main_bearing_mass * self.main_bearing_cm[i] + self.second_bearing_mass * self.second_bearing_cm[i] + \
+              self.gearbox_mass * self.gearbox_cm[i] + self.hss_mass * self.hss_cm[i] + \
+              self.generator_mass * self.generator_cm[i] + self.mainframe_mass * self.bedplate_cm[i] ) / \
+              (self.lss_mass + self.main_bearing_mass + self.second_bearing_mass + \
+              self.gearbox_mass + self.hss_mass + self.generator_mass + self.mainframe_mass)
+  self.nacelle_cm = cm
+
+  I = np.zeros(6)
+  for i in (range(0,3)):                        # calculating MOI, at nacelle center of gravity with origin at tower top center / yaw mass center, ignoring masses of non-drivetrain components / auxiliary systems
+      # calculate moments around CM
+      # sum moments around each components CM (adjust for mass of mainframe) # TODO: add yaw MMI
+      I[i]  =  self.lss_I[i] + self.main_bearing_I[i] + self.second_bearing_I[i] + self.gearbox_I[i] + self.transformer_I[i] +\
+                    self.hss_I[i] + self.generator_I[i] + self.bedplate_I[i] * (self.mainframe_mass / self.bedplate_mass)
+      # translate to nacelle CM using parallel axis theorem (use mass of mainframe en lieu of bedplate to account for auxiliary equipment)
+      for j in (range(0,3)):
+          if i != j:
+              I[i] +=  self.lss_mass * (self.lss_cm[j] - cm[j]) ** 2 + \
+                            self.main_bearing_mass * (self.main_bearing_cm[j] - cm[j]) ** 2 + \
+                            self.second_bearing_mass * (self.second_bearing_cm[j] - cm[j]) ** 2 + \
+                            self.gearbox_mass * (self.gearbox_cm[j] - cm[j]) ** 2 + \
+                            self.transformer_mass * (self.transformer_cm[j] - cm[j]) ** 2 + \
+                            self.hss_mass * (self.hss_cm[j] - cm[j]) ** 2 + \
+                            self.generator_mass * (self.generator_cm[j] - cm[j]) ** 2 + \
+                            self.mainframe_mass * (self.bedplate_cm[j] - cm[j]) ** 2
+  self.nacelle_I = I
+
+def add_RNA(self):
+  if self.rotor_mass>0:
+      rotor_mass = self.rotor_mass
+  else:
+      [rotor_mass] = get_rotor_mass(self.machine_rating,False)
+
+  masses = np.array([rotor_mass, self.yawMass, self.lss_mass, self.main_bearing_mass,self.second_bearing_mass,self.gearbox_mass,self.hss_mass,self.generator_mass])
+  cms = np.array([(-self.overhang), 0.0, self.lss_cm[0], self.main_bearing_cm[0], self.second_bearing_cm[0], self.gearbox_cm[0], self.hss_cm[0], self.generator_cm[0]])
+
+  self.RNA_mass = np.sum(masses)
+  self.RNA_cm = np.sum(masses*cms)/np.sum(masses)
+  # print self.RNA_mass
+  # print self.RNA_cm
 
 def size_Transformer(self):
 

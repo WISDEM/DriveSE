@@ -1,9 +1,7 @@
-#!/usr/bin/env python
-# encoding: utf-8
 """
-DriveSmoothComponents.py
-
-Created by Andrew Ning on 2014-02-15.
+drivesmooth.py
+smooth components for low speed shaft/main bearings, gearbox, bedplate and yaw bearings, as well as modified components from NacelleSE
+Created by Taylor Parsons on 4/7/2015.
 Copyright (c) NREL. All rights reserved.
 """
 
@@ -20,7 +18,7 @@ from drivewpact.drive import NacelleBase
 from drivewpact.drive import AboveYawMassAdder, NacelleSystemAdder #TODO remove after implementing these
 from drivese_utils import sys_print, size_Generator, size_HighSpeedSide, size_YawSystem, size_LowSpeedShaft, \
     setup_Bedplate_Front, setup_Bedplate, size_Bedplate, characterize_Bedplate_Front, characterize_Bedplate_Rear,\
-    size_Transformer
+    size_Transformer, add_RNA, add_Nacelle, add_AboveYawMass
 from fusedwind.interface import implement_base
 
 @implement_base(NacelleBase)
@@ -100,11 +98,14 @@ class NacelleTS(Assembly):
         self.add('highSpeedSide', HighSpeedSide())
         self.add('generator', GeneratorSmooth())
         self.add('bedplate', BedplateSmooth())
-        self.add('above_yaw_massAdder', AboveYawMassAdder())
+        self.add('above_yaw_massAdder', AboveYawMassAdderSmooth())
         self.add('yawSystem', YawSystemSmooth())
-        self.add('nacelleSystem', NacelleSystemAdder())
+        self.add('nacelleSystem', NacelleSystemAdderSmooth())
+        self.add('transformer',TransformerSmooth())
+        self.add('rna',RNASystemAddeSmooth())
 
-        self.driver.workflow.add(['gearbox', 'lowSpeedShaft', 'mainBearing', 'secondBearing', 'highSpeedSide', 'generator', 'bedplate', 'above_yaw_massAdder', 'yawSystem', 'nacelleSystem'])
+        self.driver.workflow.add(['gearbox', 'lowSpeedShaft', 'mainBearing', 'secondBearing', 'highSpeedSide', \
+            'generator', 'bedplate', 'above_yaw_massAdder', 'yawSystem', 'nacelleSystem','transformer','rna'])
 
         # connections to gearbox
         self.connect('rotor_diameter', 'gearbox.rotor_diameter')
@@ -246,7 +247,182 @@ class NacelleTS(Assembly):
         self.connect('nacelleSystem.nacelle_cm', 'nacelle_cm')
         self.connect('nacelleSystem.nacelle_I', 'nacelle_I')
 
+class AboveYawMassAdderSmooth(Component):
+
+    # variables
+    machine_rating = Float(iotype = 'in', units='kW', desc='machine rating')
+    lss_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    main_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    second_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    gearbox_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    hss_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    generator_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    bedplate_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    bedplate_length = Float(iotype = 'in', units='m', desc='component length')
+    bedplate_width = Float(iotype = 'in', units='m', desc='component width')
+    transformer_mass = Float(iotype = 'in', units='kg', desc='component mass')
+
+    # parameters
+    crane = Bool(iotype='in', desc='flag for presence of crane')
+
+    # returns
+    electrical_mass = Float(iotype = 'out', units='kg', desc='component mass')
+    vs_electronics_mass = Float(iotype = 'out', units='kg', desc='component mass')
+    hvac_mass = Float(iotype = 'out', units='kg', desc='component mass')
+    controls_mass = Float(iotype = 'out', units='kg', desc='component mass')
+    platforms_mass = Float(iotype = 'out', units='kg', desc='component mass')
+    crane_mass = Float(iotype = 'out', units='kg', desc='component mass')
+    mainframe_mass = Float(iotype = 'out', units='kg', desc='component mass')
+    cover_mass = Float(iotype = 'out', units='kg', desc='component mass')
+    above_yaw_mass = Float(iotype = 'out', units='kg', desc='total mass above yaw system')
+    length = Float(iotype = 'out', units='m', desc='component length')
+    width = Float(iotype = 'out', units='m', desc='component width')
+    height = Float(iotype = 'out', units='m', desc='component height')
+
+    def __init__(self):
+        ''' Initialize above yaw mass adder component
+        '''
+
+        super(AboveYawMassAdder_drive, self).__init__()
+
+        #controls what happens if derivatives are missing
+        self.missing_deriv_policy = 'assume_zero'
+
+    def execute(self):
+
+        add_AboveYawMass(self)
+
+class NacelleSystemAdderSmooth(Component): #added to drive to include transformer
+    ''' NacelleSystem class
+          The Nacelle class is used to represent the overall nacelle of a wind turbine.
+          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains an update method to determine the mass, mass properties, and dimensions of the component.
+    '''
+    # variables
+    above_yaw_mass = Float(iotype='in', units='kg', desc='mass above yaw system')
+    yawMass = Float(iotype='in', units='kg', desc='mass of yaw system')
+    lss_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    main_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    second_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    gearbox_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    hss_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    generator_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    bedplate_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    mainframe_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    lss_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    main_bearing_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    second_bearing_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    gearbox_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    hss_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    generator_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    bedplate_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    lss_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+    main_bearing_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+    second_bearing_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+    gearbox_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+    hss_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+    generator_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+    bedplate_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+    transformer_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    transformer_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    transformer_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+
+    # returns
+    nacelle_mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
+    nacelle_cm = Array(np.array([0.0, 0.0, 0.0]), units='m', iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    nacelle_I = Array(np.array([0.0, 0.0, 0.0]), units='kg*m**2', iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+
+    def __init__(self):
+        ''' Initialize above yaw mass adder component
+        '''
+
+        super(NacelleSystemAdder_drive , self).__init__()
+
+        #controls what happens if derivatives are missing
+        self.missing_deriv_policy = 'assume_zero'
+
+    def execute(self):
+        add_Nacelle(self)
+
+
+class RNASystemAddeSmooth(Component):
+    ''' RNASystem class
+          This analysis is only to be used in placing the transformer of the drivetrain.
+          The Rotor-Nacelle-Assembly class is used to represent the RNA of the turbine without the transformer and bedplate (to resolve circular dependency issues).
+          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains an update method to determine the mass, mass properties, and dimensions of the component. 
+    '''
+    #inputs
+    yawMass = Float(iotype='in', units='kg', desc='mass of yaw system')
+    lss_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    main_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    second_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    gearbox_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    hss_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    generator_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    lss_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    main_bearing_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    second_bearing_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    gearbox_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    hss_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    generator_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
+    overhang = Float(iotype = 'in', units='m', desc='nacelle overhang')
+    rotor_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    machine_rating = Float(iotype = 'in', units = 'kW', desc = 'machine rating ')
+
+    #returns
+    RNA_mass = Float(iotype = 'out', units='kg', desc='mass of total RNA')
+    RNA_cm = Float(iotype='out', units='m', desc='RNA CM along x-axis')
+
+    def __init__(self):
+        ''' Initialize RNA Adder component
+        '''
+
+        super(RNASystemAdder_drive , self).__init__()
+
+        #controls what happens if derivatives are missing
+        self.missing_deriv_policy = 'assume_zero'
+
+    def execute(self):
+
+        add_RNA(self)
+
 '''-----------------------------------------------------------------------------------------------------------------------------------------------------'''
+
+class TransformerSmooth(Component):
+    ''' Transformer class
+            The transformer class is used to represent the transformer of a wind turbine drivetrain.
+            It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+            It contains an update method to determine the mass, mass properties, and dimensions of the component if it is in fact uptower'''
+
+    #inputs
+    machine_rating = Float(iotype='in', units='kW', desc='machine rating of the turbine')
+    uptower_transformer = Bool(iotype='in', desc = 'uptower or downtower transformer')
+    tower_top_diameter = Float(iotype = 'in', units = 'm', desc = 'tower top diameter for comparision of nacelle CM')
+    rotor_mass = Float(iotype='in', units='kg', desc='rotor mass')
+    overhang = Float(iotype='in', units='m', desc='rotor overhang distance')
+    generator_cm = Array(iotype='in', desc='center of mass of the generator in [x,y,z]')
+    rotor_diameter = Float(iotype='in',units='m', desc='rotor diameter of turbine')
+    RNA_mass = Float(iotype = 'in', units='kg', desc='mass of total RNA')
+    RNA_cm = Float(iotype='in', units='m', desc='RNA CM along x-axis')
+
+    #outputs
+    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
+    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+
+    def __init__(self):
+        '''
+        Initializes transformer component
+        '''
+
+        super(Transformer_drive, self).__init__()
+
+        self.missing_deriv_policy = 'assume_zero'
+
+    def execute(self):
+
+        size_Transformer(self)
 
 class GeneratorSmooth(Component):
     '''Generator class
