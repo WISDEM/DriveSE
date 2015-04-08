@@ -137,7 +137,7 @@ class Drive3pt(Assembly):
 
         # connect inputs
         self.connect('rotor_diameter', ['lowSpeedShaft.rotor_diameter', 'mainBearing.rotor_diameter', 'secondBearing.rotor_diameter', 'gearbox.rotor_diameter', 'highSpeedSide.rotor_diameter', \
-                     'generator.rotor_diameter', 'bedplate.rotor_diameter', 'yawSystem.rotor_diameter','transformer.rotor_diameter','GetHubCM.rotor_diameter'])
+                     'generator.rotor_diameter', 'bedplate.rotor_diameter', 'yawSystem.rotor_diameter','transformer.rotor_diameter'])
         self.connect('rotor_bending_moment_x', ['lowSpeedShaft.rotor_bending_moment_x'])
         self.connect('rotor_bending_moment_y', ['bedplate.rotor_bending_moment_y','lowSpeedShaft.rotor_bending_moment_y'])
         self.connect('rotor_bending_moment_z', 'lowSpeedShaft.rotor_bending_moment_z')
@@ -1181,18 +1181,18 @@ def sys_print(nace):
     print 'Nacelle cover:   %8.1f kg %6.2f m Height %6.2f m Width %6.2f m Length' % (nace.above_yaw_massAdder.cover_mass , nace.above_yaw_massAdder.height, nace.above_yaw_massAdder.width, nace.above_yaw_massAdder.length)
     print 'Yaw system      %8.1f kg' % (nace.yawSystem.mass )
     print 'Overall nacelle:  %8.1f kg .cm %6.2f %6.2f %6.2f I %6.2f %6.2f %6.2f' % (nace.nacelle_mass, nace.nacelle_cm[0], nace.nacelle_cm[1], nace.nacelle_cm[2], nace.nacelle_I[0], nace.nacelle_I[1], nace.nacelle_I[2]  )
-    print
-    print 'Mx:', nace.rotor_torque
-    print 'My:',nace.rotor_bending_moment_y
-    print 'Mz:',nace.rotor_bending_moment_z
-    print 
+    # print
+    # print 'Mx:', nace.rotor_torque
+    # print 'My:',nace.rotor_bending_moment_y
+    # print 'Mz:',nace.rotor_bending_moment_z
+    # print 
 
 
 
 if __name__ == '__main__':
     ''' Main runs through tests of several drivetrain configurations with known component masses and dimensions '''
 
-    # nacelle_example_5MW_baseline_3pt()
+    nacelle_example_5MW_baseline_3pt()
 
     nacelle_example_5MW_baseline_4pt()
 

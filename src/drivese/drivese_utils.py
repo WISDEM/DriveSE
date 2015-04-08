@@ -13,6 +13,483 @@ from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
 import scipy as scp
 
+
+def size_Transformer(self):
+
+  def combine_CM(mass1,CM1,mass2,CM2):
+      return (mass1*CM1+mass2*CM2)/(mass1+mass2)
+
+  if self.uptower_transformer == True:
+      #function places transformer where tower top CM is within tower bottom OD to reduce tower moments
+      if self.rotor_mass:
+          rotor_mass = self.rotor_mass
+      else:
+          [rotor_mass] = get_rotor_mass(self.machine_rating,False)
+
+      bottom_OD = self.tower_top_diameter*1.7 #approximate average from industry data
+      # print bottom_OD
+
+      self.mass = 2.4445*(self.machine_rating) + 1599.0
+
+      if self.RNA_cm <= -(bottom_OD)/2: #upwind of acceptable. Most likely
+          transformer_x = (bottom_OD/2.*(self.RNA_mass+self.mass) - (self.RNA_mass*self.RNA_cm))/(self.mass)
+          if transformer_x > self.generator_cm[0]*3:
+              print '\n ---------transformer location manipulation not suitable for overall Nacelle CM changes: rear distance excessively large------- \n'
+              transformer_x = self.generator_cm[0] + (1.6 * 0.015 * self.rotor_diameter) #assuming generator and transformer approximately same length
+      else:
+          transformer_x = self.generator_cm[0] + (1.8 * 0.015 * self.rotor_diameter) #assuming generator and transformer approximately same length
+
+      cm = np.array([0.,0.,0.])
+      cm[0] = transformer_x
+      cm[1] = self.generator_cm[1]
+      cm[2] = self.generator_cm[2]/.75*.5 #same height as gearbox CM
+      self.cm = cm
+
+      width = self.tower_top_diameter+.5
+      height = 0.016*self.rotor_diameter #similar to gearbox
+      length = .012*self.rotor_diameter #similar to gearbox
+
+      def get_I(d1,d2,mass):
+          return mass*(d1**2 + d2**2)/12.
+
+      I = np.array([0.,0.,0.])
+      I[0] = get_I(height,width,self.mass)
+      I[1] = get_I(length, height, self.mass)
+      I[2] = get_I(length, width, self.mass)
+      self.I = I
+
+  else:
+      self.cm = np.array([0.,0.,0.])
+      self.I = self.cm.copy()
+      self.mass = 0.
+
+#functions used in bedplate sizing
+def midDeflection(totalLength,loadLength,load,E,I):
+  defl = load*loadLength**2.0*(3.0*totalLength - loadLength)/(6.0*E*I)
+  return defl
+
+  #tip deflection for distributed load
+def distDeflection(totalLength,distWeight,E,I):
+  defl = distWeight*totalLength**4.0/(8.0*E*I)
+  return defl
+
+def setup_Bedplate(self):
+  #Model bedplate as 2 parallel I-beams with a rear steel frame and a front cast frame
+  #Deflection constraints applied at each bedplate end
+  #Stress constraint checked at root of front and rear bedplate sections
+
+  self.g = 9.81
+  self.E = 2.1e11
+  self.density = 7800
+
+  if self.L_rb>0:
+      self.L_rb = self.L_rb
+  else:  
+      [self.L_rb] = get_L_rb(self.rotor_diameter,False)
+
+  #component weights and locations
+  if self.transformer_mass>0: #only if uptower transformer
+      self.transLoc = self.transformer_location.item()
+      self.convMass = 0.3*self.transformer_mass
+  else:
+      self.transLoc = 0
+      self.convMass = (2.4445*(self.machine_rating) + 1599.0)*0.3 #(transformer mass * .3)
+
+  self.generator_location = self.generator_location.item() #TODO check why locations are passed as numpy values
+
+  self.convLoc = self.generator_location * 2.0
+  self.mb1_location = abs(self.mb1_location) #abs(self.gbx_length/2.0) + abs(self.lss_length)
+  self.mb2_location = abs(self.mb2_location) #abs(self.gbx_length/2.0)
+  self.lss_location= abs(self.lss_location)
+
+  if self.transLoc > 0:
+    self.rearTotalLength = self.transLoc*1.1
+  else:
+    self.rearTotalLength = self.generator_location.item()*4.237/2.886 -self.tower_top_diameter/2.0 #scaled off of GE1.5
+
+  self.frontTotalLength = self.mb1_location + self.FW_mb1/2.
+
+  #rotor weights and loads
+  self.rotorLoc = self.mb1_location + self.L_rb
+  self.rotorFz=abs(self.rotor_force_z)
+  self.rotorMy=abs(self.rotor_bending_moment_y)
+
+  #If user does not know important moment, crude approx
+  if self.rotor_mass > 0 and self.rotorMy == 0: 
+      self.rotorMy=get_My(self.rotor_mass,self.L_rb)
+
+  #initial I-beam dimensions
+  self.tf = 0.01905
+  self.tw = 0.0127
+  self.h0 = 0.6096
+  self.b0 = self.h0/2.0
+  
+  #Rear Steel Frame:
+  if self.gbx_location ==0:
+      self.gbx_location = 0
+      self.gbx_mass = 0
+  else: 
+      self.gbx_location = self.gbx_location
+      self.gbx_mass = self.gbx_mass
+
+  self.rootStress = 250e6
+  self.totalTipDefl = 1.0
+  self.stressTol = 5e5
+  self.deflTol = 1e-4
+  self.defl_denom = 1500. #factor in deflection check
+  self.stress_mult = 8. #modified to fit industry data
+
+  self.stressMax = 620e6 #yeild of alloy steel
+  self.deflMax = self.rearTotalLength/self.defl_denom
+
+def characterize_Bedplate_Rear(self):
+  self.bi = (self.b0-self.tw)/2.0
+  self.hi = self.h0-2.0*self.tf
+  self.I_b = self.b0*self.h0**3/12.0 - 2*self.bi*self.hi**3/12.0
+  self.A = self.b0*self.h0 - 2.0*self.bi*self.hi
+  self.w=self.A*self.density
+  #Tip Deflection for load not at end
+  
+  self.hssTipDefl = midDeflection(self.rearTotalLength,self.hss_location,self.hss_mass*self.g/2,self.E,self.I_b)
+  self.genTipDefl = midDeflection(self.rearTotalLength,self.generator_location,self.generator_mass*self.g/2,self.E,self.I_b)
+  self.convTipDefl = midDeflection(self.rearTotalLength,self.convLoc,self.convMass*self.g/2,self.E,self.I_b)
+  self.transTipDefl = midDeflection(self.rearTotalLength,self.transLoc,self.transformer_mass*self.g/2,self.E,self.I_b)
+  self.gbxTipDefl = midDeflection(self.rearTotalLength,self.gbx_location,self.gbx_mass*self.g/2,self.E,self.I_b)
+  self.selfTipDefl = distDeflection(self.rearTotalLength,self.w*self.g,self.E,self.I_b)
+
+  self.totalTipDefl = self.hssTipDefl + self.genTipDefl + self.convTipDefl + self.transTipDefl +  self.selfTipDefl + self.gbxTipDefl
+  
+  #root stress
+  self.totalBendingMoment=(self.hss_location*self.hss_mass + self.generator_location*self.generator_mass + self.convLoc*self.convMass + self.transLoc*self.transformer_mass + self.w*self.rearTotalLength**2/2.0)*self.g
+  self.rootStress = self.totalBendingMoment*self.h0/(2.*self.I_b)
+
+  #mass
+  self.steelVolume = self.A*self.rearTotalLength
+  self.steelMass = self.steelVolume*self.density
+
+  #2 parallel I beams
+  self.totalSteelMass = 2.0*self.steelMass
+
+  self.rearTotalTipDefl=self.totalTipDefl
+  self.rearBendingStress=self.rootStress
+
+def setup_Bedplate_Front(self):
+  if self.gbx_location < 0:
+      self.gbx_location = abs(self.gbx_location)
+      self.gbx_mass = self.gbx_mass
+  else: 
+      self.gbx_location = 0
+      self.gbx_mass = 0
+  self.E=169e9 #EN-GJS-400-18-LT http://www.claasguss.de/html_e/pdf/THBl2_engl.pdf
+  self.castDensity = 7100
+
+  self.tf = 0.01905
+  self.tw = 0.0127
+  self.h0 = 0.6096
+  self.b0 = self.h0/2.0
+
+  self.rootStress = 250e6
+  self.totalTipDefl = 1.0
+
+  self.deflMax = self.frontTotalLength/self.defl_denom
+  self.stressMax = 200e6
+
+def characterize_Bedplate_Front(self):
+  self.bi = (self.b0-self.tw)/2.0
+  self.hi = self.h0-2.0*self.tf
+  self.I_b = self.b0*self.h0**3/12.0 - 2*self.bi*self.hi**3/12.0
+  self.A = self.b0*self.h0 - 2.0*self.bi*self.hi
+  self.w=self.A*self.castDensity
+
+  #Tip Deflection for load not at end
+  self.gbxTipDefl = midDeflection(self.frontTotalLength,self.gbx_mass,self.gbx_mass*self.g/2.0,self.E,self.I_b)
+  self.mb1TipDefl = midDeflection(self.frontTotalLength,self.mb1_location,self.mb1_mass*self.g/2.0,self.E,self.I_b)
+  self.mb2TipDefl = midDeflection(self.frontTotalLength,self.mb2_location,self.mb2_mass*self.g/2.0,self.E,self.I_b)
+  self.lssTipDefl = midDeflection(self.frontTotalLength,self.lss_location,self.lss_mass*self.g/2.0,self.E,self.I_b)
+  self.rotorTipDefl = midDeflection(self.frontTotalLength,self.rotorLoc,self.rotor_mass*self.g/2.0,self.E,self.I_b)
+  self.rotorFzTipDefl = midDeflection(self.frontTotalLength,self.rotorLoc,self.rotorFz/2.0,self.E,self.I_b)
+  self.selfTipDefl = distDeflection(self.frontTotalLength,self.w*self.g,self.E,self.I_b)
+  self.rotorMyTipDefl = self.rotorMy/2.0*self.frontTotalLength**2/(2.0*self.E*self.I_b)
+
+  self.totalTipDefl = self.mb1TipDefl + self.mb2TipDefl + self.lssTipDefl  + self.rotorTipDefl + self.selfTipDefl +\
+    self.rotorMyTipDefl + self.rotorFzTipDefl + self.gbxTipDefl
+
+  #root stress
+  self.totalBendingMoment=(self.mb1_location*self.mb1_mass/2.0 + self.mb2_location*self.mb2_mass/2.0 + self.lss_location*\
+    self.lss_mass/2.0 + self.w*self.frontTotalLength**2/2.0 + self.rotorLoc*self.rotor_mass/2.0)*self.g + self.rotorLoc*\
+    self.rotorFz/2.0 +self.rotorMy/2.0
+  self.rootStress = self.totalBendingMoment*self.h0/2/self.I_b
+
+  #mass
+  self.castVolume = self.A*self.frontTotalLength
+  self.castMass = self.castVolume*self.castDensity
+
+  #2 parallel I-beams
+  self.totalCastMass = 2.0*self.castMass
+  self.frontTotalTipDefl=self.totalTipDefl
+  self.frontBendingStress=self.rootStress
+
+def size_Bedplate(self):
+  self.frontHeight = self.h0
+
+  #frame multiplier for front support
+  self.support_multiplier = 1.1+5e13*self.rotor_diameter**(-8) # based on solidworks estimates for GRC and GE bedplates. extraneous mass percentage decreases for larger machines
+  # print self.rotor_diameter
+  # print support_multiplier
+  self.totalCastMass *= self.support_multiplier
+  self.totalSteelMass *= self.support_multiplier
+  self.mass = self.totalCastMass+ self.totalSteelMass
+
+  # print 'rotor mass', self.rotor_mass
+  # print 'rotor bending moment_y', self.rotor_bending_moment_y
+  # print 'rotor fz', self.rotor_force_z 
+  # print 'rear bedplate length: ', rearTotalLength
+  # print 'front bedplate length: ', frontTotalLength
+  # print'rear bedplate tip deflection', rearTotalTipDefl
+  # print'front bedplate tip deflection', frontTotalTipDefl
+  # print 'bending stress [MPa] at root of rear bedplate:', rearBendingStress/1.0e6
+  # print 'bending stress [MPa] at root of front bedplate:', frontBendingStress/1.0e6
+  # print 'front bedplate bedplate mass [kg]:', totalCastMass
+  # print 'rear bedplate mass [kg]:', totalSteelMass
+  # print 'total bedplate mass:', totalSteelMass+ totalCastMass
+
+  self.length = self.frontTotalLength + self.rearTotalLength
+  self.width = self.b0 + self.tower_top_diameter
+  if self.rearHeight >= self.frontHeight:
+      self.height = self.rearHeight
+  else:
+      self.height = self.frontHeight
+
+  # calculate mass properties
+  cm = np.array([0.0,0.0,0.0])
+  cm[0] = (self.totalSteelMass*self.rearTotalLength/2 - self.totalCastMass*self.frontTotalLength/2)/(self.mass) #previously 0.
+  cm[1] = 0.0
+  cm[2] = -self.height/2.
+  self.cm = cm
+
+  self.depth = (self.length / 2.0)
+
+  I = np.array([0.0, 0.0, 0.0])
+  I[0]  = self.mass * (self.width ** 2 + self.depth ** 2) / 8
+  I[1]  = self.mass * (self.depth ** 2 + self.width ** 2 + (4/3) * self.length ** 2) / 16
+  I[2]  = I[1]
+  self.I = I
+
+
+def size_LowSpeedShaft(self):
+  def calc_mass(rotor_torque, rotor_bending_moment, rotor_mass, rotorDiaemeter, rotor_speed, shaft_angle, shaft_length, shaftD1, shaftD2, machine_rating, shaft_ratio):
+
+        # Second moment of area for hollow shaft
+    def Imoment(d_o,d_i):
+        I=(pi/64.0)*(d_o**4-d_i**4)
+        return I
+    
+    # Second polar moment for hollow shaft
+    def Jmoment(d_o,d_i):
+        J=(pi/32.0)*(d_o**4-d_i**4)
+        return J
+    
+    # Bending stress
+    def bendingStress(M, y, I):
+        sigma=M*y/I
+        return sigma
+    
+    # Shear stress
+    def shearStress(T, r, J):
+        tau=T*r/J
+        return tau
+    
+    #Find the necessary outer diameter given a diameter ratio and max stress
+    def outerDiameterStrength(shaft_ratio,maxFactoredStress):
+        D_outer=(16.0/(pi*(1.0-shaft_ratio**4.0)*maxFactoredStress)*(factoredTotalRotorMoment+sqrt(factoredTotalRotorMoment**2.0+factoredrotor_torque**2.0)))**(1.0/3.0)
+        return D_outer
+
+    #[rotor_torque, rotor_bending_moment, rotor_mass, rotorDiaemeter, rotor_speed, shaft_angle, shaft_length, shaftD1, shaftD2, machine_rating, shaft_ratio] = x
+
+    #torque check
+    if rotor_torque == 0:
+        omega=rotor_speed/60*(2*pi)      #rotational speed in rad/s at rated power
+        eta=0.944                 #drivetrain efficiency
+        rotor_torque=machine_rating/(omega*eta)         #torque
+
+    #self.length=shaft_length
+        
+    # compute masses, dimensions and cost
+    #static overhanging rotor moment (need to adjust for CM of rotor not just distance to end of LSS)
+    L2=shaft_length*shaftD2                   #main bearing to end of mainshaft
+    alpha=shaft_angle*pi/180.0           #shaft angle
+    L2=L2*cos(alpha)                  #horizontal distance from main bearing to hub center of mass
+    staticRotorMoment=rotor_mass*L2*9.81      #static bending moment from rotor
+  
+    #assuming 38CrMo4 / AISI 4140 from http://www.efunda.com/materials/alloys/alloy_steels/show_alloy.cfm?id=aisi_4140&prop=all&page_title=aisi%204140
+    yieldStrength=417.0*10.0**6.0 #Pa
+    steelDensity=8.0*10.0**3
+    
+    #Safety Factors
+    gammaAero=1.35
+    gammaGravity=1.35 #some talk of changing this to 1.1
+    gammaFavorable=0.9
+    gammaMaterial=1.25 #most conservative
+    
+    maxFactoredStress=yieldStrength/gammaMaterial
+    factoredrotor_torque=rotor_torque*gammaAero
+    factoredTotalRotorMoment=rotor_bending_moment*gammaAero-staticRotorMoment*gammaFavorable
+
+    self.D_outer=outerDiameterStrength(self.shaft_ratio,maxFactoredStress)
+    self.D_in=shaft_ratio*self.D_outer
+
+    #print "LSS outer diameter is %f m, inner diameter is %f m" %(self.D_outer, self.D_in)
+    
+    J=Jmoment(self.D_outer,self.D_in)
+    I=Imoment(self.D_outer,self.D_in)
+    
+    sigmaX=bendingStress(factoredTotalRotorMoment, self.D_outer/2.0, I)
+    tau=shearStress(rotor_torque, self.D_outer/2.0, J)
+    
+    #print "Max unfactored normal bending stress is %g MPa" % (sigmaX/1.0e6)
+    #print "Max unfactored shear stress is %g MPa" % (tau/1.0e6)
+    
+    volumeLSS=((self.D_outer/2.0)**2.0-(self.D_in/2.0)**2.0)*pi*shaft_length
+    mass=volumeLSS*steelDensity
+    
+    return mass
+
+  self.mass = calc_mass(self.rotor_torque, self.rotor_bending_moment, self.rotor_mass, self.rotor_diameter, self.rotor_speed, \
+                              self.shaft_angle, self.shaft_length, self.shaftD1, self.shaftD2, self.machine_rating, self.shaft_ratio)
+
+
+  self.design_torque = self.rotor_torque
+  self.design_bending_load = self.rotor_bending_moment
+  self.length = self.shaft_length
+  self.diameter = self.D_outer
+
+  # calculate mass properties
+  cm = np.array([0.0,0.0,0.0])
+  cm[0] = - (0.035 - 0.01) * self.rotor_diameter            # cm based on WindPACT work - halfway between locations of two main bearings TODO change!
+  cm[1] = 0.0
+  cm[2] = 0.025 * self.rotor_diameter
+  self.cm = cm
+
+  I = np.array([0.0, 0.0, 0.0])
+  I[0]  = self.mass * (self.D_in ** 2.0 + self.D_outer ** 2.0) / 8.0
+  I[1]  = self.mass * (self.D_in ** 2.0 + self.D_outer ** 2.0 + (4.0 / 3.0) * (self.length ** 2.0)) / 16.0
+  I[2]  = I[1]
+  self.I = I
+
+def size_YawSystem(self):
+  if self.yaw_motors_number == 0 :
+    if self.rotor_diameter < 90.0 :
+      self.yaw_motors_number = 4
+    elif self.rotor_diameter < 120.0 :
+      self.yaw_motors_number = 6
+    else:
+      self.yaw_motors_number = 8
+
+  #Assume friction plate surface width is 1/10 the diameter
+  #Assume friction plate thickness scales with rotor diameter
+  frictionPlateVol=pi*self.tower_top_diameter*(self.tower_top_diameter*0.10)*(self.rotor_diameter/1000.0)
+  steelDensity=8000.0
+  frictionPlateMass=frictionPlateVol*steelDensity
+  
+  #Assume same yaw motors as Vestas V80 for now: Bonfiglioli 709T2M
+  yawMotorMass=190.0
+  
+  totalYawMass=frictionPlateMass + (self.yaw_motors_number*yawMotorMass)
+  self.mass= totalYawMass
+
+  # calculate mass properties
+  # yaw system assumed to be collocated to tower top center
+  cm = np.array([0.0,0.0,0.0])
+  cm[2] = -self.bedplate_height
+  self.cm = cm
+
+  # assuming 0 MOI for yaw system (ie mass is nonrotating)
+  I = np.array([0.0, 0.0, 0.0])
+  self.I = I
+
+
+def size_HighSpeedSide(self):
+  # compute masses, dimensions and cost
+  design_torque = self.rotor_torque / self.gear_ratio               # design torque [Nm] based on rotor torque and Gearbox ratio
+  massFact = 0.025                                 # mass matching factor default value
+  highSpeedShaftMass = (massFact * design_torque)
+
+  mechBrakeMass = (0.5 * highSpeedShaftMass)      # relationship derived from HSS multiplier for University of Sunderland model compared to NREL CSM for 750 kW and 1.5 MW turbines
+
+  self.mass = (mechBrakeMass + highSpeedShaftMass)
+
+  diameter = (1.5 * self.lss_diameter)                     # based on WindPACT relationships for full HSS / mechanical brake assembly
+  if self.length_in == 0:
+      self.length = 0.5+self.rotor_diameter/127.
+  else:
+      self.length = self.length_in
+  length = self.length
+
+  matlDensity = 7850. # material density kg/m^3
+
+  # calculate mass properties
+  cm = np.array([0.0,0.0,0.0])
+  cm[0]   = self.gearbox_cm[0]+self.gearbox_length/2+length/2
+  cm[1]   = self.gearbox_cm[1]
+  cm[2]   = self.gearbox_cm[2]+self.gearbox_height*0.2
+  self.cm = cm
+
+  I = np.array([0.0, 0.0, 0.0])
+  I[0]    = 0.25 * length * 3.14159 * matlDensity * (diameter ** 2) * (self.gear_ratio**2) * (diameter ** 2) / 8.
+  I[1]    = self.mass * ((3/4.) * (diameter ** 2) + (length ** 2)) / 12.
+  I[2]    = I[1]
+  self.I = I
+
+def size_Generator(self):
+  massCoeff = [None, 6.4737, 10.51 ,  5.34  , 37.68  ]
+  massExp   = [None, 0.9223, 0.9223,  0.9223, 1      ]
+
+  if self.rotor_speed !=0:
+    CalcRPM = self.rotor_speed
+  else:
+    CalcRPM    = 80 / (self.rotor_diameter*0.5*pi/30)
+  CalcTorque = (self.machine_rating*1.1) / (CalcRPM * pi/30)
+
+  if self.drivetrain_design == 'geared':
+      drivetrain_design = 1
+  elif self.drivetrain_design == 'single_stage':
+      drivetrain_design = 2
+  elif self.drivetrain_design == 'multi_drive':
+      drivetrain_design = 3
+  elif self.drivetrain_design == 'pm_direct_drive':
+      drivetrain_design = 4
+
+  if (drivetrain_design < 4):
+      self.mass = (massCoeff[drivetrain_design] * self.machine_rating ** massExp[drivetrain_design])
+  else:  # direct drive
+      self.mass = (massCoeff[drivetrain_design] * CalcTorque ** massExp[drivetrain_design])
+
+  # calculate mass properties
+  length = (1.8 * 0.015 * self.rotor_diameter)
+  d_length_d_rotor_diameter = 1.8*.015
+
+  depth = (0.015 * self.rotor_diameter)
+  d_depth_d_rotor_diameter = 0.015
+
+  width = (0.5 * depth)
+  d_width_d_depth = 0.5
+
+  # print self.highSpeedSide_cm
+  cm = np.array([0.0,0.0,0.0])
+  cm[0]  = self.highSpeedSide_cm[0] + self.highSpeedSide_length/2. + length/2.
+  cm[1]  = self.highSpeedSide_cm[1]
+  cm[2]  = self.highSpeedSide_cm[2]
+  self.cm = cm
+
+  I = np.array([0.0, 0.0, 0.0])
+  I[0]   = ((4.86 * (10. ** (-5))) * (self.rotor_diameter ** 5.333)) + (((2./3.) * self.mass) * (depth ** 2 + width ** 2) / 8.)
+  I[1]   = (I[0] / 2.) / (self.gear_ratio ** 2) + ((1./3.) * self.mass * (length ** 2) / 12.) + (((2. / 3.) * self.mass) * \
+             (depth ** 2. + width ** 2. + (4./3.) * (length ** 2.)) / 16. )
+  I[2]   = I[1]
+  self.I = I 
+
+
+
 class blade_moment_transform(Component): 
     ''' Blade_Moment_Transform class          
           The Blade_Moment_Transform class is used to transform moments from the WISDEM rotor models to driveSE.
@@ -57,11 +534,9 @@ class blade_moment_transform(Component):
             # print
             return [Mx,My,Mz]
 
-        C_moment = 1.1 #scaling factor based off of IEC recommendation. Set to operational conditions
-
-        [b1Mx,b1My,b1Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1]*C_moment,self.b1[2]*C_moment)
-        [b2Mx,b2My,b2Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1]*C_moment,self.b2[2]*C_moment)
-        [b3Mx,b3My,b3Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1]*C_moment,self.b3[2]*C_moment)
+        [b1Mx,b1My,b1Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1],self.b1[2])
+        [b2Mx,b2My,b2Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1],self.b2[2])
+        [b3Mx,b3My,b3Mz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1],self.b3[2])
 
         self.Mx = b1Mx+b2Mx+b3Mx
         self.My = b1My+b2My+b3My
@@ -77,95 +552,41 @@ class blade_moment_transform(Component):
         # print self.Mz
         # print
 
-class blade_force_transform(Component): 
-    ''' Blade_Force_Transform class          
-          The Blade_Force_Transform class is used to transform forces from the WISDEM rotor models to driveSE.
-    '''
-    # variables
-    # ensure angles are in radians. Azimuth is 3-element array with blade azimuths; b1, b2, b3 are 3-element arrays for each blade moment (Mx, My, Mz); pitch and cone are floats
-    azimuth_angle = Array(np.array([0,2*pi/3,4*pi/3]),iotype='in',units='rad',desc='azimuth angles for each blade')
-    pitch_angle = Float(iotype ='in', units = 'rad', desc = 'pitch angle at each blade, assumed same')
-    cone_angle = Float(iotype='in', units='rad', desc='cone angle at each blade, assumed same')
-    b1 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
-    b2 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
-    b3 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
-
-    # returns
-    Fx = Float(iotype='out',units='N', desc='rotor force in x-direction')
-    Fy = Float(iotype='out',units='N', desc='rotor force in y-direction')
-    Fz = Float(iotype='out',units='N', desc='rotor force in z-direction, not including rotor mass (accounted for in component models')
-    
-    def __init__(self):
-        
-        super(blade_force_transform, self).__init__()
-    
-    def execute(self):
-        # print "input blade loads:"
-        # i=0
-        # while i<3:
-        #   print 'b1:', self.b1[i]
-        #   print 'b2:', self.b2[i]
-        #   print 'b3:', self.b3[i]
-        #   i+=1
-        # print
-
-        #nested function for transformations
-        def trans(alpha,con,phi,bFx,bFy,bFz):
-            Fx = bFx*cos(con)*cos(alpha) - bFy*(sin(con)*cos(alpha)*sin(phi)-sin(alpha)*cos(phi)) + bFz*(sin(con)*cos(alpha)*cos(phi)-sin(alpha)*sin(phi))
-            Fy = bFx*cos(con)*sin(alpha) - bFy*(sin(con)*sin(alpha)*sin(phi)+cos(alpha)*cos(phi)) + bFz*(sin(con)*sin(alpha)*cos(phi)+cos(alpha)*sin(phi))
-            Fz = bFx*(-sin(alpha)) - bFy*(-cos(alpha)*sin(phi)) + bFz*(cos(alpha)*cos(phi))
-            # print 
-            # print Fx
-            # print Fy
-            # print Fz
-            # print
-            return [Fx,Fy,Fz]
-
-        C_force = 1.3 #scaling factor based off of IEC recommendation. Set to operational conditions
-
-        [b1Fx,b1Fy,b1Fz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1]*C_force,self.b1[2]*C_force)
-        [b2Fx,b2Fy,b2Fz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1]*C_force,self.b2[2]*C_force)
-        [b3Fx,b3Fy,b3Fz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1]*C_force,self.b3[2]*C_force)
-
-        self.Fx = b1Fx+b2Fx+b3Fx
-        self.Fy = b1Fy+b2Fy+b3Fy
-        self.Fz = b1Fz+b2Fz+b3Fz
-
-        # print 'azimuth:', self.azimuth_angle/pi*180.
-        # print 'pitch:', self.pitch_angle/pi*180.
-        # print 'cone:', self.cone_angle/pi*180.
-
-        # print "Total forces:"
-        # print self.Fx
-        # print self.Fy
-        # print self.Fz
-        # print
-
 
 # returns FW, mass for bearings without fatigue analysis
-def resize_for_bearings(D_shaft,type):
+def resize_for_bearings(D_shaft,type,deriv):
 # assume low load rating for bearing
   if type == 'CARB': #p = Fr, so X=1, Y=0
-    return [D_shaft,.2663*D_shaft+.0435,1561.4*D_shaft**2.6007]
-
+    out = [D_shaft,.2663*D_shaft+.0435,1561.4*D_shaft**2.6007]
+    if deriv== True:
+      out.extend([1.,.2663,1561.4*2.6007*D_shaft**1.6007])
   elif type == 'SRB':
-    return [D_shaft,.2762*D_shaft,876.7*D_shaft**1.7195]
-
+    out=[D_shaft,.2762*D_shaft,876.7*D_shaft**1.7195]
+    if deriv== True:
+      out.extend([1.,.2762,876.7*1.7195*D_shaft**0.7195])    
   elif type == 'TRB1':
-    return [D_shaft,.0740,92.863*D_shaft**.8399]
-
+    out = [D_shaft,.0740,92.863*D_shaft**.8399]
+    if deriv == True:
+      out.extend([1.,0.,92.863*0.8399*D_shaft**(0.8399-1.)])
   elif type == 'CRB':
-    return [D_shaft,.1136*D_shaft,304.19*D_shaft**1.8885]
-
+    out = [D_shaft,.1136*D_shaft,304.19*D_shaft**1.8885]
+    if deriv == True:
+      out.extend([1.,.1136,304.19*1.8885*D_shaft**0.8885])    
   elif type == 'TRB2':
-    return [D_shaft,.1499*D_shaft,543.01*D_shaft**1.9043]
-
+    out = [D_shaft,.1499*D_shaft,543.01*D_shaft**1.9043]
+    if deriv == True:
+      out.extend([1.,.1499,543.01*1.9043*D_shaft**.9043])
   elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality
-    return [D_shaft,.0839,229.47*D_shaft**1.8036]
+    out = [D_shaft,.0839,229.47*D_shaft**1.8036]
+    if deriv == True:
+      out.extend([1.0,0.0,229.47*1.8036*D_shaft**0.8036])
+
+  return out #shaft diameter, FW, mass. if deriv==True, provides derivatives.
+
 
 # fatigue analysis for bearings
-def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
-
+def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type,deriv):
+  #deriv is boolean, defines if derivatives are returned
   if type == 'CARB': #p = Fr, so X=1, Y=0
     if (np.max(F_a)) > 0:
       print '---------------------------------------------------------'
@@ -177,11 +598,15 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
       X2 = 1.
       Y2 = 0.
       p = 10./3
-    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,X2,life_bearing)
     if C_min > 13980*D_shaft**1.5602:
-        return [D_shaft,0.4299*D_shaft+0.0382,3682.8*D_shaft**2.7676]
+        out = [D_shaft,0.4299*D_shaft+0.0382,3682.8*D_shaft**2.7676]
+        if deriv:
+          out.extend([1.,0.4299,3682.8*2.7676*D_shaft**1.7676])
     else:
-        return [D_shaft,.2663*D_shaft+.0435,1561.4*D_shaft**2.6007]
+        out = [D_shaft,.2663*D_shaft+.0435,1561.4*D_shaft**2.6007]
+        if deriv:
+          out.extend([1.,.2663,1561.4*2.6007*D_shaft**1.6007])
 
   elif type == 'SRB':
     e = 0.32
@@ -189,11 +614,16 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     X2 = 0.67
     Y2 = 3.1
     p = 10./3
-    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,X2,life_bearing)
     if C_min >  13878*D_shaft**1.0796:
-        return [D_shaft,.4801*D_shaft,2688.3*D_shaft**1.8877]
+        out = [D_shaft,.4801*D_shaft,2688.3*D_shaft**1.8877]
+        if deriv:
+          out.extend([1.,.4801,2688.3*1.8877*D_shaft**0.8877])
     else:
-        return [D_shaft,.2762*D_shaft,876.7*D_shaft**1.7195]
+        out = [D_shaft,.2762*D_shaft,876.7*D_shaft**1.7195]
+        if deriv:
+          out.extend([1.,.2762,876.7*1.7195*D_shaft**0.7195])
+
 
   elif type == 'TRB1':
     e = .37
@@ -201,11 +631,15 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     X2 = .4
     Y2 = 1.6
     p = 10./3
-    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,X2,life_bearing)
     if C_min >  670*D_shaft+1690:
-        return [D_shaft,.1335,269.83*D_shaft**.441]
+        out = [D_shaft,.1335,269.83*D_shaft**.441]
+        if deriv:
+          out.extend([1.,0.,269.83*0.441*D_shaft**(0.441-1.)])
     else:
-        return [D_shaft,.0740,92.863*D_shaft**.8399]
+        out = [D_shaft,.0740,92.863*D_shaft**.8399]
+        if deriv:
+          out.extend([1.,0.,92.863*0.8399*D_shaft**(0.8399-1.)])
 
   elif type == 'CRB':
     if (np.max(F_a)/np.max(F_r)>=.5) or (np.min(F_a)/(np.min(F_r))>=.5):
@@ -218,11 +652,15 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
         X2 = 0.92
         Y2 = 0.6
         p = 10./3
-        C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+        C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,X2,life_bearing)
         if C_min > 4526.5*D_shaft**.9556 :
-            return [D_shaft,.2603*D_shaft,1070.8*D_shaft**1.8278]
+            out = [D_shaft,.2603*D_shaft,1070.8*D_shaft**1.8278]
+            if deriv:
+              out.extend([1.,.2603,1070.8*1.8278*D_shaft**0.8278])
         else:
-            return [D_shaft,.1136*D_shaft,304.19*D_shaft**1.8885]
+            out = [D_shaft,.1136*D_shaft,304.19*D_shaft**1.8885]
+            if deriv:
+              out.extend([1.,.1136,304.19*1.8885*D_shaft**0.8885]) 
 
   elif type == 'TRB2':
     e = 0.4
@@ -230,11 +668,16 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     X2 = 0.4
     Y2 = 1.75
     p = 10./3
-    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing)
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,X2,life_bearing)
     if C_min > 6579.9*D_shaft**.8592 :
-        return [D_shaft,.3689*D_shaft,1442.6*D_shaft**1.8932]
+        out = [D_shaft,.3689*D_shaft,1442.6*D_shaft**1.8932]
+        if deriv:
+          out.extend([1.,.3689,1442.6*1.8932*D_shaft**.8932]) 
     else:
-        return [D_shaft,.1499*D_shaft,543.01*D_shaft**1.9043]
+        out = [D_shaft,.1499*D_shaft,543.01*D_shaft**1.9043]
+        if deriv:
+          out.extend([1.,.1499,543.01*1.9043*D_shaft**.9043])
+
 
   elif type == 'RB': #factors depend on ratio Fa/C0, C0 depends on bearing... TODO: add this functionality
     e = 0.4
@@ -242,16 +685,21 @@ def fatigue_for_bearings(D_shaft,F_r,F_a,N_array,life_bearing,type):
     X2 = 0.75
     Y2 = 2.15
     p = 3.
-    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2)
+    C_min = C_calc(F_a,F_r,N_array,p,e,Y1,Y2,X2,life_bearing)
     if C_min > 884.5*D_shaft**.9964 :
-        return [D_shaft,.1571,646.46*D_shaft**2.]
+        out = [D_shaft,.1571,646.46*D_shaft**2.]
+        if deriv:
+          out.extend([1.,0.,646.46*2.*D_shaft])
     else:
-        return [D_shaft,.0839,229.47*D_shaft**1.8036]
+        out = [D_shaft,.0839,229.47*D_shaft**1.8036]
+        if deriv:
+          out.extend([1.0,0.0,229.47*1.8036*D_shaft**0.8036])
 
+  return out
 
 
 #calculate required dynamic load rating, C
-def C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing):
+def C_calc(F_a,F_r,N_array,p,e,Y1,Y2,X2,life_bearing):
   Fa_ref = np.max(F_a) #used in comparisons Fa/Fr <e
   Fr_ref = np.max(F_r)
 
@@ -381,12 +829,18 @@ def C_calc(F_a,F_r,N_array,p,e,Y1,Y2,life_bearing):
 # -------------------------------------------------
 
 
-def get_rotor_mass(machine_rating): #if user inputs forces and zero rotor mass
-    return 23.566*machine_rating
+def get_rotor_mass(machine_rating,deriv): #if user inputs forces and zero rotor mass
+    out = [23.566*machine_rating]
+    if deriv:
+      out.extend([23.566])
+    return out
 
 
-def get_L_rb(rotor_diameter):
-    return 0.007835*rotor_diameter+0.9642
+def get_L_rb(rotor_diameter,deriv):
+    out = [0.007835*rotor_diameter+0.9642]
+    if deriv:
+      out.extend([.007835])
+    return out
 
 def get_My(rotor_mass,L_rb): #moments taken to scale approximately with force (rotor mass) and distance (L_rb)
     if L_rb == 0:
@@ -397,3 +851,35 @@ def get_Mz(rotor_mass,L_rb): #moments taken to scale roughly with force (rotor m
     if L_rb == 0:
       L_rb = get_L_rb((rotor_mass-49089)/1170.6) #approximate rotor diameter from rotor mass
     return 53.846*rotor_mass*L_rb
+
+def sys_print(nace):
+    print
+    print '-------------Nacelle system model results--------------------'
+
+    print 'Low speed shaft %8.1f kg %6.2f m %6.2f Ixx %6.2f Iyy %6.2f Izz %6.2f CGx %6.2f CGy %6.2f CGz '\
+          % (nace.lowSpeedShaft.mass-nace.lowSpeedShaft.shrink_disc_mass , nace.lowSpeedShaft.length, nace.lowSpeedShaft.I[0], nace.lowSpeedShaft.I[1], nace.lowSpeedShaft.I[2], nace.lowSpeedShaft.cm[0], nace.lowSpeedShaft.cm[1], nace.lowSpeedShaft.cm[2])
+    print 'LSS diameters:', 'upwind', nace.lowSpeedShaft.diameter1   , 'downwind', nace.lowSpeedShaft.diameter2 , 'inner', nace.lowSpeedShaft.diameter1*nace.shaft_ratio
+    print 'Main bearing upwind   %8.1f kg. cm %8.1f %8.1f %8.1f' % (nace.mainBearing.mass ,nace.mainBearing.cm[0],nace.mainBearing.cm[1],nace.mainBearing.cm[2])
+    print 'Second bearing downwind   %8.1f kg. cm %8.1f %8.1f %8.1f' % (nace.secondBearing.mass ,nace.secondBearing.cm[0],nace.secondBearing.cm[1],nace.secondBearing.cm[2])
+    print 'Gearbox         %8.1f kg %6.2f Ixx %6.2f Iyy %6.2f Izz %6.2f CGx %6.2f CGy %6.2f CGz' \
+          % (nace.gearbox.mass, nace.gearbox.I[0], nace.gearbox.I[1], nace.gearbox.I[2], nace.gearbox.cm[0], nace.gearbox.cm[1], nace.gearbox.cm[2] )
+    print '     gearbox stage masses: %8.1f kg  %8.1f kg %8.1f kg' % (nace.gearbox.stage_masses[0], nace.gearbox.stage_masses[1], nace.gearbox.stage_masses[2])
+    print 'High speed shaft & brakes  %8.1f kg %6.2f Ixx %6.2f Iyy %6.2f Izz %6.2f CGx %6.2f CGy %6.2f CGz' \
+          % (nace.highSpeedSide.mass, nace.highSpeedSide.I[0], nace.highSpeedSide.I[1], nace.highSpeedSide.I[2], nace.highSpeedSide.cm[0], nace.highSpeedSide.cm[1], nace.highSpeedSide.cm[2])
+    print 'Generator       %8.1f kg %6.2f Ixx %6.2f Iyy %6.2f Izz %6.2f CGx %6.2f CGy %6.2f CGz' \
+          % (nace.generator.mass, nace.generator.I[0], nace.generator.I[1], nace.generator.I[2], nace.generator.cm[0], nace.generator.cm[1], nace.generator.cm[2])
+    print 'Variable speed electronics %8.1f kg' % (nace.above_yaw_massAdder.vs_electronics_mass)
+    print 'Transformer mass %8.1f kg' % (nace.transformer.mass)
+    print 'Overall mainframe %8.1f kg' % (nace.above_yaw_massAdder.mainframe_mass)
+    print 'Bedplate     %8.1f kg %8.1f m length %6.2f Ixx %6.2f Iyy %6.2f Izz %6.2f CGx %6.2f CGy %6.2f CGz' \
+         % (nace.bedplate.mass, nace.bedplate.length, nace.bedplate.I[0], nace.bedplate.I[1], nace.bedplate.I[2], nace.bedplate.cm[0], nace.bedplate.cm[1], nace.bedplate.cm[2])
+    print 'electrical connections  %8.1f kg' % (nace.above_yaw_massAdder.electrical_mass)
+    print 'HVAC system     %8.1f kg' % (nace.above_yaw_massAdder.hvac_mass )
+    print 'Nacelle cover:   %8.1f kg %6.2f m Height %6.2f m Width %6.2f m Length' % (nace.above_yaw_massAdder.cover_mass , nace.above_yaw_massAdder.height, nace.above_yaw_massAdder.width, nace.above_yaw_massAdder.length)
+    print 'Yaw system      %8.1f kg' % (nace.yawSystem.mass )
+    print 'Overall nacelle:  %8.1f kg .cm %6.2f %6.2f %6.2f I %6.2f %6.2f %6.2f' % (nace.nacelle_mass, nace.nacelle_cm[0], nace.nacelle_cm[1], nace.nacelle_cm[2], nace.nacelle_I[0], nace.nacelle_I[1], nace.nacelle_I[2]  )
+    # print
+    # print 'Mx:', nace.rotor_torque
+    # print 'My:',nace.rotor_bending_moment_y
+    # print 'Mz:',nace.rotor_bending_moment_z
+    # print 
