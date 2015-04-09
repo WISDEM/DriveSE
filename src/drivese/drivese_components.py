@@ -18,7 +18,8 @@ from scipy import integrate
 
 from drivese_utils import fatigue_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb, get_My, get_Mz,\
     size_Generator, size_HighSpeedSide, size_YawSystem, size_LowSpeedShaft, setup_Bedplate_Front, setup_Bedplate, size_Bedplate,\
-    characterize_Bedplate_Front, characterize_Bedplate_Rear, size_Transformer, add_RNA, add_Nacelle, add_AboveYawMass #fatigue2_for_bearings,
+    characterize_Bedplate_Front, characterize_Bedplate_Rear, size_Transformer, add_RNA, add_Nacelle, add_AboveYawMass,\
+    size_LSS_3pt_loop1, get_Damage_Brng1, get_Damage_Brng2, setup_Fatigue_Loads #fatigue2_for_bearings,
 
 
 #-------------------------------------------------------------------------------
@@ -107,37 +108,18 @@ class LowSpeedShaft_drive4pt(Component):
     
     def execute(self):
 
-        #input parameters
-        self.g=9.81
-        rotor_diameter = self.rotor_diameter
-        machine_rating = self.machine_rating
-        DrivetrainEfficiency = self.DrivetrainEfficiency
-        rotor_freq = self.rotor_freq
-
-        if self.rotor_mass ==0:
-          [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
-
-        if self.flange_length == 0:
-            self.flange_length = 0.3*(self.rotor_diameter/100.0)**2.0 - 0.1 * (self.rotor_diameter / 100.0) + 0.4
-                
-        # initialization for iterations    
-        L_ms_new = 0.0
-        L_ms_0=0.5 # main shaft length downwind of main bearing
-        L_ms=L_ms_0
         tol=1e-4 
         check_limit = 1.0
         dL=0.05
         counter = 0
         N_count=50
         N_count_2=2
-        len_pts=101
-        D_max=1
-        D_min=0.2
-        sR = self.shaft_ratio
 
-        #Distances
+        #input parameters
+        self.g=9.81
+
         if self.L_rb == 0: #distance from hub center to main bearing
-          self.L_rb = 0.007835*rotor_diameter+0.9642
+          self.L_rb = 0.007835*self.rotor_diameter+0.9642
 
         #If user does not know important moments, crude approx
         if self.rotor_mass > 0 and self.rotor_bending_moment_y == 0: 
@@ -146,54 +128,70 @@ class LowSpeedShaft_drive4pt(Component):
         if self.rotor_mass > 0 and self.rotor_bending_moment_z == 0:
             self.rotor_bending_moment_z=get_Mz(self.rotor_mass,self.L_rb)
 
+        if self.rotor_mass ==0:
+          [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
+
+        if self.flange_length == 0:
+            self.flange_length = 0.3*(self.rotor_diameter/100.0)**2.0 - 0.1 * (self.rotor_diameter / 100.0) + 0.4
+                
+        # initialization for iterations    
+        self.L_ms_new = 0.0
+        self.L_ms_0=0.5 # main shaft length downwind of main bearing
+        self.L_ms=self.L_ms_0
+        len_pts=101
+        self.D_max=1
+        self.D_min=0.2
+
+        #Distances
         L_bg = 6.11-self.L_rb    #distance from first main bearing to gearbox yokes  # to add as an input
-        L_as = L_ms/2.0     #distance from main bearing to shaft center
-        L_gb = 0.0          #distance to gbx center from trunnions in x-dir # to add as an input
+        L_as = self.L_ms/2.0     #distance from main bearing to shaft center
+        self.L_gb = 0.0          #distance to gbx center from trunnions in x-dir # to add as an input
         H_gb = 1.0          #distance to gbx center from trunnions in z-dir # to add as an input     
         L_gp = 0.825        #distance from gbx coupling to gbx trunnions
-        L_cu = L_ms + 0.5   #distance from upwind main bearing to upwind carrier bearing 0.5 meter is an estimation # to add as an input
+        L_cu = self.L_ms + 0.5   #distance from upwind main bearing to upwind carrier bearing 0.5 meter is an estimation # to add as an input
         L_cd = L_cu + 0.5   #distance from upwind main bearing to downwind carrier bearing 0.5 meter is an estimation # to add as an input
         
         #material properties
-        E=2.1e11
-        density=7800.0
-        n_safety = 2.5 # According to AGMA, takes into account the peak load safety factor
-        Sy = 66000#*self.S_ut/700e6 #66000 #psi
+        self.E=2.1e11
+        self.density=7800.0
+        self.n_safety = 2.5 # According to AGMA, takes into account the peak load safety factor
+        self.Sy = 66000#*self.S_ut/700e6 #66000 #psi
 
         #unit conversion
-        u_knm_inlb = 8850.745454036
-        u_in_m = 0.0254000508001
+        self.u_knm_inlb = 8850.745454036
+        self.u_in_m = 0.0254000508001
 
         #bearing deflection limits
         MB_limit = 0.026
         CB_limit = 4.0/60.0/180.0*pi
         TRB1_limit = 3.0/60.0/180.0*pi
-        n_safety_brg = 1.0
+        self.n_safety_brg = 1.0
 
         length_max = self.overhang - self.L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29/14
 
-        while abs(check_limit) > tol and L_ms_new < length_max:
+        while abs(check_limit) > tol and self.L_ms_new < length_max:
             counter = counter+1
-            if L_ms_new > 0:
-                L_ms=L_ms_new
+            if self.L_ms_new > 0:
+                self.L_ms=self.L_ms_new
             else:
-                L_ms=L_ms_0
+                self.L_ms=self.L_ms_0
 
             #Distances
-            L_as = L_ms/2.0     #distance from main bearing to shaft center
-            L_cu = L_ms + 0.5   #distance from upwind main bearing to upwind carrier bearing 0.5 meter is an estimation # to add as an input
+            L_as = self.L_ms/2.0     #distance from main bearing to shaft center
+            L_cu = self.L_ms + 0.5   #distance from upwind main bearing to upwind carrier bearing 0.5 meter is an estimation # to add as an input
             L_cd = L_cu + 0.5   #distance from upwind main bearing to downwind carrier bearing 0.5 meter is an estimation # to add as an input
 
             #Weight properties
             rotorWeight=self.rotor_mass*self.g                             #rotor weight
-            lssWeight = pi/3.0*(D_max**2 + D_min**2 + D_max*D_min)*L_ms*density*self.g/4.0 ##
+            lssWeight = pi/3.0*(self.D_max**2 + self.D_min**2 + self.D_max*self.D_min)*self.L_ms*self.density*self.g/4.0 ##
             lss_mass = lssWeight/self.g
             gbxWeight = self.gearbox_mass*self.g                               #gearbox weight
+            self.gbxWeight = gbxWeight #global needed in fatigue functions
             carrierWeight = self.carrier_mass*self.g                       #carrier weight
             shrinkDiscWeight = self.shrink_disc_mass*self.g
 
             #define LSS
-            x_ms = np.linspace(self.L_rb, L_ms+self.L_rb, len_pts)
+            x_ms = np.linspace(self.L_rb, self.L_ms+self.L_rb, len_pts)
             x_rb = np.linspace(0.0, self.L_rb, len_pts)
             y_gp = np.linspace(0, L_gp, len_pts)
 
@@ -202,7 +200,7 @@ class LowSpeedShaft_drive4pt(Component):
             F_mb_z = (-self.rotor_bending_moment_y + rotorWeight*(cos(self.shaft_angle)*(self.L_rb + L_bg)\
                        + sin(self.shaft_angle)*H_gb) + lssWeight*(L_bg - L_as)\
                        * cos(self.shaft_angle) + shrinkDiscWeight*cos(self.shaft_angle)\
-                       *(L_bg - L_ms) - gbxWeight*cos(self.shaft_angle)*L_gb - self.rotor_force_z*cos(self.shaft_angle)*(L_bg + self.L_rb))/L_bg
+                       *(L_bg - self.L_ms) - gbxWeight*cos(self.shaft_angle)*self.L_gb - self.rotor_force_z*cos(self.shaft_angle)*(L_bg + self.L_rb))/L_bg
 
             F_gb_x = -(lssWeight+shrinkDiscWeight+gbxWeight)*sin(self.shaft_angle)
             F_gb_y = -F_mb_y - self.rotor_force_y
@@ -212,11 +210,11 @@ class LowSpeedShaft_drive4pt(Component):
             Mz_ms = np.zeros(2*len_pts)
 
             for k in range(len_pts):
-                My_ms[k] = -self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_rb[k] + 0.5*lssWeight/L_ms*x_rb[k]**2 - self.rotor_force_z*x_rb[k]
+                My_ms[k] = -self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_rb[k] + 0.5*lssWeight/self.L_ms*x_rb[k]**2 - self.rotor_force_z*x_rb[k]
                 Mz_ms[k] = -self.rotor_bending_moment_z - self.rotor_force_y*x_rb[k]
 
             for j in range(len_pts):
-                My_ms[j+len_pts] = -self.rotor_force_z*x_ms[j] - self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_ms[j] - F_mb_z*(x_ms[j]-self.L_rb) + 0.5*lssWeight/L_ms*x_ms[j]**2
+                My_ms[j+len_pts] = -self.rotor_force_z*x_ms[j] - self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_ms[j] - F_mb_z*(x_ms[j]-self.L_rb) + 0.5*lssWeight/self.L_ms*x_ms[j]**2
                 Mz_ms[j+len_pts] = -self.rotor_bending_moment_z - F_mb_y*(x_ms[j]-self.L_rb) -self.rotor_force_y*x_ms[j]
 
             x_shaft = np.concatenate([x_rb, x_ms])
@@ -227,98 +225,98 @@ class LowSpeedShaft_drive4pt(Component):
             MM_min = ((My_ms[-1]**2+Mz_ms[-1]**2)**0.5)
             #Design shaft OD 
             MM=MM_max
-            D_max=(16.0*n_safety/pi/Sy*(4.0*(MM*u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*u_in_m
+            self.D_max=(16.0*self.n_safety/pi/self.Sy*(4.0*(MM*self.u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*self.u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*self.u_in_m
 
             #OD at end
             MM=MM_min
-            D_min=(16.0*n_safety/pi/Sy*(4.0*(MM*u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*u_in_m
+            self.D_min=(16.0*self.n_safety/pi/self.Sy*(4.0*(MM*self.u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*self.u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*self.u_in_m
 
             #Estimate ID
-            D_in=sR*D_max
-            D_max = (D_max**4 + D_in**4)**0.25
-            D_min = (D_min**4 + D_in**4)**0.25
+            self.D_in=self.shaft_ratio*self.D_max
+            self.D_max = (self.D_max**4 + self.D_in**4)**0.25
+            self.D_min = (self.D_min**4 + self.D_in**4)**0.25
            
-            lssWeight_new=((pi/3)*(D_max**2+D_min**2+D_max*D_min)*(L_ms)*density/4+(-pi/4*(D_in**2)*density*(L_ms)))*self.g
+            lssWeight_new=((pi/3)*(self.D_max**2+self.D_min**2+self.D_max*self.D_min)*(self.L_ms)*self.density/4+(-pi/4*(self.D_in**2)*self.density*(self.L_ms)))*self.g
 
             def deflection(F_z,W_r,gamma,M_y,f_mb_z,L_rb,W_ms,L_ms,z):
-                return -F_z*z**3/6.0 + W_r*cos(gamma)*z**3/6.0 - M_y*z**2/2.0 - f_mb_z*(z-self.L_rb)**3/6.0 + W_ms/(L_ms + L_rb)/24.0*z**4
+                return -F_z*z**3/6.0 + W_r*cos(gamma)*z**3/6.0 - M_y*z**2/2.0 - f_mb_z*(z-L_rb)**3/6.0 + W_ms/(L_ms + L_rb)/24.0*z**4
             
                      
-            D1 = deflection(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,L_ms,self.L_rb+L_ms)
-            D2 = deflection(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,L_ms,self.L_rb)
-            C1 = -(D1-D2)/L_ms;
+            D1 = deflection(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,self.L_ms,self.L_rb+self.L_ms)
+            D2 = deflection(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,self.L_ms,self.L_rb)
+            C1 = -(D1-D2)/self.L_ms;
             C2 = D2-C1*(self.L_rb);
             
-            I_2=pi/64.0*(D_max**4 - D_in**4)
+            I_2=pi/64.0*(self.D_max**4 - self.D_in**4)
 
             def gx(F_z,W_r,gamma,M_y,f_mb_z,L_rb,W_ms,L_ms,C1,z):
-                return -F_z*z**2/2.0 + W_r*cos(gamma)*z**2/2.0 - M_y*z - f_mb_z*(z-L_rb)**2/2.0 + W_ms/(L_ms + self.L_rb)/6.0*z**3 + C1
+                return -F_z*z**2/2.0 + W_r*cos(gamma)*z**2/2.0 - M_y*z - f_mb_z*(z-L_rb)**2/2.0 + W_ms/(L_ms + L_rb)/6.0*z**3 + C1
 
             theta_y = np.zeros(len_pts)
             d_y = np.zeros(len_pts)
 
             for kk in range(len_pts):
-                theta_y[kk]=gx(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,L_ms,C1,x_ms[kk])/E/I_2
-                d_y[kk]=(deflection(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,L_ms,x_ms[kk])+C1*x_ms[kk]+C2)/E/I_2
+                theta_y[kk]=gx(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,self.L_ms,C1,x_ms[kk])/self.E/I_2
+                d_y[kk]=(deflection(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,self.L_ms,x_ms[kk])+C1*x_ms[kk]+C2)/self.E/I_2
 
-            check_limit = abs(abs(theta_y[-1])-TRB1_limit/n_safety_brg)
+            check_limit = abs(abs(theta_y[-1])-TRB1_limit/self.n_safety_brg)
 
             if check_limit < 0:
-                L_ms_new = L_ms + dL
+                self.L_ms_new = self.L_ms + dL
 
             else:
-                L_ms_new = L_ms + dL
+                self.L_ms_new = self.L_ms + dL
 
          #Initialization
-        L_mb=L_ms_new
+        self.L_mb=self.L_ms_new
         counter_ms=0
         check_limit_ms=1.0
-        L_mb_new=0.0
-        L_mb_0=L_mb                     #main shaft length
-        L_ms = L_ms_new
+        self.L_mb_new=0.0
+        self.L_mb_0=self.L_mb                     #main shaft length
+        self.L_ms = self.L_ms_new
         dL_ms = 0.05
         dL = 0.0025
 
-        while abs(check_limit_ms)>tol and L_mb_new < length_max:
+        while abs(check_limit_ms)>tol and self.L_mb_new < length_max:
             counter_ms= counter_ms + 1
-            if L_mb_new > 0:
-                L_mb=L_mb_new
+            if self.L_mb_new > 0:
+                self.L_mb=self.L_mb_new
             else:
-                L_mb=L_mb_0
+                self.L_mb=self.L_mb_0
 
             counter = 0.0
             check_limit=1.0
-            L_ms_gb_new=0.0
-            L_ms_0=0.5 #mainshaft length
-            L_ms = L_ms_0
+            self.L_ms_gb_new=0.0
+            self.L_ms_0=0.5 #mainshaft length
+            self.L_ms = self.L_ms_0
 
 
             while abs(check_limit) > tol and counter <N_count_2:
                 counter =counter+1
-                if L_ms_gb_new>0.0:
-                    L_ms_gb = L_ms_gb_new
+                if self.L_ms_gb_new>0.0:
+                    self.L_ms_gb = self.L_ms_gb_new
                 else:
-                    L_ms_gb = L_ms_0
+                    self.L_ms_gb = self.L_ms_0
 
                 #Distances
-                L_as = (L_ms_gb+L_mb)/2.0
-                L_cu = (L_ms_gb + L_mb) + 0.5
+                L_as = (self.L_ms_gb+self.L_mb)/2.0
+                L_cu = (self.L_ms_gb + self.L_mb) + 0.5
                 L_cd = L_cu + 0.5
 
                 #Weight
-                lssWeight_new=((pi/3)*(D_max**2+D_min**2+D_max*D_min)*(L_ms_gb + L_mb)*density/4+(-pi/4*(D_in**2)*density*(L_ms_gb + L_mb)))*self.g
+                lssWeight_new=((pi/3)*(self.D_max**2+self.D_min**2+self.D_max*self.D_min)*(self.L_ms_gb + self.L_mb)*self.density/4+(-pi/4*(self.D_in**2)*self.density*(self.L_ms_gb + self.L_mb)))*self.g
 
                 #define LSS
-                x_ms = np.linspace(self.L_rb + L_mb, L_ms_gb + L_mb +self.L_rb, len_pts)
-                x_mb = np.linspace(self.L_rb, L_mb+self.L_rb, len_pts)
+                x_ms = np.linspace(self.L_rb + self.L_mb, self.L_ms_gb + self.L_mb +self.L_rb, len_pts)
+                x_mb = np.linspace(self.L_rb, self.L_mb+self.L_rb, len_pts)
                 x_rb = np.linspace(0.0, self.L_rb, len_pts)
                 y_gp = np.linspace(0, L_gp, len_pts)
 
                 F_mb2_x = -self.rotor_force_x - rotorWeight*sin(self.shaft_angle)
-                F_mb2_y = -self.rotor_bending_moment_z/L_mb + self.rotor_force_y*(self.L_rb)/L_mb
+                F_mb2_y = -self.rotor_bending_moment_z/self.L_mb + self.rotor_force_y*(self.L_rb)/self.L_mb
                 F_mb2_z = (self.rotor_bending_moment_y - rotorWeight*cos(self.shaft_angle)*self.L_rb \
-                          -lssWeight*L_as*cos(self.shaft_angle) - shrinkDiscWeight*(L_mb+L_ms_0)*cos(self.shaft_angle) \
-                           + gbxWeight*cos(self.shaft_angle)*L_gb + self.rotor_force_z*cos(self.shaft_angle)*self.L_rb)/L_mb
+                          -lssWeight*L_as*cos(self.shaft_angle) - shrinkDiscWeight*(self.L_mb+self.L_ms_0)*cos(self.shaft_angle) \
+                           + gbxWeight*cos(self.shaft_angle)*self.L_gb + self.rotor_force_z*cos(self.shaft_angle)*self.L_rb)/self.L_mb
 
                 F_mb1_x = 0.0
                 F_mb1_y = -self.rotor_force_y - F_mb2_y
@@ -332,15 +330,15 @@ class LowSpeedShaft_drive4pt(Component):
                 Mz_ms = np.zeros(3*len_pts)
 
                 for k in range(len_pts):
-                    My_ms[k] = -self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_rb[k] + 0.5*lssWeight/(L_mb+L_ms_0)*x_rb[k]**2 - self.rotor_force_z*x_rb[k]
+                    My_ms[k] = -self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_rb[k] + 0.5*lssWeight/(self.L_mb+self.L_ms_0)*x_rb[k]**2 - self.rotor_force_z*x_rb[k]
                     Mz_ms[k] = -self.rotor_bending_moment_z - self.rotor_force_y*x_rb[k]
 
                 for j in range(len_pts):
-                    My_ms[j+len_pts] = -self.rotor_force_z*x_mb[j] - self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_mb[j] - F_mb1_z*(x_mb[j]-self.L_rb) + 0.5*lssWeight/(L_mb+L_ms_0)*x_mb[j]**2
+                    My_ms[j+len_pts] = -self.rotor_force_z*x_mb[j] - self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_mb[j] - F_mb1_z*(x_mb[j]-self.L_rb) + 0.5*lssWeight/(self.L_mb+self.L_ms_0)*x_mb[j]**2
                     Mz_ms[j+len_pts] = -self.rotor_bending_moment_z - F_mb1_y*(x_mb[j]-self.L_rb) -self.rotor_force_y*x_mb[j]
 
                 for l in range(len_pts):
-                    My_ms[l + 2*len_pts] = -self.rotor_force_z*x_ms[l] - self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_ms[l] - F_mb1_z*(x_ms[l]-self.L_rb) -F_mb2_z*(x_ms[l] - self.L_rb - L_mb) + 0.5*lssWeight/(L_mb+L_ms_0)*x_ms[l]**2
+                    My_ms[l + 2*len_pts] = -self.rotor_force_z*x_ms[l] - self.rotor_bending_moment_y + rotorWeight*cos(self.shaft_angle)*x_ms[l] - F_mb1_z*(x_ms[l]-self.L_rb) -F_mb2_z*(x_ms[l] - self.L_rb - self.L_mb) + 0.5*lssWeight/(self.L_mb+self.L_ms_0)*x_ms[l]**2
                     Mz_ms[l + 2*len_pts] = -self.rotor_bending_moment_z - F_mb_y*(x_ms[l]-self.L_rb) -self.rotor_force_y*x_ms[l]
 
                 x_shaft = np.concatenate([x_rb, x_mb, x_ms])
@@ -354,33 +352,33 @@ class LowSpeedShaft_drive4pt(Component):
 
                 #Design Shaft OD using static loading and distortion energy theory
                 MM=MM_max
-                D_max=(16.0*n_safety/pi/Sy*(4.0*(MM*u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*u_in_m
+                self.D_max=(16.0*self.n_safety/pi/self.Sy*(4.0*(MM*self.u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*self.u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*self.u_in_m
 
                 #OD at end
                 MM=MM_min
-                D_min=(16.0*n_safety/pi/Sy*(4.0*(MM*u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*u_in_m
+                self.D_min=(16.0*self.n_safety/pi/self.Sy*(4.0*(MM*self.u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*self.u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*self.u_in_m
 
                 MM=MM_med
-                D_med=(16.0*n_safety/pi/Sy*(4.0*(MM*u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*u_in_m
+                self.D_med=(16.0*self.n_safety/pi/self.Sy*(4.0*(MM*self.u_knm_inlb/1000)**2+3.0*(self.rotor_bending_moment_x*self.u_knm_inlb/1000)**2)**0.5)**(1.0/3.0)*self.u_in_m
 
                 #Estimate ID
-                D_in=sR*D_max
-                D_max = (D_max**4 + D_in**4)**0.25
-                D_min = (D_min**4 + D_in**4)**0.25
-                D_med = (D_med**4 + D_in**4)**0.25
+                self.D_in=self.shaft_ratio*self.D_max
+                self.D_max = (self.D_max**4 + self.D_in**4)**0.25
+                self.D_min = (self.D_min**4 + self.D_in**4)**0.25
+                self.D_med = (self.D_med**4 + self.D_in**4)**0.25
 
-                lssWeight_new = (density*pi/12.0*L_mb*(D_max**2+D_med**2 + D_max*D_med) - density*pi/4.0*D_in**2*L_mb)*self.g
+                lssWeight_new = (self.density*pi/12.0*self.L_mb*(self.D_max**2+self.D_med**2 + self.D_max*self.D_med) - self.density*pi/4.0*self.D_in**2*self.L_mb)*self.g
 
                 #deflection between mb1 and mb2
                 def deflection1(F_r_z,W_r,gamma,M_y,f_mb1_z,L_rb,W_ms,L_ms,L_mb,z):
                     return -F_r_z*z**3/6.0 + W_r*cos(gamma)*z**3/6.0 - M_y*z**2/2.0 - f_mb1_z*(z-L_rb)**3/6.0 + W_ms/(L_ms + L_mb)/24.0*z**4
                 
-                D11 = deflection1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,L_ms,L_mb,self.L_rb+L_mb)
-                D21 = deflection1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,L_ms,L_mb,self.L_rb)
-                C11 = -(D11-D21)/L_mb
+                D11 = deflection1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,self.L_rb+self.L_mb)
+                D21 = deflection1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,self.L_rb)
+                C11 = -(D11-D21)/self.L_mb
                 C21 = -D21-C11*(self.L_rb)
 
-                I_2=pi/64.0*(D_max**4 - D_in**4)
+                I_2=pi/64.0*(self.D_max**4 - self.D_in**4)
 
                 def gx1(F_r_z,W_r,gamma,M_y,f_mb1_z,L_rb,W_ms,L_ms,L_mb,C11,z):
                     return -F_r_z*z**2/2.0 + W_r*cos(gamma)*z**2/2.0 - M_y*z - f_mb1_z*(z - L_rb)**2/2.0 + W_ms/(L_ms + L_mb)/6.0*z**3 + C11
@@ -389,307 +387,115 @@ class LowSpeedShaft_drive4pt(Component):
                 d_y = np.zeros(2*len_pts)
 
                 for kk in range(len_pts):
-                    theta_y[kk]=gx1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,L_ms,L_mb,C11,x_mb[kk])/E/I_2
-                    d_y[kk]=(deflection1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,L_ms,L_mb,x_mb[kk])+C11*x_mb[kk]+C21)/E/I_2
+                    theta_y[kk]=gx1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,C11,x_mb[kk])/self.E/I_2
+                    d_y[kk]=(deflection1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,x_mb[kk])+C11*x_mb[kk]+C21)/self.E/I_2
 
                 #Deflection between mb2 and gbx
                 def deflection2(F_z,W_r,gamma,M_y,f_mb1_z,f_mb2_z,L_rb,W_ms,L_ms,L_mb,z):
-                    return -F_z*z**3/6.0 + W_r*cos(gamma)*z**3/6.0 - M_y*z**2/2.0 - f_mb1_z*(z-L_rb)**3/6.0 + -f_mb2_z*(z - self.L_rb - L_mb)**3/6.0 + W_ms/(L_ms + L_mb)/24.0*z**4
+                    return -F_z*z**3/6.0 + W_r*cos(gamma)*z**3/6.0 - M_y*z**2/2.0 - f_mb1_z*(z-L_rb)**3/6.0 + -f_mb2_z*(z - L_rb - L_mb)**3/6.0 + W_ms/(L_ms + L_mb)/24.0*z**4
             
                 def gx2(F_z,W_r,gamma,M_y,f_mb1_z,f_mb2_z,L_rb,W_ms,L_ms,L_mb,z):
-                    return -F_z*z**2/2.0 + W_r*cos(gamma)*z**2/2.0 - M_y*z - f_mb1_z*(z - self.L_rb)**2/2.0 - f_mb2_z*(z - L_rb - L_mb)**2/2.0 + W_ms/(L_ms + L_mb)/6.0*z**3
+                    return -F_z*z**2/2.0 + W_r*cos(gamma)*z**2/2.0 - M_y*z - f_mb1_z*(z - L_rb)**2/2.0 - f_mb2_z*(z - L_rb - L_mb)**2/2.0 + W_ms/(L_ms + L_mb)/6.0*z**3
 
-                D12 = deflection2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,L_ms,L_mb,self.L_rb+L_mb)
-                D22 = gx2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,L_ms,L_mb,self.L_rb+L_mb)
-                C12 = gx1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,L_ms,L_mb,C11,x_mb[-1])-D22
-                C22 = -D12-C12*(self.L_rb + L_mb);
+                D12 = deflection2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,self.L_rb+self.L_mb)
+                D22 = gx2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,self.L_rb+self.L_mb)
+                C12 = gx1(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,C11,x_mb[-1])-D22
+                C22 = -D12-C12*(self.L_rb + self.L_mb);
 
                 for kk in range(len_pts):
-                    theta_y[kk + len_pts]=(gx2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,L_ms,L_mb,x_ms[kk]) + C12)/E/I_2
-                    d_y[kk + len_pts]=(deflection2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,L_ms,L_mb,x_ms[kk])+C12*x_ms[kk]+C22)/E/I_2
+                    theta_y[kk + len_pts]=(gx2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,x_ms[kk]) + C12)/self.E/I_2
+                    d_y[kk + len_pts]=(deflection2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,x_ms[kk])+C12*x_ms[kk]+C22)/self.E/I_2
 
-                check_limit = abs(abs(theta_y[-1])-TRB1_limit/n_safety_brg)
+                check_limit = abs(abs(theta_y[-1])-TRB1_limit/self.n_safety_brg)
 
                 if check_limit < 0:
-                    L_ms__gb_new = L_ms_gb + dL
+                    self.L_ms__gb_new = self.L_ms_gb + dL
                 else:
-                    L_ms__gb_new = L_ms_gb + dL
+                    self.L_ms__gb_new = self.L_ms_gb + dL
 
-                check_limit_ms = abs(abs(theta_y[-1]) - TRB1_limit/n_safety_brg)
+                check_limit_ms = abs(abs(theta_y[-1]) - TRB1_limit/self.n_safety_brg)
 
                 if check_limit_ms < 0:
-                    L_mb_new = L_mb + dL_ms
+                    self.L_mb_new = self.L_mb + dL_ms
                 else:
-                    L_mb_new = L_mb + dL_ms
+                    self.L_mb_new = self.L_mb + dL_ms
 
         # fatigue check Taylor Parsons 6/14
         if self.check_fatigue == 1 or self.check_fatigue == 2:
           #start_time = time.time()
 
           #checks to make sure all inputs are reasonable
-          # if self.rotor_mass < 100:
-          #     [self.rotor_mass] = get_rotor_mass(self.machine_rating)
+          if self.rotor_mass < 100:
+              [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
 
-          #Weibull Parameters
-          weibullA=self.weibull_A
-          weibullk=self.weibull_k
-
-          self.g=9.81 
           #material properties 34CrNiMo6 steel +QT, large diameter
-          E=2.1e11
-          density=7800.0
-          n_safety = 2.5
-          if self.S_ut > 0:
-            Sut = self.S_ut
-          else:
-            Sut=700.0e6 #Pa
+          self.n_safety = 2.5
+          if self.S_ut <= 0:
+            self.S_ut=700.0e6 #Pa
 
           #calculate material props for fatigue
-          Sm=0.9*Sut #for bending situations, material strength at 10^3 cycles
-          C_size=0.6 #diameter larger than 10"
-          C_surf=4.51*(Sut/1e6)**-.265 #machined surface 272*(Sut/1e6)**-.995 #forged
-          C_temp=1 #normal operating temps
-          C_reliab=0.814 #99% reliability
-          C_envir=1. #enclosed environment
-          Se=C_size*C_surf*C_temp*C_reliab*C_envir*.5*Sut #modified endurance limit for infinite life (should be Sf)\
+          Sm=0.9*self.S_ut #for bending situations, material strength at 10^3 cycles
 
           if self.fatigue_exponent!=0:
             if self.fatigue_exponent > 0:
-                SN_b = - self.fatigue_exponent
+                self.SN_b = - self.fatigue_exponent
             else:
-                SN_b = self.fatigue_exponent
-
+                self.SN_b = self.fatigue_exponent
           else:
-            Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
-            z=log10(1e3)-log10(Nfinal)  #assuming no endurance limit (high strength steel)
-            SN_b=1/z*log10(Sm/Se)
-          SN_a=Sm/(1000.**SN_b)
-          print 'fatigue_exponent:',SN_b
-          # print 'm:', -1/SN_b
-          # print 'a:', SN_a
+              C_size=0.6 #diameter larger than 10"
+              C_surf=4.51*(self.S_ut/1e6)**-.265 #machined surface 272*(self.S_ut/1e6)**-.995 #forged
+              C_temp=1 #normal operating temps
+              C_reliab=0.814 #99% reliability
+              C_envir=1. #enclosed environment
+              Se=C_size*C_surf*C_temp*C_reliab*C_envir*.5*self.S_ut #modified endurance limit for infinite life (should be Sf)\
+              Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
+              z=log10(1e3)-log10(Nfinal)  #assuming no endurance limit (high strength steel)
+              self.SN_b=1/z*log10(Sm/Se)
+          self.SN_a=Sm/(1000.**self.SN_b)
+          # print 'fatigue_exponent:',self.SN_b
+          # print 'm:', -1/self.SN_b
+          # print 'a:', self.SN_a
           if self.check_fatigue == 1:
-              #Rotor Loads calculations using DS472
-              R=rotor_diameter/2.0
-              rotor_torque = (machine_rating * 1000 / DrivetrainEfficiency) / (rotor_freq * (pi/30))
-              Tip_speed_ratio= rotor_freq/30.*pi*R/self.V_rated
-              rho_air= 1.225 #kg/m^3 density of air
-              p_o = 4./3*rho_air*((4*pi*rotor_freq/60*R/3)**2+self.V_rated**2)*(pi*R/(self.blade_number*Tip_speed_ratio*(Tip_speed_ratio**2+1)**(.5)))
-              # print 'po:',p_o
-              n_c=self.blade_number*rotor_freq/60 #characteristic frequency on rotor from turbine of given blade number [Hz]
-              N_f=self.availability*n_c*(self.T_life*365*24*60*60)*exp(-(self.cut_in/weibullA)**weibullk)-exp(-(self.cut_out/weibullA)**weibullk) #number of rotor rotations based off of weibull curve. .827 comes from lower rpm than rated at lower wind speeds
 
-              k_b= 2.5 #calculating rotor pressure from all three blades. Use kb=1 for individual blades
-
-              if self.IEC_Class_Letter == 'A': # From IEC 61400-1 TODO consider calculating based off of 10-minute windspeed and weibull parameters, include neighboring wake effects?
-                I_t=0.18 
-              elif self.IEC_Class_Letter == 'B':
-                I_t=0.14
-              else:
-                I_t=0.12
-
-              Beta=0.11*k_b*(I_t+0.1)*(weibullA+4.4)
-
-              # find generic standardized stochastic load range distribution
-              def standardrange(N, N_f, Beta, k_b): 
-                  F_delta=(Beta*(log10(N_f)-log10(N)))+0.18
-                  if F_delta>=2*k_b:
-                    F_delta=0.
-                  return F_delta
-              # print N_f
-
-              def rounddown(x,step):
-                return int(floor(x/step))*step
-
-              def roundup(x,step):
-                  return int(ceil(x/step))*step
-
-              #for analysis with N on log scale, makes larger loads contain finer step sizes
-              num_pts=100
-              N=np.logspace( (log10(N_f)-(2*k_b-0.18)/Beta) , log10(N_f) , endpoint=True , num=num_pts) # with zeros: N=np.logspace(log10(1.0),log10(N_f),endpoint=True,num=num_pts)
-              N_rotor = N_f/3.
-              F_stoch=N.copy()
-
-              for i in range(num_pts):
-                  N[i]=roundup(N[i],1)
-
-              #print N
-
-              k_r=0.8 #assuming natural frequency of rotor is significantly larger than rotor rotational frequency
-
-              for i in range(num_pts):
-                F_stoch[i] = standardrange(N[i],N_f,Beta,k_b)
-              # print 'Standard1:'
-              # print F_stoch
-
-              Fx_factor = (.3649*log(rotor_diameter)-1.074)
-              Mx_factor = (.0799*log(rotor_diameter)-.2577)
-              My_factor = (.172*log(rotor_diameter)-.5943)
-              Mz_factor = (.1659*log(rotor_diameter)-.5795)
-
-              Fx_stoch = (F_stoch.copy()*0.5*p_o*(R))*Fx_factor
-              Mx_stoch = (F_stoch.copy()*0.45*p_o*(R)**2)*Mx_factor#*0.31
-              My_stoch = (F_stoch.copy()*0.33*p_o*k_r*(R)**2)*My_factor#*0.25
-              Mz_stoch = (F_stoch.copy()*0.33*p_o*k_r*(R)**2)*Mz_factor#*0.25 
-
-              # print np.max(N)
-              # print np.min(N)
-              # print np.max(Fx_stoch)
-              # print np.min(Fx_stoch)
-              # print np.max(Mx_stoch)
-              # print np.min(Mx_stoch)
-              # print np.max(My_stoch)
-              # print np.min(My_stoch)
-              # print np.max(Mz_stoch)
-              # print np.min(Mz_stoch)    
-              # print N
-              # print Fx_stoch
-              # print Mx_stoch          
-
-              def Ninterp(S,a,b):
-                  return (S/a)**(1/b)
-
-              def Goodman(S_alt,S_mean,Sut):
-                  return S_alt/(1-(S_mean/Sut))
-
-              Fx_mean=0.5*p_o*R*self.blade_number*Fx_factor
-              Mx_mean=0.5*rotor_torque*Mx_factor
-              rotorWeight=self.rotor_mass*self.g
-
-              # print 'Fx_max:', np.max(Fx_stoch) + Fx_mean
-              # print 'Mx_max:', np.max(Mx_stoch) + Mx_mean
-              # print 'My_max:', np.max(My_stoch)
-              # print 'Mz_max:', np.max(Mz_stoch)
-              # print 'occurance:', np.min(N)
+              setup_Fatigue_Loads(self)
 
               #upwind bearing calculations
               iterationstep=0.001
               diameter_limit = 5.0
-              # print ''
               while True:
-                  D_in=sR*D_max
-                  D_max = (D_max**4 + D_in**4)**0.25
-                  D_min = (D_min**4 + D_in**4)**0.25
-                  D_med = (D_med**4 + D_in**4)**0.25
-                  I=(pi/64.0)*(D_max**4-D_in**4)
-                  J=I*2
-                  Area=pi/4.*(D_max**2-D_in**2)
-                  LssWeight=density*9.81*(((pi/12)*(D_max**2+D_med**2+D_max*D_med)*(L_mb))-(pi/4*L_mb*D_in**2))
-
-                  #create stochastic loads across N
-                  stoch_bend1 = (My_stoch**2+Mz_stoch**2)**(0.5)*D_max/(2.*I)
-                  stoch_shear1 = abs(Mx_stoch*D_max/(2.*J))
-                  stoch_normal1 = Fx_stoch/Area*cos(gamma)
-                  stoch_stress1 = ((stoch_bend1+stoch_normal1)**2+3.*stoch_shear1**2)**(0.5)
-                  
-                  #create mean loads
-                  mean_bend1 = 0 #Fz_mean*self.L_rb*D_max/(2.*I) #not mean, but deterministic
-                  mean_shear1 = Mx_mean*D_max/(2.*J)
-                  mean_normal1 = Fx_mean/Area*cos(self.shaft_angle)+(rotorWeight+LssWeight)*sin(self.shaft_angle)
-                  mean_stress1 = ((mean_bend1+mean_normal1)**2+3.*mean_shear1**2)**(0.5)
-
-                  #apply Goodman with compressive (-) mean stress
-                  S_mod_stoch1=Goodman(stoch_stress1,-mean_stress1,Sut)
-
-                  #Use Palmgren-Miner linear damage rule to add damage from stochastic load ranges
-                  DEL_y=Fx_stoch.copy() #initialize
-                  for i in range(num_pts):
-                      DEL_y[i] = N[i]/(Ninterp(S_mod_stoch1[i],SN_a,SN_b))
-
-                  Damage = scp.integrate.simps(DEL_y,x= N, even='avg') #damage from stochastic loading
-
-                  #create deterministic loads occurring N_rotor times
-                  determ_stress1 = abs(rotorWeight*cos(self.shaft_angle)*self.L_rb*D_max/(2.*I)) #only deterministic stress at mb1 is bending due to rotor weight
-
-                  S_mod_determ=Goodman(determ_stress1,-mean_stress1,Sut)
-                  # print 'before deterministic Damage:', Damage
-
-                  Damage += N_rotor/(Ninterp(S_mod_determ,SN_a,SN_b))
-                  # print 'Upwind Bearing Diameter:', D_max
-                  # print 'Damage:', Damage
-                  if Damage < 1 or D_max >= diameter_limit:
-                      # print 'Upwind Bearing Diameter:', D_max
-                      # print 'Damage:', Damage
-                      # print 'unadjusted upwind diameter is %f m.' %(D_max)
-                      #print (time.time() - start_time), 'seconds of total simulation time'
+                  get_Damage_Brng1(self)
+                  if self.Damage < 1 or self.D_max >= diameter_limit:
                       break
                   else:
-                      D_max+=iterationstep
+                      self.D_max+=iterationstep
 
               #downwind bearing calculations
               diameter_limit = 5.0
               iterationstep=0.001
-
               while True:
-                  I=(pi/64.0)*(D_med**4-D_in**4)
-                  J=I*2
-                  Area=pi/4.*(D_med**2-D_in**2)
-                  LssWeight=density*9.81*(((pi/12)*(D_max**2+D_med**2+D_max*D_med)*(L_mb))-(pi/4*L_mb*D_in**2))
-                  
-                  Fz1stoch = (-My_stoch)/(L_mb)
-                  Fy1stoch = Mz_stoch/L_mb
-                  My2stoch = 0. #My_stoch - abs(Fz1stoch)*L_mb #=0
-                  Mz2stoch = 0. #Mz_stoch - abs(Fy1stoch)*L_mb #=0
-
-                  #create stochastic loads across N
-                  stoch_bend2 = (My2stoch**2+Mz2stoch**2)**(0.5)*D_med/(2.*I)
-                  stoch_shear2 = abs(Mx_stoch*D_med/(2.*J))
-                  stoch_normal2 = Fx_stoch/Area*cos(self.shaft_angle) #all normal force held by downwind bearing
-                  stoch_stress2 = ((stoch_bend2+stoch_normal2)**2+3.*stoch_shear2**2)**(0.5)
-                  #print stoch_stress2
-                  
-                  #create mean loads
-                  mean_bend2 = 0. #Fz_mean*self.L_rb*D_med/(2.*I) #not mean, but deterministic
-                  mean_shear2 = Mx_mean*D_med/(2.*J)
-                  mean_normal2 = Fx_mean/Area*cos(self.shaft_angle)+(rotorWeight+LssWeight)*sin(self.shaft_angle)
-                  mean_stress2 = ((mean_bend2+mean_normal2)**2+3.*mean_shear2**2)**(0.5)
-                  #apply Goodman with compressive (-) mean stress
-                  S_mod_stoch2=Goodman(stoch_stress2,-mean_stress2,Sut)
-
-                  #Use Palmgren-Miner linear damage rule to add damage from stochastic load ranges
-                  for i in range(num_pts):
-                      DEL_y[i] = N[i]/(Ninterp(S_mod_stoch2[i],SN_a,SN_b))
-
-                  Damage = scp.integrate.simps(DEL_y, x=N , even='avg') #damage from stochastic loading
-
-                  #create deterministic loads occurring N_rotor times
-                  Fz1determ = (gbxWeight*L_gb - LssWeight*.5*L_mb - rotorWeight*(L_mb+self.L_rb)) / (L_mb)
-                  My2determ = gbxWeight*L_gb #-rotorWeight*(self.L_rb+L_mb) + Fz1determ*L_mb - LssWeight*.5*L_mb + gbxWeight*L_gb
-                  determ_stress2 = abs(My2determ*D_med/(2.*I))
-
-                  S_mod_determ2=Goodman(determ_stress2,-mean_stress2,Sut)
-
-                  if S_mod_determ2 > 0:
-                    Damage += N_rotor/(Ninterp(S_mod_determ2,SN_a,SN_b))
-                  # print 'max stochastic:', np.max(S_mod_stoch2)
-                  # print ''
-                  # print 'Downwind Bearing Diameter:', D_med
-                  # print 'Damage:', Damage
-                  if Damage < 1 or D_med >= diameter_limit:
-                      # print ''
-                      # print 'Downwind Bearing Diameter:', D_med
-                      # print 'Damage:', Damage
-                      #print (time.time() - start_time), 'seconds of total simulation time'
+                  get_Damage_Brng2(self)
+                  if self.Damage < 1 or self.D_med >= diameter_limit:
                       break
                   else:
-                      D_med+=iterationstep
+                      self.D_med+=iterationstep
 
               #begin bearing calculations
-              N_bearings = N/self.blade_number #counts per rotation (not defined by characteristic frequency 3n_rotor)
+              N_bearings = self.N/self.blade_number #counts per rotation (not defined by characteristic frequency 3n_rotor)
 
-              Fr1_range = ((abs(Fz1stoch)+abs(Fz1determ))**2 +Fy1stoch**2)**.5 #radial stochastic + deterministic mean
-              Fa1_range = np.zeros(len(Fy1stoch))
+              Fr1_range = ((abs(self.Fz1stoch)+abs(self.Fz1determ))**2 +self.Fy1stoch**2)**.5 #radial stochastic + deterministic mean
+              Fa1_range = np.zeros(len(self.Fy1stoch))
 
               #...calculate downwind forces
-              lss_weight=density*9.81*(((pi/12)*(D_max**2+D_med**2+D_max*D_med)*(L_mb))-(pi/4*L_mb*D_in**2))
-              Fy2stoch = -Mz_stoch/(L_mb) #= -Fy1 - Fy_stoch
-              Fz2stoch = -(lss_weight*2./3.*L_mb-My_stoch)/(L_mb) + (lss_weight+shrinkDiscWeight+gbxWeight)*cos(self.shaft_angle) - rotorWeight #-Fz1 +Weights*cos(gamma)-Fz_stoch+Fz_mean (Fz_mean is in negative direction)
-              Fr2_range = (Fy2stoch**2+(Fz2stoch+abs(-rotorWeight*self.L_rb + 0.5*lss_weight+gbxWeight*L_gb/L_mb))**2)**0.5
-              Fa2_range = Fx_stoch*cos(self.shaft_angle) + (rotorWeight+LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
+              lss_weight=self.density*9.81*(((pi/12)*(self.D_max**2+self.D_med**2+self.D_max*self.D_med)*(self.L_mb))-(pi/4*self.L_mb*self.D_in**2))
+              Fy2stoch = -self.Mz_stoch/(self.L_mb) #= -Fy1 - Fy_stoch
+              Fz2stoch = -(lss_weight*2./3.*self.L_mb-self.My_stoch)/(self.L_mb) + (lss_weight+shrinkDiscWeight+gbxWeight)*cos(self.shaft_angle) - rotorWeight #-Fz1 +Weights*cos(gamma)-Fz_stoch+Fz_mean (Fz_mean is in negative direction)
+              Fr2_range = (Fy2stoch**2+(Fz2stoch+abs(-rotorWeight*self.L_rb + 0.5*lss_weight+gbxWeight*self.L_gb/self.L_mb))**2)**0.5
+              Fa2_range = self.Fx_stoch*cos(self.shaft_angle) + (rotorWeight+lss_weight)*sin(self.shaft_angle) #axial stochastic + mean
 
-              life_bearing = N_f/self.blade_number
+              life_bearing = self.N_f/self.blade_number
 
-              [D_max_a,FW_max,bearing1mass] = fatigue_for_bearings(D_max, Fr1_range, Fa1_range, N_bearings, life_bearing, self.mb1Type,False)
-              [D_med_a,FW_med,bearing2mass] = fatigue_for_bearings(D_med, Fr2_range, Fa2_range, N_bearings, life_bearing, self.mb2Type,False)  
+              [self.D_max_a,FW_max,bearing1mass] = fatigue_for_bearings(self.D_max, Fr1_range, Fa1_range, N_bearings, life_bearing, self.mb1Type,False)
+              [self.D_med_a,FW_med,bearing2mass] = fatigue_for_bearings(self.D_med, Fr2_range, Fa2_range, N_bearings, life_bearing, self.mb2Type,False)
 
           # elif self.check_fatigue == 2: # untested and not used currently
           #   Fx = self.rotor_thrust_distribution
@@ -708,7 +514,7 @@ class LowSpeedShaft_drive4pt(Component):
           #   print n_Fx
           #   print Fx*.5
           #   print Mx*.5
-          #   print -1/SN_b
+          #   print -1/self.SN_b
 
           #   def Ninterp(L_ult,L_range,m):
           #       return (L_ult/(.5*L_range))**m #TODO double-check that the input will be the load RANGE instead of load amplitudes. May also include means
@@ -718,107 +524,107 @@ class LowSpeedShaft_drive4pt(Component):
           #   iterationstep=0.001
           #   #upwind bearing calcs
           #   while True:
-          #       Damage = 0
-          #       Fx_ult = SN_a*(pi/4.*(D_max**2-D_in**2))
-          #       Fyz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)/self.L_rb
-          #       Mx_ult = SN_a*(pi*(D_max**4-D_in**4))/(32*(3)**.5*D_max)
-          #       Myz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)
+          #       self.Damage = 0
+          #       Fx_ult = self.SN_a*(pi/4.*(self.D_max**2-self.D_in**2))
+          #       Fyz_ult = self.SN_a*(pi*(self.D_max**4-self.D_in**4))/(self.D_max*64.)/self.L_rb
+          #       Mx_ult = self.SN_a*(pi*(self.D_max**4-self.D_in**4))/(32*(3)**.5*self.D_max)
+          #       Myz_ult = self.SN_a*(pi*(self.D_max**4-self.D_in**4))/(self.D_max*64.)
           #       if Fx_ult !=0 and np.all(n_Fx) != 0:
-          #           Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
+          #           self.Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/self.SN_b),x=n_Fx,even = 'avg')
           #       if Fyz_ult !=0:
           #           if np.all(n_Fy) != 0:
-          #               Damage+=scp.integrate.simps(abs(n_Fy/Ninterp(Fyz_ult,Fy,-1/SN_b)),x=n_Fy,even = 'avg')
+          #               self.Damage+=scp.integrate.simps(abs(n_Fy/Ninterp(Fyz_ult,Fy,-1/self.SN_b)),x=n_Fy,even = 'avg')
           #           if np.all(n_Fz) != 0:
-          #               Damage+=scp.integrate.simps(abs(n_Fz/Ninterp(Fyz_ult,Fz,-1/SN_b)),x=n_Fz,even = 'avg')
+          #               self.Damage+=scp.integrate.simps(abs(n_Fz/Ninterp(Fyz_ult,Fz,-1/self.SN_b)),x=n_Fz,even = 'avg')
           #       if Mx_ult !=0 and np.all(n_Mx) != 0:
-          #           Damage+=scp.integrate.simps(abs(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b)),x=n_Mx,even = 'avg')
+          #           self.Damage+=scp.integrate.simps(abs(n_Mx/Ninterp(Mx_ult,Mx,-1/self.SN_b)),x=n_Mx,even = 'avg')
           #       if Myz_ult!=0:
           #           if np.all(n_My) != 0:
-          #               Damage+=scp.integrate.simps(abs(n_My/Ninterp(Myz_ult,My,-1/SN_b)),x=n_My,even = 'avg')
+          #               self.Damage+=scp.integrate.simps(abs(n_My/Ninterp(Myz_ult,My,-1/self.SN_b)),x=n_My,even = 'avg')
           #           if np.all(n_Mz) != 0:
-          #               Damage+=scp.integrate.simps(abs(n_Mz/Ninterp(Myz_ult,Mz,-1/SN_b)),x=n_Mz,even = 'avg')
+          #               self.Damage+=scp.integrate.simps(abs(n_Mz/Ninterp(Myz_ult,Mz,-1/self.SN_b)),x=n_Mz,even = 'avg')
 
-          #       print 'Upwind Bearing Diameter:', D_max
-          #       print 'Damage:', Damage
+          #       print 'Upwind Bearing Diameter:', self.D_max
+          #       print 'self.Damage:', self.Damage
 
-          #       if Damage <= 1 or D_max >= diameter_limit:
-          #           # print 'Upwind Bearing Diameter:', D_max
-          #           # print 'Damage:', Damage
+          #       if self.Damage <= 1 or self.D_max >= diameter_limit:
+          #           # print 'Upwind Bearing Diameter:', self.D_max
+          #           # print 'self.Damage:', self.Damage
           #           #print (time.time() - start_time), 'seconds of total simulation time'
           #           break
           #       else:
-          #           D_max+=iterationstep
+          #           self.D_max+=iterationstep
           #   #downwind bearing calcs
           #   while True:
-          #       Damage = 0
-          #       Fx_ult = SN_a*(pi/4.*(D_med**2-D_in**2))
-          #       Mx_ult = SN_a*(pi*(D_med**4-D_in**4))/(32*(3)**.5*D_med)
+          #       self.Damage = 0
+          #       Fx_ult = self.SN_a*(pi/4.*(self.D_med**2-self.D_in**2))
+          #       Mx_ult = self.SN_a*(pi*(self.D_med**4-self.D_in**4))/(32*(3)**.5*self.D_med)
           #       if Fx_ult !=0:
-          #           Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
+          #           self.Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/self.SN_b),x=n_Fx,even = 'avg')
           #       if Mx_ult !=0:
-          #           Damage+=scp.integrate.simps(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b),x=n_Mx,even = 'avg')
-          #       print 'Downwind Bearing Diameter:', D_med
-          #       print 'Damage:', Damage
+          #           self.Damage+=scp.integrate.simps(n_Mx/Ninterp(Mx_ult,Mx,-1/self.SN_b),x=n_Mx,even = 'avg')
+          #       print 'Downwind Bearing Diameter:', self.D_med
+          #       print 'self.Damage:', self.Damage
 
-          #       if Damage <= 1 or D_med>= diameter_limit:
-          #           # print 'Upwind Bearing Diameter:', D_max
-          #           # print 'Damage:', Damage
+          #       if self.Damage <= 1 or self.D_med>= diameter_limit:
+          #           # print 'Upwind Bearing Diameter:', self.D_max
+          #           # print 'self.Damage:', self.Damage
           #           #print (time.time() - start_time), 'seconds of total simulation time'
           #           break
           #       else:
-          #           D_med+=iterationstep
+          #           self.D_med+=iterationstep
 
           #   #bearing calcs
-          #   if self.availability != 0 and rotor_freq != 0 and self.T_life != 0 and self.cut_out != 0 and weibullA != 0:
-          #       N_rotations = self.availability*rotor_freq/60.*(self.T_life*365*24*60*60)*exp(-(self.cut_in/weibullA)**weibullk)-exp(-(self.cut_out/weibullA)**weibullk)
+          #   if self.availability != 0 and rotor_freq != 0 and self.T_life != 0 and self.cut_out != 0 and self.weibull_A != 0:
+          #       N_rotations = self.availability*rotor_freq/60.*(self.T_life*365*24*60*60)*exp(-(self.cut_in/self.weibull_A)**self.weibull_k)-exp(-(self.cut_out/self.weibull_A)**self.weibull_k)
           #   elif np.max(n_Fx > 1e6):
           #       N_rotations = np.max(n_Fx)/self.blade_number
           #   elif np.max(n_My > 1e6):
           #       N_rotations = np.max(n_My)/self.blade_number
           #   # print 'Upwind bearing calcs'
-          #   Fz1_Fz = Fz*(L_mb+self.L_rb)/L_mb
-          #   Fz1_My = My/L_mb
-          #   Fy1_Fy = -Fy*(L_mb+self.L_rb)/L_mb
-          #   Fy1_Mz = Mz/L_mb
-          #   [D_max_a,FW_max,bearing1mass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/self.blade_number,Fz1_Fz,n_Fz/self.blade_number,Fz1_My,n_My/self.blade_number,Fy1_Mz,n_Mz/self.blade_number,N_rotations)
+          #   Fz1_Fz = Fz*(self.L_mb+self.L_rb)/self.L_mb
+          #   Fz1_My = My/self.L_mb
+          #   Fy1_Fy = -Fy*(self.L_mb+self.L_rb)/self.L_mb
+          #   Fy1_Mz = Mz/self.L_mb
+          #   [self.D_max_a,FW_max,bearing1mass] = fatigue2_for_bearings(self.D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/self.blade_number,Fz1_Fz,n_Fz/self.blade_number,Fz1_My,n_My/self.blade_number,Fy1_Mz,n_Mz/self.blade_number,N_rotations)
           #   # print 'Downwind bearing calcs'
-          #   Fz2_Fz = Fz*self.L_rb/L_mb
-          #   Fz2_My = My/L_mb
-          #   Fy2_Fy = Fy*self.L_rb/L_mb
-          #   Fy2_Mz = Mz/L_mb
-          #   [D_med_a,FW_med,bearing2mass] = fatigue2_for_bearings(D_med,self.mb2Type,Fx,n_Fx/self.blade_number,Fy2_Fy,n_Fy/self.blade_number,Fz2_Fz,n_Fz/self.blade_number,Fz2_My,n_My/self.blade_number,Fy2_Mz,n_Mz/self.blade_number,N_rotations)
+          #   Fz2_Fz = Fz*self.L_rb/self.L_mb
+          #   Fz2_My = My/self.L_mb
+          #   Fy2_Fy = Fy*self.L_rb/self.L_mb
+          #   Fy2_Mz = Mz/self.L_mb
+          #   [self.D_med_a,FW_med,bearing2mass] = fatigue2_for_bearings(self.D_med,self.mb2Type,Fx,n_Fx/self.blade_number,Fy2_Fy,n_Fy/self.blade_number,Fz2_Fz,n_Fz/self.blade_number,Fz2_My,n_My/self.blade_number,Fy2_Mz,n_Mz/self.blade_number,N_rotations)
 
         else: #if fatigue_check is not true, resize based on diameter            
-            [D_max_a,FW_max,bearing1mass] = resize_for_bearings(D_max,  self.mb1Type,False)
-            [D_med_a,FW_med,bearing2mass] = resize_for_bearings(D_med,  self.mb2Type,False)
+            [self.D_max_a,FW_max,bearing1mass] = resize_for_bearings(self.D_max,  self.mb1Type,False)
+            [self.D_med_a,FW_med,bearing2mass] = resize_for_bearings(self.D_med,  self.mb2Type,False)
 
         # end fatigue code additions 6/2014
             
-        lss_mass_new=(pi/3)*(D_max_a**2+D_med_a**2+D_max_a*D_med_a)*(L_mb-(FW_max+FW_med)/2)*density/4+ \
-                         (pi/4)*(D_max_a**2-D_in**2)*density*FW_max+\
-                         (pi/4)*(D_med_a**2-D_in**2)*density*FW_med-\
-                         (pi/4)*(D_in**2)*density*(L_mb+(FW_max+FW_med)/2)
+        lss_mass_new=(pi/3)*(self.D_max_a**2+self.D_med_a**2+self.D_max_a*self.D_med_a)*(self.L_mb-(FW_max+FW_med)/2)*self.density/4+ \
+                         (pi/4)*(self.D_max_a**2-self.D_in**2)*self.density*FW_max+\
+                         (pi/4)*(self.D_med_a**2-self.D_in**2)*self.density*FW_med-\
+                         (pi/4)*(self.D_in**2)*self.density*(self.L_mb+(FW_max+FW_med)/2)
 
         ## begin bearing routine with updated shaft mass
-        self.length=L_mb_new + (FW_max+FW_med)/2 + self.flange_length # add facewidths and flange
-        # print ("L_mb: {0}").format(L_mb)
+        self.length=self.L_mb_new + (FW_max+FW_med)/2 + self.flange_length # add facewidths and flange
+        # print ("self.L_mb: {0}").format(self.L_mb)
         # print ("LSS length, m: {0}").format(self.length)
-        self.D_outer=D_max
-        # print ("Upwind MB OD, m: {0}").format(D_max_a)
-        # print ("Dnwind MB OD, m: {0}").format(D_med_a)
-        # print ("D_min: {0}").format(D_min)
-        self.D_in=D_in
+        self.D_outer=self.D_max
+        # print ("Upwind MB OD, m: {0}").format(self.D_max_a)
+        # print ("Dnwind MB OD, m: {0}").format(self.D_med_a)
+        # print ("self.D_min: {0}").format(self.D_min)
+        self.D_in=self.D_in
         self.mass=lss_mass_new*1.33 # add flange mass
-        self.diameter1= D_max_a
-        self.diameter2= D_med_a 
+        self.diameter1= self.D_max_a
+        self.diameter2= self.D_med_a 
 
         # calculate mass properties
         downwind_location = np.array([self.gearbox_cm[0]-self.gearbox_length/2. , self.gearbox_cm[1] , self.gearbox_cm[2] ])
 
         bearing_location1 = np.array([0.,0.,0.]) #upwind
-        bearing_location1[0] = downwind_location[0] - (L_mb_new + FW_med/2)*cos(self.shaft_angle)
+        bearing_location1[0] = downwind_location[0] - (self.L_mb_new + FW_med/2)*cos(self.shaft_angle)
         bearing_location1[1] = downwind_location[1]
-        bearing_location1[2] = downwind_location[2] + (L_mb_new + FW_med/2)*sin(self.shaft_angle)
+        bearing_location1[2] = downwind_location[2] + (self.L_mb_new + FW_med/2)*sin(self.shaft_angle)
         self.bearing_location1 = bearing_location1
 
         bearing_location2 = np.array([0.,0.,0.]) #downwind
@@ -949,26 +755,20 @@ class LowSpeedShaft_drive3pt(Component):
         if self.rotor_mass > 0 and self.rotor_bending_moment_z == 0:
             self.rotor_bending_moment_z=get_Mz(self.rotor_mass,self.L_rb)
 
-        rotor_diameter = self.rotor_diameter
-        machine_rating = self.machine_rating
-        rotor_freq = self.rotor_freq
-        DrivetrainEfficiency = self.DrivetrainEfficiency
-
         self.g = 9.81 #m/s
-        density = 7850.0
+        self.density = 7850.0
 
 
-        L_ms_new = 0.0
-        L_ms_0=0.5 # main shaft length downwind of main bearing
-        L_ms=L_ms_0
+        self.L_ms_new = 0.0
+        self.L_ms_0=0.5 # main shaft length downwind of main bearing
+        self.L_ms=self.L_ms_0
         tol=1e-4 
         check_limit = 1.0
         dL=0.05
-        D_max = 1.0
-        D_min = 0.2
-        sR = self.shaft_ratio
-        # D_in=self.shaft_ratio*D_max
-        rotor_diameter = self.rotor_diameter
+        self.D_max = 1.0
+        self.D_min = 0.2
+        # self.D_in=self.shaft_ratio*self.D_max
+        self.rotor_diameter = self.rotor_diameter
 
         T=self.rotor_bending_moment_x/1000.0
 
@@ -976,342 +776,102 @@ class LowSpeedShaft_drive3pt(Component):
         MB_limit=0.026;
         CB_limit=4.0/60.0/180.0*pi;
         TRB1_limit=3.0/60.0/180.0*pi;
-        n_safety_brg = 1.0
-        n_safety=2.5
-        Sy = 66000#*self.S_ut/700e6 #psi
-        E=2.1e11  
+        self.n_safety_brg = 1.0
+        self.n_safety=2.5
+        self.Sy = 66000#*self.S_ut/700e6 #psi
+        self.E=2.1e11  
         N_count=50    
           
-        u_knm_inlb = 8850.745454036
-        u_in_m = 0.0254000508001
+        self.u_knm_inlb = 8850.745454036
+        self.u_in_m = 0.0254000508001
         counter=0
         length_max = self.overhang - self.L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29
 
-        while abs(check_limit) > tol and L_ms_new < length_max:
+        while abs(check_limit) > tol and self.L_ms_new < length_max:
             counter =counter+1
-            if L_ms_new > 0:
-                 L_ms=L_ms_new
+            if self.L_ms_new > 0:
+                 self.L_ms=self.L_ms_new
             else:
-                  L_ms=L_ms_0
+                  self.L_ms=self.L_ms_0
 
-            #Distances
-            L_bg = 6.11 *(self.machine_rating/5.0e3)         #distance from hub center to gearbox yokes
-            L_as = L_ms/2.0     #distance from main bearing to shaft center
-            H_gb = 1.0          #distance to gbx center from trunnions in z-dir     
-            L_gp = 0.825        #distance from gbx coupling to gbx trunnions
-            L_cu = L_ms + 0.5
-            L_cd = L_cu + 0.5
-            L_gb=0
+            #-----------------------
+            size_LSS_3pt_loop1(self)
+            #-----------------------
 
-            #Weight properties
-            weightRotor=0     # Yi modified to remove rotor overhung weight, considered in the load analysis                        #rotor weight accounted for in F_z
-            massLSS = pi/3*(D_max**2.0 + D_min**2.0 + D_max*D_min)*L_ms*density/4.0
-            weightLSS = massLSS*self.g       #LSS weight
-            weightShrinkDisc = self.shrink_disc_mass*self.g                #shrink disc weight
-            weightGbx = self.gearbox_mass*self.g                              #gearbox weight
-            weightCarrier = self.carrier_mass*self.g
-
-            len_pts=101;
-            x_ms = np.linspace(self.L_rb, L_ms+self.L_rb, len_pts)
-            x_rb = np.linspace(0.0, self.L_rb, len_pts)
-            y_gp = np.linspace(0, L_gp, len_pts)
-
-            #len_my = np.arange(1,len(self.rotor_bending_moment_y)+1)
-            #print ("self.rotor_force_x: {0}").format(self.rotor_force_x)
-            #print ("self.rotor_force_y: {0}").format(self.rotor_force_y)
-            #print ("self.rotor_force_z: {0}").format(self.rotor_force_z)
-            #print ("self.rotor_bending_moment_x: {0}").format(self.rotor_bending_moment_x)
-            #print ("self.rotor_bending_moment_y: {0}").format(self.rotor_bending_moment_y)
-            #print ("self.rotor_bending_moment_z: {0}").format(self.rotor_bending_moment_z)
-            F_mb_x = -self.rotor_force_x - weightRotor*sin(self.shaft_angle)
-            F_mb_y = self.rotor_bending_moment_z/L_bg - self.rotor_force_y*(L_bg + self.L_rb)/L_bg
-            F_mb_z = (-self.rotor_bending_moment_y + weightRotor*(cos(self.shaft_angle)*(self.L_rb + L_bg)\
-            + sin(self.shaft_angle)*H_gb) + weightLSS*(L_bg - L_as)\
-            * cos(self.shaft_angle) + weightShrinkDisc*cos(self.shaft_angle)\
-            *(L_bg - L_ms) - weightGbx*cos(self.shaft_angle)*L_gb - self.rotor_force_z*cos(self.shaft_angle)*(L_bg + self.L_rb))/L_bg
-
-
-            F_gb_x = -(weightLSS + weightShrinkDisc + weightGbx)*sin(self.shaft_angle)
-            F_gb_y = -F_mb_y - self.rotor_force_y
-            F_gb_z = -F_mb_z + (weightLSS + weightShrinkDisc + weightGbx + weightRotor)*cos(self.shaft_angle) - self.rotor_force_z
-
-            F_cu_z = (weightLSS*cos(self.shaft_angle) + weightShrinkDisc*cos(self.shaft_angle) + weightGbx*cos(self.shaft_angle)) - F_mb_z - self.rotor_force_z- \
-            (-self.rotor_bending_moment_y - self.rotor_force_z*cos(self.shaft_angle)*self.L_rb + weightLSS*(L_bg - L_as)*cos(self.shaft_angle) - weightCarrier*cos(self.shaft_angle)*L_gb)/(1 - L_cu/L_cd)
-
-            F_cd_z = (weightLSS*cos(self.shaft_angle) + weightShrinkDisc*cos(self.shaft_angle) + weightGbx*cos(self.shaft_angle)) - F_mb_z - self.rotor_force_z - F_cu_z 
-
-
-            My_ms = np.zeros(2*len_pts)
-            Mz_ms = np.zeros(2*len_pts)
-
-            for k in range(len_pts):
-                My_ms[k] = -self.rotor_bending_moment_y + weightRotor*cos(self.shaft_angle)*x_rb[k] + 0.5*weightLSS/L_ms*x_rb[k]**2 - self.rotor_force_z*x_rb[k]
-                Mz_ms[k] = -self.rotor_bending_moment_z - self.rotor_force_y*x_rb[k]
-
-            for j in range(len_pts):
-                My_ms[j+len_pts] = -self.rotor_force_z*x_ms[j] - self.rotor_bending_moment_y + weightRotor*cos(self.shaft_angle)*x_ms[j] - F_mb_z*(x_ms[j]-self.L_rb) + 0.5*weightLSS/L_ms*x_ms[j]**2
-                Mz_ms[j+len_pts] = -self.rotor_bending_moment_z - F_mb_y*(x_ms[j]-self.L_rb) - self.rotor_force_y*x_ms[j]
-
-            x_shaft = np.concatenate([x_rb, x_ms])
-
-            MM_max=np.amax((My_ms**2 + Mz_ms**2)**0.5/1000.0)
-            Index=np.argmax((My_ms**2 + Mz_ms**2)**0.5/1000.0)
-                
-            #print 'Max Moment kNm:'
-            #print MM_max
-            #print 'Max moment location m:'
-            #print x_shaft[Index]
-
-            MM_min = ((My_ms[-1]**2+Mz_ms[-1]**2)**0.5/1000.0)
-
-            #print 'Max Moment kNm:'
-            #print MM_min
-            #print 'Max moment location m:'#
-            #print x_shaft[-1]
-
-            #Design shaft OD using distortion energy theory
-            
-           
-            MM=MM_max
-            D_max=(16.0*n_safety/pi/Sy*(4.0*(MM*u_knm_inlb)**2 + 3.0*(self.rotor_bending_moment_x/1000.0*u_knm_inlb)**2)**0.5)**(1.0/3.0)*u_in_m
-
-            #OD at end
-            MM=MM_min
-            D_min=(16.0*n_safety/pi/Sy*(4.0*(MM*u_knm_inlb)**2 + 3.0*(self.rotor_bending_moment_x/1000.0*u_knm_inlb)**2)**0.5)**(1.0/3.0)*u_in_m
-
-            #Estimate ID
-            D_in=self.shaft_ratio*D_max
-            D_max=(D_in**4.0 + D_max**4.0)**0.25
-            D_min=(D_in**4.0 + D_min**4.0)**0.25
-            #print'Max shaft OD m:'
-            #print D_max
-            #print 'Min shaft OD m:'
-            #print D_min
-            #print'Shaft ID:', D_in
-            
-
-            weightLSS_new = (density*pi/12.0*L_ms*(D_max**2.0 + D_min**2.0 + D_max*D_min) - density*pi/4.0*D_in**2.0*L_ms + \
-                              density*pi/4.0*D_max**2*self.L_rb)*self.g
-            massLSS_new = weightLSS_new/self.g
-
-            #print 'Old LSS mass kg:' 
-            #print massLSS
-            #print 'New LSS mass kg:'
-            #print massLSS_new
-
-            def fx(F_r_z,W_r,gamma,M_y,f_mb_z,L_rb,W_ms,L_ms,z):
-                return -F_r_z*z**3/6.0 + W_r*cos(gamma)*z**3/6.0 - M_y*z**2/2.0 - f_mb_z*(z-L_rb)**3/6.0 + W_ms/(L_ms + L_rb)/24.0*z**4
-            
-                       
-            D1 = fx(self.rotor_force_z,weightRotor,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,weightLSS_new,L_ms,self.L_rb+L_ms)
-            D2 = fx(self.rotor_force_z,weightRotor,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,weightLSS_new,L_ms,self.L_rb)
-            C1 = -(D1-D2)/L_ms;
-            C2 = -D2-C1*(self.L_rb);
-            
-            
-            I_2=pi/64.0*(D_max**4 - D_in**4)
-
-            def gx(F_r_z,W_r,gamma,M_y,f_mb_z,L_rb,W_ms,L_ms,C1,z):
-                return -F_r_z*z**2/2.0 + W_r*cos(gamma)*z**2/2.0 - M_y*z - f_mb_z*(z-L_rb)**2/2.0 + W_ms/(L_ms + L_rb)/6.0*z**3 + C1
-
-            theta_y = np.zeros(len_pts)
-            d_y = np.zeros(len_pts)
-
-            for kk in range(len_pts):
-                theta_y[kk]=gx(self.rotor_force_z,weightRotor,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,weightLSS_new,L_ms,C1,x_ms[kk])/E/I_2
-                d_y[kk]=(fx(self.rotor_force_z,weightRotor,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,weightLSS_new,L_ms,x_ms[kk])+C1*x_ms[kk]+C2)/E/I_2
-
-            check_limit = abs(abs(theta_y[-1])-TRB1_limit/n_safety_brg)
+            check_limit = abs(abs(self.theta_y[-1])-TRB1_limit/self.n_safety_brg)
             #print 'deflection slope'
             #print TRB1_limit
             #print 'threshold'
             #print theta_y[-1]
-            L_ms_new = L_ms + dL        
+            self.L_ms_new = self.L_ms + dL        
 
         # fatigue check Taylor Parsons 6/2014
         if self.check_fatigue == 1 or 2:
           #start_time = time.time()
           #material properties 34CrNiMo6 steel +QT, large diameter
-          E=2.1e11
-          density=7800.0
-          n_safety = 2.5
-          if self.S_ut > 0:
-            Sut = self.S_ut
-          else:
-            Sut=700.0e6 #Pa
-          Sm=0.9*Sut #for bending situations, material strength at 10^3 cycles
+          self.E=2.1e11
+          self.density=7800.0
+          self.n_safety = 2.5
+          if self.S_ut <= 0:
+            self.S_ut=700.0e6 #Pa
+          Sm=0.9*self.S_ut #for bending situations, material strength at 10^3 cycles
           C_size=0.6 #diameter larger than 10"
-          C_surf=4.51*(Sut/1e6)**-.265 #machined surface 272*(Sut/1e6)**-.995 #forged
+          C_surf=4.51*(self.S_ut/1e6)**-.265 #machined surface 272*(self.S_ut/1e6)**-.995 #forged
           C_temp=1 #normal operating temps
           C_reliab=0.814 #99% reliability
           C_envir=1. #enclosed environment
-          Se=C_size*C_surf*C_temp*C_reliab*C_envir*.5*Sut #modified endurance limit for infinite life
+          Se=C_size*C_surf*C_temp*C_reliab*C_envir*.5*self.S_ut #modified endurance limit for infinite life
 
           if self.fatigue_exponent!=0:
             if self.fatigue_exponent > 0:
-                SN_b = - self.fatigue_exponent
+                self.SN_b = - self.fatigue_exponent
             else:
-                SN_b = self.fatigue_exponent
+                self.SN_b = self.fatigue_exponent
           else:
             Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
             z=log10(1e3)-log10(Nfinal)  #assuming no endurance limit (high strength steel)
-            SN_b=1/z*log10(Sm/Se)
-          SN_a=Sm/(1000.**SN_b)
-          # print 'm:', -1/SN_b
-          # print 'a:', SN_a
-
-          #Weibull Parameters
-          weibullA=self.weibull_A
-          weibullk=self.weibull_k
+            self.SN_b=1/z*log10(Sm/Se)
+          self.SN_a=Sm/(1000.**self.SN_b)
+          # print 'm:', -1/self.SN_b
+          # print 'a:', self.SN_a
 
           if self.check_fatigue == 1:
               #checks to make sure all inputs are reasonable
               if self.rotor_mass < 100:
-                  [self.rotor_mass] = get_rotor_mass(self.machine_rating)
+                  [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
 
               #Rotor Loads calculations using DS472
-              R=rotor_diameter/2.0
-              rotor_torque = (machine_rating * 1000 / DrivetrainEfficiency) / (rotor_freq * (pi/30))
-              Tip_speed_ratio= rotor_freq/30.*pi*R/self.V_rated
-              rho_air= 1.225 #kg/m^3 density of air
-              p_o = 4./3*rho_air*((4*pi*rotor_freq/60*R/3)**2+self.V_rated**2)*(pi*R/(self.blade_number*Tip_speed_ratio*(Tip_speed_ratio**2+1)**(.5)))
-
-              n_c=self.blade_number*rotor_freq/60 #characteristic frequency on rotor from turbine of given blade number [Hz]
-              N_f=self.availability*n_c*(self.T_life*365*24*60*60)*exp(-(self.cut_in/weibullA)**weibullk)-exp(-(self.cut_out/weibullA)**weibullk) #number of rotor rotations based off of weibull curve. .827 comes from lower rpm than rated at lower wind speeds
-
-
-              k_b= 2.5 #calculating rotor pressure from all three blades. Use kb=1 for individual blades
-
-              if self.IEC_Class_Letter == 'A': # From IEC 61400-1 TODO consider calculating based off of 10-minute windspeed and weibull parameters, include neighboring wake effects?
-                I_t=0.18 
-              elif self.IEC_Class_Letter == 'B':
-                I_t=0.14
-              else:
-                I_t=0.12
-
-              Beta=0.11*k_b*(I_t+0.1)*(weibullA+4.4)
-
-              # find generic standardized stochastic load range distribution
-              def standardrange(N, N_f, Beta, k_b): 
-                  F_delta=(Beta*(log10(N_f)-log10(N)))+0.18
-                  if F_delta>=2*k_b:
-                    F_delta=0.
-                  return F_delta
-
-              def rounddown(x,step):
-                return int(floor(x/step))*step
-
-              def roundup(x,step):
-                  return int(ceil(x/step))*step
-
-              #for analysis with N on log scale, makes larger loads contain finer step sizes
-              num_pts=100
-              N=np.logspace( (log10(N_f)-(2*k_b-0.18)/Beta) , log10(N_f) , endpoint=True , num=num_pts) # with zeros: N=np.logspace(log10(1.0),log10(N_f),endpoint=True,num=num_pts)
-              N_rotor = N_f/3.
-              F_stoch=N.copy()
-
-
-              for i in range(num_pts):
-                  N[i]=roundup(N[i],1)
-
-              #print N
-
-              k_r=0.8 #assuming natural frequency of rotor is significantly larger than rotor rotational frequency
-
-              for i in range(num_pts):
-                F_stoch[i] = standardrange(N[i],N_f,Beta,k_b)
-
-              Fx_factor = (.3649*log(rotor_diameter)-1.074)
-              Mx_factor = (.0799*log(rotor_diameter)-.2577)
-              My_factor = (.172*log(rotor_diameter)-.5943)
-              Mz_factor = (.1659*log(rotor_diameter)-.5795)
-
-              Fx_stoch = (F_stoch.copy()*0.5*p_o*(R))*Fx_factor #divide by 2 to reflect amplitudes?
-              Mx_stoch = (F_stoch.copy()*0.45*p_o*(R)**2)*Mx_factor#*0.31
-              My_stoch = (F_stoch.copy()*0.33*p_o*k_r*(R)**2)*My_factor#*.5*0.25
-              Mz_stoch = (F_stoch.copy()*0.33*p_o*k_r*(R)**2)*Mz_factor#*.5*0.25 
-
-              def Ninterp(S,a,b):
-                  return (S/a)**(1/b)
-
-              def Goodman(S_alt,S_mean,Sut):
-                  return S_alt/(1-(S_mean/Sut))
-
-              Fx_mean=0.5*p_o*R*self.blade_number*Fx_factor
-              Mx_mean=0.5*rotor_torque*Mx_factor
-              rotorWeight=self.rotor_mass*self.g
-
-              # print 'Fx_max:', np.max(Fx_stoch) + Fx_mean
-              # print 'Mx_max:', np.max(Mx_stoch) + Mx_mean
-              # print 'My_max:', np.max(My_stoch)
-              # print 'Mz_max:', np.max(Mz_stoch)
-              # print 'occurance:', np.min(N)
+              setup_Fatigue_Loads(self)
 
               #upwind bearing calculations
               iterationstep=0.001
               diameter_limit = 1.5
               while True:
-                  D_in=sR*D_max
-                  D_max = (D_max**4 + D_in**4)**0.25
-                  D_min = (D_min**4 + D_in**4)**0.25
-                  I=(pi/64.0)*(D_max**4-D_in**4)
-                  J=I*2
-                  Area=pi/4.*(D_max**2-D_in**2)
-                  LssWeight=density*9.81*(((pi/12)*(D_max**2+D_min**2+D_max*D_min)*(L_ms))-(pi/4*L_ms*D_in**2))
+                  get_Damage_Brng1(self)
 
-                  #create stochastic loads across N
-                  stoch_bend1 = (My_stoch**2+Mz_stoch**2)**(0.5)*D_max/(2.*I)
-                  stoch_shear1 = abs(Mx_stoch*D_max/(2.*J))
-                  stoch_normal1 = Fx_stoch/Area*cos(self.shaft_angle)
-                  stoch_stress1 = ((stoch_bend1+stoch_normal1)**2+3.*stoch_shear1**2)**(0.5)
-                  
-                  #create mean loads
-                  mean_bend1 = 0 #Fz_mean*self.L_rb*D_max/(2.*I) #not mean, but deterministic
-                  mean_shear1 = Mx_mean*D_max/(2.*J)
-                  mean_normal1 = Fx_mean/Area*cos(self.shaft_angle)+(rotorWeight+LssWeight)*sin(self.shaft_angle)
-                  mean_stress1 = ((mean_bend1+mean_normal1)**2+3.*mean_shear1**2)**(0.5)
-
-                  #apply Goodman with compressive (-) mean stress
-                  S_mod_stoch1=Goodman(stoch_stress1,-mean_stress1,Sut)
-
-                  #Use Palmgren-Miner linear damage rule to add damage from stochastic load ranges
-                  DEL_y=Fx_stoch.copy() #initialize
-                  for i in range(num_pts):
-                      DEL_y[i] = N[i]/(Ninterp(S_mod_stoch1[i],SN_a,SN_b))
-
-                  Damage = scp.integrate.simps(DEL_y,x= N, even='avg') #damage from stochastic loading
-
-                  #create deterministic loads occurring N_rotor times
-                  determ_stress1 = abs(rotorWeight*cos(self.shaft_angle)*self.L_rb*D_max/(2.*I)) #only deterministic stress at mb1 is bending due to weights
-
-                  S_mod_determ=Goodman(determ_stress1,-mean_stress1,Sut)
-                  # print 'before deterministic Damage:', Damage
-
-                  Damage += N_rotor/(Ninterp(S_mod_determ,SN_a,SN_b))
-
-                  # print 'Bearing Diameter:', D_max
-                  # print 'Damage:', Damage
-                  if Damage < 1 or D_max >= diameter_limit:
-                      # print 'Bearing Diameter:', D_max
-                      # print 'Damage:', Damage
+                  # print 'Bearing Diameter:', self.D_max
+                  # print 'self.Damage:', self.Damage
+                  if self.Damage < 1 or self.D_max >= diameter_limit:
+                      # print 'Bearing Diameter:', self.D_max
+                      # print 'self.Damage:', self.Damage
                       #print (time.time() - start_time), 'seconds of total simulation time'
                       break
                   else:
-                      D_max+=iterationstep
+                      self.D_max+=iterationstep
 
               #begin bearing calculations
-              N_bearings = N/self.blade_number #rotation number
+              N_bearings = self.N/self.blade_number #rotation number
 
-              Fz1stoch = (-My_stoch)/(L_ms)
-              Fy1stoch = Mz_stoch/L_ms
-              Fz1determ = (weightGbx*L_gb - LssWeight*.5*L_ms - rotorWeight*(L_ms+self.L_rb)) / (L_ms)
+              Fz1stoch = (-self.My_stoch)/(self.L_ms)
+              Fy1stoch = self.Mz_stoch/self.L_ms
+              Fz1determ = (self.weightGbx*self.L_gb - self.LssWeight*.5*self.L_ms - self.rotorWeight*(self.L_ms+self.L_rb)) / (self.L_ms)
 
               Fr_range = ((abs(Fz1stoch)+abs(Fz1determ))**2 +Fy1stoch**2)**.5 #radial stochastic + deterministic mean
-              Fa_range = Fx_stoch*cos(self.shaft_angle) + (rotorWeight+LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
+              Fa_range = self.Fx_stoch*cos(self.shaft_angle) + (self.rotorWeight+self.LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
 
-              life_bearing = N_f/self.blade_number
+              life_bearing = self.N_f/self.blade_number
 
-              [D_max_a,FW_max,bearingmass] = fatigue_for_bearings(D_max, Fr_range, Fa_range, N_bearings, life_bearing, self.mb1Type)
+              [self.D_max_a,FW_max,bearingmass] = fatigue_for_bearings(self.D_max, Fr_range, Fa_range, N_bearings, life_bearing, self.mb1Type,False)
 
           # elif self.check_fatigue == 2:
           #   Fx = self.rotor_thrust_distribution
@@ -1330,7 +890,7 @@ class LowSpeedShaft_drive3pt(Component):
           #   # print n_Fx
           #   # print Fx*.5
           #   # print Mx*.5
-          #   # print -1/SN_b
+          #   # print -1/self.SN_b
 
           #   def Ninterp(L_ult,L_range,m):
           #       return (L_ult/(.5*L_range))**m #TODO double-check that the input will be the load RANGE instead of load amplitudes. Also, may include means?
@@ -1340,86 +900,86 @@ class LowSpeedShaft_drive3pt(Component):
           #   iterationstep=0.001
           #   #upwind bearing calcs
           #   while True:
-          #       Damage = 0
-          #       Fx_ult = SN_a*(pi/4.*(D_max**2-D_in**2))
-          #       Fyz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*32*self.L_rb)
-          #       Mx_ult = SN_a*(pi*(D_max**4-D_in**4))/(32*(3.**.5)*D_max)
-          #       Myz_ult = SN_a*(pi*(D_max**4-D_in**4))/(D_max*64.)
+          #       self.Damage = 0
+          #       Fx_ult = self.SN_a*(pi/4.*(self.D_max**2-self.D_in**2))
+          #       Fyz_ult = self.SN_a*(pi*(self.D_max**4-self.D_in**4))/(self.D_max*32*self.L_rb)
+          #       Mx_ult = self.SN_a*(pi*(self.D_max**4-self.D_in**4))/(32*(3.**.5)*self.D_max)
+          #       Myz_ult = self.SN_a*(pi*(self.D_max**4-self.D_in**4))/(self.D_max*64.)
           #       if Fx_ult and np.all(n_Fx):
-          #           Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/SN_b),x=n_Fx,even = 'avg')
+          #           self.Damage+=scp.integrate.simps(n_Fx/Ninterp(Fx_ult,Fx,-1/self.SN_b),x=n_Fx,even = 'avg')
           #       if Fyz_ult:
           #           if np.all(n_Fy):
-          #               Damage+=scp.integrate.simps(abs(n_Fy/Ninterp(Fyz_ult,Fy,-1/SN_b)),x=n_Fy,even = 'avg')
+          #               self.Damage+=scp.integrate.simps(abs(n_Fy/Ninterp(Fyz_ult,Fy,-1/self.SN_b)),x=n_Fy,even = 'avg')
           #           if np.all(n_Fz):
-          #               Damage+=scp.integrate.simps(abs(n_Fz/Ninterp(Fyz_ult,Fz,-1/SN_b)),x=n_Fz,even = 'avg')
+          #               self.Damage+=scp.integrate.simps(abs(n_Fz/Ninterp(Fyz_ult,Fz,-1/self.SN_b)),x=n_Fz,even = 'avg')
           #       if Mx_ult and np.all(n_Mx):
-          #           Damage+=scp.integrate.simps(abs(n_Mx/Ninterp(Mx_ult,Mx,-1/SN_b)),x=n_Mx,even = 'avg')
+          #           self.Damage+=scp.integrate.simps(abs(n_Mx/Ninterp(Mx_ult,Mx,-1/self.SN_b)),x=n_Mx,even = 'avg')
           #       if Myz_ult:
           #           if np.all(n_My):
-          #               Damage+=scp.integrate.simps(abs(n_My/Ninterp(Myz_ult,My,-1/SN_b)),x=n_My,even = 'avg')
+          #               self.Damage+=scp.integrate.simps(abs(n_My/Ninterp(Myz_ult,My,-1/self.SN_b)),x=n_My,even = 'avg')
           #           if np.all(n_Mz):
-          #               Damage+=scp.integrate.simps(abs(n_Mz/Ninterp(Myz_ult,Mz,-1/SN_b)),x=n_Mz,even = 'avg')
+          #               self.Damage+=scp.integrate.simps(abs(n_Mz/Ninterp(Myz_ult,Mz,-1/self.SN_b)),x=n_Mz,even = 'avg')
 
-          #       print 'Upwind Bearing Diameter:', D_max
-          #       print 'Damage:', Damage
+          #       print 'Upwind Bearing Diameter:', self.D_max
+          #       print 'self.Damage:', self.Damage
 
-          #       if Damage <= 1 or D_max >= diameter_limit:
-          #           # print 'Upwind Bearing Diameter:', D_max
-          #           # print 'Damage:', Damage
+          #       if self.Damage <= 1 or self.D_max >= diameter_limit:
+          #           # print 'Upwind Bearing Diameter:', self.D_max
+          #           # print 'self.Damage:', self.Damage
           #           #print (time.time() - start_time), 'seconds of total simulation time'
           #           break
           #       else:
-          #           D_max+=iterationstep
+          #           self.D_max+=iterationstep
 
           #   #bearing calcs
-          #   if self.availability != 0 and rotor_freq != 0 and self.T_life != 0 and self.cut_out != 0 and weibullA != 0:
-          #       N_rotations = self.availability*rotor_freq/60.*(self.T_life*365*24*60*60)*exp(-(self.cut_in/weibullA)**weibullk)-exp(-(self.cut_out/weibullA)**weibullk)
+          #   if self.availability != 0 and rotor_freq != 0 and self.T_life != 0 and self.cut_out != 0 and self.weibull_A != 0:
+          #       N_rotations = self.availability*rotor_freq/60.*(self.T_life*365*24*60*60)*exp(-(self.cut_in/self.weibull_A)**self.weibull_k)-exp(-(self.cut_out/self.weibull_A)**self.weibull_k)
           #   elif np.max(n_Fx > 1e6):
           #       N_rotations = np.max(n_Fx)/self.blade_number
           #   elif np.max(n_My > 1e6):
           #       N_rotations = np.max(n_My)/self.blade_number
 
-          #   # Fz1 = (Fz*(L_ms+self.L_rb)+My)/L_ms
-          #   Fz1_Fz = Fz*(L_ms+self.L_rb)/L_ms #force in z direction due to Fz
-          #   Fz1_My = My/L_ms #force in z direction due to My
-          #   Fy1_Fy = -Fy*(L_ms+self.L_rb)/L_ms
-          #   Fy1_Mz = Mz/L_ms
-          #   [D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/self.blade_number,Fz1_Fz,n_Fz/self.blade_number,Fz1_My,n_My/self.blade_number,Fy1_Mz,n_Mz/self.blade_number,N_rotations)
+          #   # Fz1 = (Fz*(self.L_ms+self.L_rb)+My)/self.L_ms
+          #   Fz1_Fz = Fz*(self.L_ms+self.L_rb)/self.L_ms #force in z direction due to Fz
+          #   Fz1_My = My/self.L_ms #force in z direction due to My
+          #   Fy1_Fy = -Fy*(self.L_ms+self.L_rb)/self.L_ms
+          #   Fy1_Mz = Mz/self.L_ms
+          #   [self.D_max_a,FW_max,bearingmass] = fatigue2_for_bearings(self.D_max,self.mb1Type,np.zeros(2),np.array([1,2]),Fy1_Fy,n_Fy/self.blade_number,Fz1_Fz,n_Fz/self.blade_number,Fz1_My,n_My/self.blade_number,Fy1_Mz,n_Mz/self.blade_number,N_rotations)
          
         #resize bearing if no fatigue check
         if self.check_fatigue == 0:
-            [D_max_a,FW_max,bearingmass] = resize_for_bearings(D_max,  self.mb1Type,False)
+            [self.D_max_a,FW_max,bearingmass] = resize_for_bearings(self.D_max,  self.mb1Type,False)
 
-        [D_min_a,FW_min,trash] = resize_for_bearings(D_min,  self.mb2Type,False) #mb2 is a representation of the gearbox connection
+        [self.D_min_a,FW_min,trash] = resize_for_bearings(self.D_min,  self.mb2Type,False) #mb2 is a representation of the gearbox connection
             
-        lss_mass_new=(pi/3)*(D_max_a**2+D_min_a**2+D_max_a*D_min_a)*(L_ms-(FW_max+FW_min)/2)*density/4+ \
-                         (pi/4)*(D_max_a**2-D_in**2)*density*FW_max+\
-                         (pi/4)*(D_min_a**2-D_in**2)*density*FW_min-\
-                         (pi/4)*(D_in**2)*density*(L_ms+(FW_max+FW_min)/2)
+        lss_mass_new=(pi/3)*(self.D_max_a**2+self.D_min_a**2+self.D_max_a*self.D_min_a)*(self.L_ms-(FW_max+FW_min)/2)*self.density/4+ \
+                         (pi/4)*(self.D_max_a**2-self.D_in**2)*self.density*FW_max+\
+                         (pi/4)*(self.D_min_a**2-self.D_in**2)*self.density*FW_min-\
+                         (pi/4)*(self.D_in**2)*self.density*(self.L_ms+(FW_max+FW_min)/2)
         lss_mass_new *= 1.35 # add flange and shrink disk mass
-        self.length=L_ms_new + (FW_max+FW_min)/2 + self.flange_length
-        #print ("L_ms: {0}").format(L_ms)
+        self.length=self.L_ms_new + (FW_max+FW_min)/2 + self.flange_length
+        #print ("self.L_ms: {0}").format(self.L_ms)
         #print ("LSS length, m: {0}").format(self.length)
-        self.D_outer=D_max
-        #print ("Upwind MB OD, m: {0}").format(D_max_a)
-        #print ("CB OD, m: {0}").format(D_min_a)
-        #print ("D_min: {0}").format(D_min)
-        self.D_in=D_in
+        self.D_outer=self.D_max
+        #print ("Upwind MB OD, m: {0}").format(self.D_max_a)
+        #print ("CB OD, m: {0}").format(self.D_min_a)
+        #print ("self.D_min: {0}").format(self.D_min)
+        self.D_in=self.D_in
         self.mass=lss_mass_new
-        self.diameter1= D_max_a
-        self.diameter2= D_min_a 
-        #self.length=L_ms
+        self.diameter1= self.D_max_a
+        self.diameter2= self.D_min_a 
+        #self.length=self.L_ms
         #print self.length
-        self.D_outer=D_max_a
-        self.diameter=D_max_a
+        self.D_outer=self.D_max_a
+        self.diameter=self.D_max_a
 
          # calculate mass properties
         downwind_location = np.array([self.gearbox_cm[0]-self.gearbox_length/2. , self.gearbox_cm[1] , self.gearbox_cm[2] ])
 
         bearing_location1 = np.array([0.,0.,0.]) #upwind
-        bearing_location1[0] = downwind_location[0] - L_ms*cos(self.shaft_angle)
+        bearing_location1[0] = downwind_location[0] - self.L_ms*cos(self.shaft_angle)
         bearing_location1[1] = downwind_location[1]
-        bearing_location1[2] = downwind_location[2] + L_ms*sin(self.shaft_angle)
+        bearing_location1[2] = downwind_location[2] + self.L_ms*sin(self.shaft_angle)
         self.bearing_location1 = bearing_location1
 
         self.bearing_location2 = np.array([0.,0.,0.]) #downwind does not exist
