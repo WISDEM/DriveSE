@@ -19,7 +19,7 @@ from scipy import integrate
 from drivese_utils import fatigue_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb, get_My, get_Mz,\
     size_Generator, size_HighSpeedSide, size_YawSystem, size_LowSpeedShaft, setup_Bedplate_Front, setup_Bedplate, size_Bedplate,\
     characterize_Bedplate_Front, characterize_Bedplate_Rear, size_Transformer, add_RNA, add_Nacelle, add_AboveYawMass,\
-    size_LSS_3pt_loop1, get_Damage_Brng1, get_Damage_Brng2, setup_Fatigue_Loads #fatigue2_for_bearings,
+    size_LSS_3pt, get_Damage_Brng1, get_Damage_Brng2, setup_Fatigue_Loads #fatigue2_for_bearings,
 
 
 #-------------------------------------------------------------------------------
@@ -795,7 +795,7 @@ class LowSpeedShaft_drive3pt(Component):
                   self.L_ms=self.L_ms_0
 
             #-----------------------
-            size_LSS_3pt_loop1(self)
+            size_LSS_3pt(self)
             #-----------------------
 
             check_limit = abs(abs(self.theta_y[-1])-TRB1_limit/self.n_safety_brg)

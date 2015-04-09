@@ -161,7 +161,7 @@ def Ninterp(S,a,b):
 def Goodman(S_alt,S_mean,Sut):
     return S_alt/(1-(S_mean/Sut))
 
-def size_LSS_3pt_loop1(self):
+def size_LSS_3pt(self):
   #Distances
   L_bg = 6.11 *(self.machine_rating/5.0e3)         #distance from hub center to gearbox yokes
   L_as = self.L_ms/2.0     #distance from main bearing to shaft center

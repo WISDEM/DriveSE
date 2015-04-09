@@ -17,8 +17,9 @@ from commonse.utilities import smooth_abs, vstack
 from drivewpact.drive import NacelleBase
 from drivewpact.drive import AboveYawMassAdder, NacelleSystemAdder #TODO remove after implementing these
 from drivese_utils import sys_print, size_Generator, size_HighSpeedSide, size_YawSystem, size_LowSpeedShaft, \
-    setup_Bedplate_Front, setup_Bedplate, size_Bedplate, characterize_Bedplate_Front, characterize_Bedplate_Rear,\
-    size_Transformer, add_RNA, add_Nacelle, add_AboveYawMass
+    setup_Bedplate_Front, setup_Bedplate, size_Bedplate, characterize_Bedplate_Front, characterize_Bedplate_Rear, \
+    size_Transformer, add_RNA, add_Nacelle, add_AboveYawMass, size_LSS_3pt, get_Damage_Brng1, get_Damage_Brng2, \
+    setup_Fatigue_Loads
 from fusedwind.interface import implement_base
 
 @implement_base(NacelleBase)
@@ -963,10 +964,287 @@ class GearboxSmooth(Component):
 
         return indStageMass
 
+class LowSpeedShaft3ptSmooth(Component):
+    ''' LowSpeedShaft class
+          The LowSpeedShaft class is used to represent the low speed shaft component of a wind turbine drivetrain. 
+          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains an update method to determine the mass, mass properties, and dimensions of the component.
+    '''
+
+    # variables
+    rotor_bending_moment_x = Float(iotype='in', units='N*m', desc='The bending moment about the x axis')
+    rotor_bending_moment_y = Float(iotype='in', units='N*m', desc='The bending moment about the y axis')
+    rotor_bending_moment_z = Float(iotype='in', units='N*m', desc='The bending moment about the z axis')
+    rotor_force_x = Float(iotype='in', units='N', desc='The force along the x axis applied at hub center')
+    rotor_force_y = Float(iotype='in', units='N', desc='The force along the y axis applied at hub center')
+    rotor_force_z = Float(iotype='in', units='N', desc='The force along the z axis applied at hub center')
+    rotor_mass = Float(iotype='in', units='kg', desc='rotor mass')
+    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
+    machine_rating = Float(iotype='in', units='kW', desc='machine_rating machine rating of the turbine')
+    gearbox_mass = Float(iotype='in', units='kg', desc='Gearbox mass')
+    carrier_mass = Float(iotype='in', units='kg', desc='Carrier mass')
+    overhang = Float(iotype='in', units='m', desc='Overhang distance')
+
+    # parameters
+    shrink_disc_mass = Float(iotype='in', units='kg', desc='Mass of the shrink disc')
+    gearbox_cm = Array(iotype = 'in', units = 'm', desc = 'center of mass of gearbox')
+    gearbox_length = Float(iotype='in', units='m', desc='gearbox length')
+    flange_length = Float(iotype ='in', units='m', desc ='flange length')
+    shaft_angle = Float(iotype='in', units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
+    shaft_ratio = Float(iotype='in', desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
+    mb1Type = Str(iotype='in',desc='Main bearing type: CARB, TRB1 or SRB')
+    mb2Type = Str(iotype='in',desc='Second bearing type: CARB, TRB1 or SRB')
+
+    L_rb = Float(iotype='in', units='m', desc='distance between hub center and upwind main bearing')
+    check_fatigue = Enum(0,(0,1,2),iotype = 'in', desc = 'turns on and off fatigue check')
+    fatigue_exponent = Float(iotype = 'in', desc = 'fatigue exponent of material')
+    S_ut = Float(700e6,iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of material')
+    weibull_A = Float(iotype = 'in', units = 'm/s', desc = 'weibull scale parameter "A" of 10-minute windspeed probability distribution')
+    weibull_k = Float(iotype = 'in', desc = 'weibull shape parameter "k" of 10-minute windspeed probability distribution')
+    blade_number = Float(iotype = 'in', desc = 'number of blades on rotor, 2 or 3')
+    cut_in = Float(iotype = 'in', units = 'm/s', desc = 'cut-in windspeed')
+    cut_out = Float(iotype = 'in', units = 'm/s', desc = 'cut-out windspeed')
+    Vrated = Float(iotype = 'in', units = 'm/s', desc = 'rated windspeed')
+    T_life = Float(iotype = 'in', units = 'yr', desc = 'design life')
+    IEC_Class = Str(iotype='in',desc='IEC class letter: A, B, or C')
+    DrivetrainEfficiency = Float(iotype = 'in', desc = 'overall drivettrain efficiency')
+    rotor_freq = Float(iotype = 'in', units = 'rpm', desc='rated rotor speed')
+    availability = Float(.95,iotype = 'in', desc = 'turbine availability')
+
+    rotor_thrust_distribution = Array(iotype='in', units ='N', desc = 'thrust distribution across turbine life')
+    rotor_thrust_count = Array(iotype='in', desc = 'corresponding cycle array for thrust distribution')
+    rotor_Fy_distribution = Array(iotype='in', units ='N', desc = 'Fy distribution across turbine life')
+    rotor_Fy_count = Array(iotype='in', desc = 'corresponding cycle array for Fy distribution')
+    rotor_Fz_distribution = Array(iotype='in', units ='N', desc = 'Fz distribution across turbine life')
+    rotor_Fz_count = Array(iotype='in', desc = 'corresponding cycle array for Fz distribution') 
+    rotor_torque_distribution = Array(iotype='in', units ='N*m', desc = 'torque distribution across turbine life')
+    rotor_torque_count = Array(iotype='in', desc = 'corresponding cycle array for torque distribution') 
+    rotor_My_distribution = Array(iotype='in', units ='N*m', desc = 'My distribution across turbine life')
+    rotor_My_count = Array(iotype='in', desc = 'corresponding cycle array for My distribution') 
+    rotor_Mz_distribution = Array(iotype='in', units ='N*m', desc = 'Mz distribution across turbine life')
+    rotor_Mz_count = Array(iotype='in', desc = 'corresponding cycle array for Mz distribution') 
+   
+    # outputs
+    design_torque = Float(iotype='out', units='N*m', desc='lss design torque')
+    design_bending_load = Float(iotype='out', units='N', desc='lss design bending load')
+    length = Float(iotype='out', units='m', desc='lss length')
+    diameter1 = Float(iotype='out', units='m', desc='lss outer diameter at main bearing')
+    diameter2 = Float(iotype='out', units='m', desc='lss outer diameter at second bearing')
+    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
+    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+    FW_mb = Float(iotype='out', units='m', desc='facewidth of main bearing')    
+    bearing_mass1 = Float(iotype='out', units = 'kg', desc='main bearing mass')
+    bearing_mass2 = Float(0., iotype='out', units = 'kg', desc='main bearing mass') #zero for 3-pt model
+    bearing_location1 = Array(np.array([0,0,0]),iotype='out', units = 'm', desc = 'main bearing 1 center of mass')
+    bearing_location2 = Array(np.array([0,0,0]),iotype='out', units = 'm', desc = 'main bearing 2 center of mass')
+
+    def __init__(self):
+        '''
+        Initializes low speed shaft component  
+        '''
+
+        super(LowSpeedShaft3ptSmooth, self).__init__()
+    
+    def execute(self):
+
+        #input parameters
+        if self.flange_length == 0:
+            self.flange_length = 0.3*(self.rotor_diameter/100.0)**2.0 - 0.1 * (self.rotor_diameter / 100.0) + 0.4
+
+        if self.L_rb == 0: #distance from hub center to main bearing
+            self.L_rb = get_L_rb(self.rotor_diameter, False)
+
+        #If user does not know important moments, crude approx
+        if self.rotor_mass > 0 and self.rotor_bending_moment_y == 0: 
+            self.rotor_bending_moment_y=get_My(self.rotor_mass,self.L_rb)
+
+        if self.rotor_mass > 0 and self.rotor_bending_moment_z == 0:
+            self.rotor_bending_moment_z=get_Mz(self.rotor_mass,self.L_rb)
+
+        self.g = 9.81 #m/s
+        self.density = 7850.0
 
 
+        self.L_ms_new = 0.0
+        self.L_ms_0=0.5 # main shaft length downwind of main bearing
+        self.L_ms=self.L_ms_0
+        tol=1e-4 
+        check_limit = 1.0
+        dL=0.05
+        self.D_max = 1.0
+        self.D_min = 0.2
+        # self.D_in=self.shaft_ratio*self.D_max
 
-class LowSpeedShaftDrive4ptSmooth(Component):
+        T=self.rotor_bending_moment_x/1000.0
+
+        #Main bearing defelection check
+        MB_limit=0.026;
+        CB_limit=4.0/60.0/180.0*pi;
+        TRB1_limit=3.0/60.0/180.0*pi;
+        self.n_safety_brg = 1.0
+        self.n_safety=2.5
+        self.Sy = 66000#*self.S_ut/700e6 #psi
+        self.E=2.1e11  
+        N_count=50    
+          
+        self.u_knm_inlb = 8850.745454036
+        self.u_in_m = 0.0254000508001
+        counter=0
+        length_max = self.overhang - self.L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29
+
+        while abs(check_limit) > tol and self.L_ms_new < length_max:
+            counter =counter+1
+            if self.L_ms_new > 0:
+                 self.L_ms=self.L_ms_new
+            else:
+                  self.L_ms=self.L_ms_0
+
+            #-----------------------
+            size_LSS_3pt(self)
+            #-----------------------
+
+            check_limit = abs(abs(self.theta_y[-1])-TRB1_limit/self.n_safety_brg)
+            #print 'deflection slope'
+            #print TRB1_limit
+            #print 'threshold'
+            #print theta_y[-1]
+            self.L_ms_new = self.L_ms + dL        
+
+        # fatigue check Taylor Parsons 6/2014
+        if self.check_fatigue == 1 or 2:
+          #start_time = time.time()
+          #material properties 34CrNiMo6 steel +QT, large diameter
+          self.E=2.1e11
+          self.density=7800.0
+          self.n_safety = 2.5
+          if self.S_ut <= 0:
+            self.S_ut=700.0e6 #Pa
+          Sm=0.9*self.S_ut #for bending situations, material strength at 10^3 cycles
+          C_size=0.6 #diameter larger than 10"
+          C_surf=4.51*(self.S_ut/1e6)**-.265 #machined surface 272*(self.S_ut/1e6)**-.995 #forged
+          C_temp=1 #normal operating temps
+          C_reliab=0.814 #99% reliability
+          C_envir=1. #enclosed environment
+          Se=C_size*C_surf*C_temp*C_reliab*C_envir*.5*self.S_ut #modified endurance limit for infinite life
+
+          if self.fatigue_exponent!=0:
+            if self.fatigue_exponent > 0:
+                self.SN_b = - self.fatigue_exponent
+            else:
+                self.SN_b = self.fatigue_exponent
+          else:
+            Nfinal = 5e8 #point where fatigue limit occurs under hypothetical S-N curve TODO adjust to fit actual data
+            z=log10(1e3)-log10(Nfinal)  #assuming no endurance limit (high strength steel)
+            self.SN_b=1/z*log10(Sm/Se)
+          self.SN_a=Sm/(1000.**self.SN_b)
+          # print 'm:', -1/self.SN_b
+          # print 'a:', self.SN_a
+
+          if self.check_fatigue == 1:
+              #checks to make sure all inputs are reasonable
+              if self.rotor_mass < 100:
+                  [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
+
+              #Rotor Loads calculations using DS472
+              setup_Fatigue_Loads(self)
+
+              #upwind bearing calculations
+              iterationstep=0.001
+              diameter_limit = 1.5
+              while True:
+                  get_Damage_Brng1(self)
+
+                  # print 'Bearing Diameter:', self.D_max
+                  # print 'self.Damage:', self.Damage
+                  if self.Damage < 1 or self.D_max >= diameter_limit:
+                      # print 'Bearing Diameter:', self.D_max
+                      # print 'self.Damage:', self.Damage
+                      #print (time.time() - start_time), 'seconds of total simulation time'
+                      break
+                  else:
+                      self.D_max+=iterationstep
+
+              #begin bearing calculations
+              N_bearings = self.N/self.blade_number #rotation number
+
+              Fz1stoch = (-self.My_stoch)/(self.L_ms)
+              Fy1stoch = self.Mz_stoch/self.L_ms
+              Fz1determ = (self.weightGbx*self.L_gb - self.LssWeight*.5*self.L_ms - self.rotorWeight*(self.L_ms+self.L_rb)) / (self.L_ms)
+
+              Fr_range = ((abs(Fz1stoch)+abs(Fz1determ))**2 +Fy1stoch**2)**.5 #radial stochastic + deterministic mean
+              Fa_range = self.Fx_stoch*cos(self.shaft_angle) + (self.rotorWeight+self.LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
+
+              life_bearing = self.N_f/self.blade_number
+
+              [self.D_max_a,FW_max,bearingmass] = fatigue_for_bearings(self.D_max, Fr_range, Fa_range, N_bearings, life_bearing, self.mb1Type,False)
+         
+        #resize bearing if no fatigue check
+        if self.check_fatigue == 0:
+            [self.D_max_a,FW_max,bearingmass] = resize_for_bearings(self.D_max,  self.mb1Type,False)
+
+        [self.D_min_a,FW_min,trash] = resize_for_bearings(self.D_min,  self.mb2Type,False) #mb2 is a representation of the gearbox connection
+            
+        lss_mass_new=(pi/3)*(self.D_max_a**2+self.D_min_a**2+self.D_max_a*self.D_min_a)*(self.L_ms-(FW_max+FW_min)/2)*self.density/4+ \
+                         (pi/4)*(self.D_max_a**2-self.D_in**2)*self.density*FW_max+\
+                         (pi/4)*(self.D_min_a**2-self.D_in**2)*self.density*FW_min-\
+                         (pi/4)*(self.D_in**2)*self.density*(self.L_ms+(FW_max+FW_min)/2)
+        lss_mass_new *= 1.35 # add flange and shrink disk mass
+        self.length=self.L_ms_new + (FW_max+FW_min)/2 + self.flange_length
+        #print ("self.L_ms: {0}").format(self.L_ms)
+        #print ("LSS length, m: {0}").format(self.length)
+        self.D_outer=self.D_max
+        #print ("Upwind MB OD, m: {0}").format(self.D_max_a)
+        #print ("CB OD, m: {0}").format(self.D_min_a)
+        #print ("self.D_min: {0}").format(self.D_min)
+        self.D_in=self.D_in
+        self.mass=lss_mass_new
+        self.diameter1= self.D_max_a
+        self.diameter2= self.D_min_a 
+        #self.length=self.L_ms
+        #print self.length
+        self.D_outer=self.D_max_a
+        self.diameter=self.D_max_a
+
+         # calculate mass properties
+        downwind_location = np.array([self.gearbox_cm[0]-self.gearbox_length/2. , self.gearbox_cm[1] , self.gearbox_cm[2] ])
+
+        bearing_location1 = np.array([0.,0.,0.]) #upwind
+        bearing_location1[0] = downwind_location[0] - self.L_ms*cos(self.shaft_angle)
+        bearing_location1[1] = downwind_location[1]
+        bearing_location1[2] = downwind_location[2] + self.L_ms*sin(self.shaft_angle)
+        self.bearing_location1 = bearing_location1
+
+        self.bearing_location2 = np.array([0.,0.,0.]) #downwind does not exist
+
+        cm = np.array([0.0,0.0,0.0])
+        cm[0] = downwind_location[0] - 0.65*self.length*cos(self.shaft_angle) #From solid models, center of mass with flange (not including shrink disk) very nearly .65*total_length
+        cm[1] = downwind_location[1]
+        cm[2] = downwind_location[2] + 0.65*self.length*sin(self.shaft_angle)
+
+        #including shrink disk mass
+        self.cm[0] = (cm[0]*self.mass + downwind_location[0]*self.shrink_disc_mass) / (self.mass+self.shrink_disc_mass) 
+        self.cm[1] = cm[1]
+        self.cm[2] = (cm[2]*self.mass + downwind_location[2]*self.shrink_disc_mass) / (self.mass+self.shrink_disc_mass)
+        # print 'shaft before shrink disk:', self.mass
+        self.mass+=self.shrink_disc_mass
+
+        I = np.array([0.0, 0.0, 0.0])
+        I[0]  = self.mass * (self.D_in ** 2.0 + self.D_outer ** 2.0) / 8.0
+        I[1]  = self.mass * (self.D_in ** 2.0 + self.D_outer ** 2.0 + (4.0 / 3.0) * (self.length ** 2.0)) / 16.0
+        I[2]  = I[1]
+        self.I = I
+
+        # print 'self.L_rb %8.f' %(self.L_rb) #*(self.machine_rating/5.0e3)   #distance from hub center to main bearing scaled off NREL 5MW
+        # print 'L_bg %8.f' %(L_bg) #*(self.machine_rating/5.0e3)         #distance from hub center to gearbox yokes
+        # print 'L_as %8.f' %(L_as) #distance from main bearing to shaft center
+      
+        self.FW_mb=FW_max
+        self.bearing_mass1 = bearingmass
+        self.bearing_mass2 = 0.
+
+
+class LowSpeedShaft4ptSmooth(Component):
     ''' LowSpeedShaft class
           The LowSpeedShaft class is used to represent the low speed shaft component of a wind turbine drivetrain.
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
