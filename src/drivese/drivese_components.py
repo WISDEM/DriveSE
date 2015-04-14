@@ -49,16 +49,14 @@ class LowSpeedShaft_drive4pt(Component):
     gearbox_cm = Array(iotype = 'in', units = 'm', desc = 'center of mass of gearbox')
     gearbox_length = Float(iotype='in', units='m', desc='gearbox length')
     flange_length = Float(iotype ='in', units='m', desc ='flange length')
-
-    # parameters
-    shrink_disc_mass = Float(iotype='in', units='kg', desc='Mass of the shrink disc')# shrink disk or flange addtional mass
+    L_rb = Float(iotype='in', units='m', desc='distance between hub center and upwind main bearing')
     shaft_angle = Float(iotype='in', units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
     shaft_ratio = Float(iotype='in', desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
-    mb1Type = Str(iotype='in',desc='Main bearing type: CARB, TRB1 or SRB')
-    mb2Type = Str(iotype='in',desc='Second bearing type: CARB, TRB1 or SRB')
+    DrivetrainEfficiency = Float(iotype = 'in', desc = 'overall drivettrain efficiency')
 
-    L_rb = Float(iotype='in', units='m', desc='distance between hub center and upwind main bearing')
-    check_fatigue = Enum(0,(0,1,2),iotype = 'in', desc = 'turns on and off fatigue check')
+    #fatigue1 variables
+    rotor_freq = Float(iotype = 'in', units = 'rpm', desc='rated rotor speed')
+    availability = Float(.95,iotype = 'in', desc = 'turbine availability')
     fatigue_exponent = Float(0,iotype = 'in', desc = 'fatigue exponent of material')
     S_ut = Float(700e6,iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of material')
     weibull_A = Float(iotype = 'in', units = 'm/s', desc = 'weibull scale parameter "A" of 10-minute windspeed probability distribution')
@@ -68,11 +66,8 @@ class LowSpeedShaft_drive4pt(Component):
     cut_out = Float(iotype = 'in', units = 'm/s', desc = 'cut-out windspeed')
     Vrated = Float(iotype = 'in', units = 'm/s', desc = 'rated windspeed')
     T_life = Float(iotype = 'in', units = 'yr', desc = 'cut-in windspeed')
-    IEC_Class = Str(iotype='in',desc='IEC class letter: A, B, or C')
-    DrivetrainEfficiency = Float(iotype = 'in', desc = 'overall drivettrain efficiency')
-    rotor_freq = Float(iotype = 'in', units = 'rpm', desc='rated rotor speed')
-    availability = Float(.95,iotype = 'in', desc = 'turbine availability')
 
+    # fatigue2 variables
     rotor_thrust_distribution = Array(iotype='in', units ='N', desc = 'thrust distribution across turbine life')
     rotor_thrust_count = Array(iotype='in', desc = 'corresponding cycle array for thrust distribution')
     rotor_Fy_distribution = Array(iotype='in', units ='N', desc = 'Fy distribution across turbine life')
@@ -85,6 +80,13 @@ class LowSpeedShaft_drive4pt(Component):
     rotor_My_count = Array(iotype='in', desc = 'corresponding cycle array for My distribution') 
     rotor_Mz_distribution = Array(iotype='in', units ='N*m', desc = 'Mz distribution across turbine life')
     rotor_Mz_count = Array(iotype='in', desc = 'corresponding cycle array for Mz distribution') 
+
+    # parameters
+    shrink_disc_mass = Float(iotype='in', units='kg', desc='Mass of the shrink disc')# shrink disk or flange addtional mass
+    mb1Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Main bearing type')
+    mb2Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Second bearing type')
+    check_fatigue = Enum(0,(0,1,2),iotype = 'in', desc = 'turns on and off fatigue check')
+    IEC_Class = Enum('A',('A','B','C'),iotype='in',desc='IEC class letter: A, B, or C')
     
     # outputs
     design_torque = Float(iotype='out', units='N*m', desc='lss design torque')
@@ -107,13 +109,6 @@ class LowSpeedShaft_drive4pt(Component):
         super(LowSpeedShaft_drive4pt, self).__init__()
     
     def execute(self):
-
-        tol=1e-4 
-        check_limit = 1.0
-        dL=0.05
-        counter = 0
-        N_count=50
-        N_count_2=2
 
         #input parameters
         self.g=9.81
@@ -142,6 +137,13 @@ class LowSpeedShaft_drive4pt(Component):
         self.D_max=1
         self.D_min=0.2
 
+        tol=1e-4 
+        check_limit = 1.0
+        dL=0.05
+        counter = 0
+        N_count=50
+        N_count_2=2
+
         #Distances
         L_bg = 6.11-self.L_rb    #distance from first main bearing to gearbox yokes  # to add as an input
         L_as = self.L_ms/2.0     #distance from main bearing to shaft center
@@ -161,10 +163,34 @@ class LowSpeedShaft_drive4pt(Component):
         self.u_knm_inlb = 8850.745454036
         self.u_in_m = 0.0254000508001
 
-        #bearing deflection limits
-        MB_limit = 0.026
-        CB_limit = 4.0/60.0/180.0*pi
-        TRB1_limit = 3.0/60.0/180.0*pi
+        #Main bearing defelection check
+        if self.mb1Type == 'TRB1' or 'TRB2':
+            Bearing_Limit = 3.0/60.0/180.0*pi
+        elif self.mb1Type == 'CRB':
+            Bearing_Limit = 4.0/60.0/180.0*pi
+        elif self.mb1Type == 'SRB' or 'RB':
+            Bearing_Limit = 0.078
+        elif self.mb1Type == 'RB':
+            Bearing_Limit = 0.002
+        elif self.mb1Type == 'CARB':
+            Bearing_Limit = 0.5/180*pi
+        else:
+            Bearing_Limit = False
+
+        #Second bearing defelection check
+        if self.mb2Type == 'TRB1' or 'TRB2':
+            Bearing_Limit2 = 3.0/60.0/180.0*pi
+        elif self.mb2Type == 'CRB':
+            Bearing_Limit2 = 4.0/60.0/180.0*pi
+        elif self.mb2Type == 'SRB' or 'RB':
+            Bearing_Limit2 = 0.078
+        elif self.mb2Type == 'RB':
+            Bearing_Limit2 = 0.002
+        elif self.mb2Type == 'CARB':
+            Bearing_Limit2 = 0.5/180*pi
+        else:
+            Bearing_Limit2 = False
+
         self.n_safety_brg = 1.0
 
         length_max = self.overhang - self.L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29/14
@@ -185,8 +211,8 @@ class LowSpeedShaft_drive4pt(Component):
             rotorWeight=self.rotor_mass*self.g                             #rotor weight
             lssWeight = pi/3.0*(self.D_max**2 + self.D_min**2 + self.D_max*self.D_min)*self.L_ms*self.density*self.g/4.0 ##
             lss_mass = lssWeight/self.g
-            gbxWeight = self.gearbox_mass*self.g                               #gearbox weight
-            self.gbxWeight = gbxWeight #global needed in fatigue functions
+            gbxWeight = self.gearbox_mass*self.g                           #gearbox weight
+            self.gbxWeight = gbxWeight                                     #needed in fatigue functions
             carrierWeight = self.carrier_mass*self.g                       #carrier weight
             shrinkDiscWeight = self.shrink_disc_mass*self.g
 
@@ -259,7 +285,7 @@ class LowSpeedShaft_drive4pt(Component):
                 theta_y[kk]=gx(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,self.L_ms,C1,x_ms[kk])/self.E/I_2
                 d_y[kk]=(deflection(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb_z,self.L_rb,lssWeight_new,self.L_ms,x_ms[kk])+C1*x_ms[kk]+C2)/self.E/I_2
 
-            check_limit = abs(abs(theta_y[-1])-TRB1_limit/self.n_safety_brg)
+            check_limit = abs(abs(theta_y[-1])-Bearing_Limit/self.n_safety_brg)
 
             if check_limit < 0:
                 self.L_ms_new = self.L_ms + dL
@@ -406,14 +432,14 @@ class LowSpeedShaft_drive4pt(Component):
                     theta_y[kk + len_pts]=(gx2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,x_ms[kk]) + C12)/self.E/I_2
                     d_y[kk + len_pts]=(deflection2(self.rotor_force_z,rotorWeight,self.shaft_angle,self.rotor_bending_moment_y,F_mb1_z,F_mb2_z,self.L_rb,lssWeight_new,self.L_ms,self.L_mb,x_ms[kk])+C12*x_ms[kk]+C22)/self.E/I_2
 
-                check_limit = abs(abs(theta_y[-1])-TRB1_limit/self.n_safety_brg)
+                check_limit = abs(abs(theta_y[-1])-Bearing_Limit/self.n_safety_brg)
 
                 if check_limit < 0:
                     self.L_ms__gb_new = self.L_ms_gb + dL
                 else:
                     self.L_ms__gb_new = self.L_ms_gb + dL
 
-                check_limit_ms = abs(abs(theta_y[-1]) - TRB1_limit/self.n_safety_brg)
+                check_limit_ms = abs(abs(theta_y[-1]) - Bearing_Limit2/self.n_safety_brg)
 
                 if check_limit_ms < 0:
                     self.L_mb_new = self.L_mb + dL_ms
@@ -677,19 +703,9 @@ class LowSpeedShaft_drive3pt(Component):
     gearbox_mass = Float(iotype='in', units='kg', desc='Gearbox mass')
     carrier_mass = Float(iotype='in', units='kg', desc='Carrier mass')
     overhang = Float(iotype='in', units='m', desc='Overhang distance')
-
-    # parameters
-    shrink_disc_mass = Float(iotype='in', units='kg', desc='Mass of the shrink disc')
-    gearbox_cm = Array(iotype = 'in', units = 'm', desc = 'center of mass of gearbox')
-    gearbox_length = Float(iotype='in', units='m', desc='gearbox length')
-    flange_length = Float(iotype ='in', units='m', desc ='flange length')
-    shaft_angle = Float(iotype='in', units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
-    shaft_ratio = Float(iotype='in', desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
-    mb1Type = Str(iotype='in',desc='Main bearing type: CARB, TRB1 or SRB')
-    mb2Type = Str(iotype='in',desc='Second bearing type: CARB, TRB1 or SRB')
-
     L_rb = Float(iotype='in', units='m', desc='distance between hub center and upwind main bearing')
-    check_fatigue = Enum(0,(0,1,2),iotype = 'in', desc = 'turns on and off fatigue check')
+
+    #fatigue1 variables
     fatigue_exponent = Float(iotype = 'in', desc = 'fatigue exponent of material')
     S_ut = Float(700e6,iotype = 'in', units = 'Pa', desc = 'ultimate tensile strength of material')
     weibull_A = Float(iotype = 'in', units = 'm/s', desc = 'weibull scale parameter "A" of 10-minute windspeed probability distribution')
@@ -699,11 +715,11 @@ class LowSpeedShaft_drive3pt(Component):
     cut_out = Float(iotype = 'in', units = 'm/s', desc = 'cut-out windspeed')
     Vrated = Float(iotype = 'in', units = 'm/s', desc = 'rated windspeed')
     T_life = Float(iotype = 'in', units = 'yr', desc = 'design life')
-    IEC_Class = Str(iotype='in',desc='IEC class letter: A, B, or C')
     DrivetrainEfficiency = Float(iotype = 'in', desc = 'overall drivettrain efficiency')
     rotor_freq = Float(iotype = 'in', units = 'rpm', desc='rated rotor speed')
     availability = Float(.95,iotype = 'in', desc = 'turbine availability')
 
+    #fatigue2 variables
     rotor_thrust_distribution = Array(iotype='in', units ='N', desc = 'thrust distribution across turbine life')
     rotor_thrust_count = Array(iotype='in', desc = 'corresponding cycle array for thrust distribution')
     rotor_Fy_distribution = Array(iotype='in', units ='N', desc = 'Fy distribution across turbine life')
@@ -716,6 +732,18 @@ class LowSpeedShaft_drive3pt(Component):
     rotor_My_count = Array(iotype='in', desc = 'corresponding cycle array for My distribution') 
     rotor_Mz_distribution = Array(iotype='in', units ='N*m', desc = 'Mz distribution across turbine life')
     rotor_Mz_count = Array(iotype='in', desc = 'corresponding cycle array for Mz distribution') 
+
+    # parameters
+    shrink_disc_mass = Float(iotype='in', units='kg', desc='Mass of the shrink disc')
+    gearbox_cm = Array(iotype = 'in', units = 'm', desc = 'center of mass of gearbox')
+    gearbox_length = Float(iotype='in', units='m', desc='gearbox length')
+    flange_length = Float(iotype ='in', units='m', desc ='flange length')
+    shaft_angle = Float(iotype='in', units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
+    shaft_ratio = Float(iotype='in', desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
+    mb1Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Main bearing type')
+    mb2Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Second bearing type')
+    check_fatigue = Enum(0,(0,1,2),iotype = 'in', desc = 'turns on and off fatigue check')
+    IEC_Class = Enum('A',('A','B','C'),iotype='in',desc='IEC class letter: A, B, or C')
    
     # outputs
     design_torque = Float(iotype='out', units='N*m', desc='lss design torque')
@@ -767,15 +795,23 @@ class LowSpeedShaft_drive3pt(Component):
         dL=0.05
         self.D_max = 1.0
         self.D_min = 0.2
-        # self.D_in=self.shaft_ratio*self.D_max
-        self.rotor_diameter = self.rotor_diameter
 
         T=self.rotor_bending_moment_x/1000.0
 
         #Main bearing defelection check
-        MB_limit=0.026;
-        CB_limit=4.0/60.0/180.0*pi;
-        TRB1_limit=3.0/60.0/180.0*pi;
+        if self.mb1Type == 'TRB1' or 'TRB2':
+            Bearing_Limit = 3.0/60.0/180.0*pi
+        elif self.mb1Type == 'CRB':
+            Bearing_Limit = 4.0/60.0/180.0*pi
+        elif self.mb1Type == 'SRB' or 'RB':
+            Bearing_Limit = 0.078
+        elif self.mb1Type == 'RB':
+            Bearing_Limit = 0.002
+        elif self.mb1Type == 'CARB':
+            Bearing_Limit = 0.5/180*pi
+        else:
+            Bearing_Limit = False
+        
         self.n_safety_brg = 1.0
         self.n_safety=2.5
         self.Sy = 66000#*self.S_ut/700e6 #psi
@@ -798,9 +834,9 @@ class LowSpeedShaft_drive3pt(Component):
             size_LSS_3pt(self)
             #-----------------------
 
-            check_limit = abs(abs(self.theta_y[-1])-TRB1_limit/self.n_safety_brg)
+            check_limit = abs(abs(self.theta_y[-1])-Bearing_Limit/self.n_safety_brg)
             #print 'deflection slope'
-            #print TRB1_limit
+            #print Bearing_Limit
             #print 'threshold'
             #print theta_y[-1]
             self.L_ms_new = self.L_ms + dL        
@@ -843,18 +879,14 @@ class LowSpeedShaft_drive3pt(Component):
               #Rotor Loads calculations using DS472
               setup_Fatigue_Loads(self)
 
-              #upwind bearing calculations
+              #upwind diameter calculations
               iterationstep=0.001
               diameter_limit = 1.5
               while True:
+
                   get_Damage_Brng1(self)
 
-                  # print 'Bearing Diameter:', self.D_max
-                  # print 'self.Damage:', self.Damage
                   if self.Damage < 1 or self.D_max >= diameter_limit:
-                      # print 'Bearing Diameter:', self.D_max
-                      # print 'self.Damage:', self.Damage
-                      #print (time.time() - start_time), 'seconds of total simulation time'
                       break
                   else:
                       self.D_max+=iterationstep

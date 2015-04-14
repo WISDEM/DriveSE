@@ -84,8 +84,8 @@ class Drive3pt(Assembly):
 
     # new parameters
     Np = Array(np.array([0.0,0.0,0.0,]), iotype='in', desc='number of planets in each stage')
-    mb1Type = Str(iotype='in',desc='Main bearing type: CARB, TRB or SRB')
-    mb2Type = Str(iotype='in',desc= 'Carrier bearing type: CRB, TRB or RB')
+    mb1Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Main bearing type')
+    mb2Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Second bearing type')
 
     #Fatigue Parameters
     check_fatigue = Enum(0,(0,1,2),iotype = 'in', desc = 'turns on and off fatigue check. 0 if no fatigue check, 1 if unknown loads, 2 if known loads')
@@ -98,7 +98,7 @@ class Drive3pt(Assembly):
     cut_out = Float(iotype = 'in', units = 'm/s', desc = 'cut-out windspeed')
     Vrated = Float(iotype = 'in', units = 'm/s', desc = 'rated windspeed')
     T_life = Float(iotype = 'in', units = 'yr', desc = 'cut-in windspeed')
-    IEC_Class = Str(iotype='in',desc='IEC class letter: A, B, or C')
+    IEC_Class = Enum('A',('A','B','C'),iotype='in',desc='IEC class letter: A, B, or C')
     DrivetrainEfficiency = Float(iotype = 'in', desc = 'overall drivettrain efficiency')
     availability = Float(.95,iotype = 'in', desc = 'turbine availability')
 
@@ -343,8 +343,8 @@ class Drive4pt(Assembly):
     uptower_transformer = Bool(iotype = 'in', desc = 'Boolean stating if transformer is uptower')
     shrink_disc_mass = Float(iotype='in',  desc='Mass of the shrink disc')
     carrier_mass = Float(iotype='in', units='kg', desc='Carrier mass')
-    mb1Type = Str(iotype='in',desc='Main bearing type: CARB, TRB or SRB')
-    mb2Type = Str(iotype='in',desc='Second bearing type: CARB, TRB or SRB')
+    mb1Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Main bearing type')
+    mb2Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Second bearing type')
     L_rb = Float(iotype='in', units='m', desc='distance between hub center and upwind main bearing')
     hss_length = Float(iotype = 'in', units = 'm', desc = 'high speed shaft length determined by user. Default 0.5m')
 
@@ -359,7 +359,7 @@ class Drive4pt(Assembly):
     cut_out = Float(iotype = 'in', units = 'm/s', desc = 'cut-out windspeed')
     Vrated = Float(iotype = 'in', units = 'm/s', desc = 'rated windspeed')
     T_life = Float(iotype = 'in', units = 'yr', desc = 'cut-in windspeed')
-    IEC_Class = Str(iotype='in',desc='IEC class letter: A, B, or C')
+    IEC_Class = Enum('A',('A','B','C'),iotype='in',desc='IEC class letter: A, B, or C')
     DrivetrainEfficiency = Float(iotype = 'in', desc = 'overall drivettrain efficiency')
     availability = Float(.95,iotype = 'in', desc = 'turbine availability')
 

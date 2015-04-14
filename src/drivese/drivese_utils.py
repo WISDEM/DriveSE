@@ -203,6 +203,7 @@ def size_LSS_3pt(self):
   F_gb_y = -F_mb_y - self.rotor_force_y
   F_gb_z = -F_mb_z + (self.weightLSS + weightShrinkDisc + self.weightGbx + weightRotor)*cos(self.shaft_angle) - self.rotor_force_z
 
+  #carrier bearing loads
   F_cu_z = (self.weightLSS*cos(self.shaft_angle) + weightShrinkDisc*cos(self.shaft_angle) + self.weightGbx*cos(self.shaft_angle)) - F_mb_z - self.rotor_force_z- \
   (-self.rotor_bending_moment_y - self.rotor_force_z*cos(self.shaft_angle)*self.L_rb + self.weightLSS*(L_bg - L_as)*cos(self.shaft_angle) - weightCarrier*cos(self.shaft_angle)*self.L_gb)/(1 - L_cu/L_cd)
 

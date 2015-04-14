@@ -461,8 +461,9 @@ class GeneratorSmooth(Component):
     def execute(self):
 
         size_Generator(self)
+        #this function performs all analysis needed for smooth. No internal iterations.
 
-        # derivatives
+        # derivatives TODO fix
         if (drivetrain_design < 4):
             self.d_mass_d_rotor_diameter = 0.0
         else:  # direct drive
@@ -557,6 +558,9 @@ class HighSpeedSideSmooth(Component):
     def execute(self):
 
         size_HighSpeedSide(self)
+        #this function performs all analysis needed for smooth. No internal iterations.
+
+        #TODO add derivatives
 
 #---------------------------------------------------------------------------------------------------------------
 
