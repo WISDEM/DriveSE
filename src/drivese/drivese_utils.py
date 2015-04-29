@@ -367,7 +367,7 @@ def size_LSS_3pt(self):
   self.L_gb=0
 
   #Weight properties
-  weightRotor=self.rotor_mass*self.g     # Yi modified to remove rotor overhung weight, considered in the load analysis
+  weightRotor=self.rotor_mass*self.g
   massLSS = pi/3*(self.D_max**2.0 + self.D_min**2.0 + self.D_max*self.D_min)*self.L_ms*self.density/4.0
   self.weightLSS = massLSS*self.g       #LSS weight
   self.weightShrinkDisc = self.shrink_disc_mass*self.g                #shrink disc weight
@@ -393,10 +393,12 @@ def size_LSS_3pt(self):
   * cos(self.shaft_angle) + self.weightShrinkDisc*cos(self.shaft_angle)\
   *(L_bg - self.L_ms) - self.weightGbx*cos(self.shaft_angle)*self.L_gb - self.rotor_force_z*cos(self.shaft_angle)*(L_bg + self.L_rb))/L_bg
 
-
   F_gb_x = -(self.weightLSS + self.weightShrinkDisc + self.weightGbx)*sin(self.shaft_angle)
   F_gb_y = -self.F_mb_y - self.rotor_force_y
   F_gb_z = -self.F_mb_z + (self.weightLSS + self.weightShrinkDisc + self.weightGbx + weightRotor)*cos(self.shaft_angle) - self.rotor_force_z
+
+  # print 'radial force ', (F_gb_y**2+F_gb_z**2)**0.5
+  # print 'axial force ', F_gb_x
 
   #carrier bearing loads
   F_cu_z = (self.weightLSS*cos(self.shaft_angle) + self.weightShrinkDisc*cos(self.shaft_angle) + self.weightGbx*cos(self.shaft_angle)) - self.F_mb_z - self.rotor_force_z- \
@@ -656,8 +658,6 @@ def setup_Bedplate(self):
   else:
       self.transLoc = 0
       self.convMass = (2.4445*(self.machine_rating) + 1599.0)*0.3 #(transformer mass * .3)
-
-  self.generator_location = self.generator_location.item() #TODO check why locations are passed as numpy values
 
   self.convLoc = self.generator_location * 2.0
   self.mb1_location = abs(self.mb1_location) #abs(self.gbx_length/2.0) + abs(self.lss_length)
@@ -1413,6 +1413,7 @@ def get_Mz(rotor_mass,L_rb): #moments taken to scale roughly with force (rotor m
     if L_rb == 0:
       L_rb = get_L_rb((rotor_mass-49089)/1170.6) #approximate rotor diameter from rotor mass
     return 53.846*rotor_mass*L_rb
+
 
 def sys_print(nace):
     print
