@@ -680,6 +680,9 @@ def setup_Bedplate(self):
   if self.rotor_mass > 0 and self.rotorMy == 0: 
       self.rotorMy=get_My(self.rotor_mass,self.L_rb)
 
+  if self.rotorFz == 0 and self.rotor_mass >0:
+      self.rotorFz = self.rotor_mass*self.g
+
   #initial I-beam dimensions
   self.tf = 0.01905
   self.tw = 0.0127
