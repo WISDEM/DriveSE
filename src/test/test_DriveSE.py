@@ -11,41 +11,40 @@ import numpy as np
 from math import pi
 from commonse.utilities import check_gradient_unit_test
 
-from drivese.drive_smooth import BearingSmooth, YawSystemSmooth, BedplateSmooth
+# from drivese.drive_smooth import YawSystemSmooth, BedplateSmooth
 from drivese.drive import Drive3pt, Drive4pt, sys_print
 from drivese.drivese_components import LowSpeedShaft_drive, Gearbox_drive, MainBearing_drive, SecondBearing_drive, Bedplate_drive, YawSystem_drive, LowSpeedShaft_drive3pt, \
     LowSpeedShaft_drive4pt, Transformer_drive, HighSpeedSide_drive, Generator_drive, NacelleSystemAdder_drive, AboveYawMassAdder_drive, RNASystemAdder_drive
-from drivese.hub import HubSE, Hub_drive, PitchSystem_drive, Spinner_drive
+from drivese.hub import Hub_System_Adder_drive, Hub_drive, PitchSystem_drive, Spinner_drive
 
 
 # Hub Components
-class Test_HubSE(unittest.TestCase):
+# commented out since Hub_system_Adder_drive was implemented instead of Hub_SE
+# class Test_HubSE(unittest.TestCase):
 
-    def setUp(self):
+#     def setUp(self):
 
-        self.hub = HubSE()
+#         self.hub = Hub_System_Adder_drive()
 
-        self.hub = HubSE()
+#         self.hub.rotor_diameter = 126.0 # m
+#         self.hub.blade_number  = 3
+#         self.hub.blade_root_diameter   = 3.542
+#         self.hub.machine_rating = 5000.0
+#         # self.hub.blade_mass = 17740.0 # kg
     
-        self.hub.rotor_diameter = 126.0 # m
-        self.hub.blade_number  = 3
-        self.hub.blade_root_diameter   = 3.542
-        self.hub.machine_rating = 5000.0
-        self.hub.blade_mass = 17740.0 # kg
+#         AirDensity= 1.225 # kg/(m^3)
+#         Solidity  = 0.0517
+#         RatedWindSpeed = 11.05 # m/s
+#         self.hub.rotor_bending_moment = (3.06 * pi / 8) * AirDensity * (RatedWindSpeed ** 2) * (Solidity * (self.hub.rotor_diameter ** 3)) / self.hub.blade_number
     
-        AirDensity= 1.225 # kg/(m^3)
-        Solidity  = 0.0517
-        RatedWindSpeed = 11.05 # m/s
-        self.hub.rotor_bending_moment = (3.06 * pi / 8) * AirDensity * (RatedWindSpeed ** 2) * (Solidity * (self.hub.rotor_diameter ** 3)) / self.hub.blade_number
-    
-        self.hub.gamma = 5.0
-        self.hub.MB1_location = np.array([-3.2, 0.0, 1.0])
+#         self.hub.gamma = 5.0
+#         self.hub.MB1_location = np.array([-3.2, 0.0, 1.0])
 
-    def test_functionality(self):
+#     def test_functionality(self):
         
-        self.hub.run()
+#         self.hub.run()
         
-        self.assertEqual(round(self.hub.hub_system_mass,1), 45025.7)
+#         self.assertEqual(round(self.hub.hub_system_mass,1), 45025.7)
 
 class Test_Hub(unittest.TestCase):
 
@@ -53,18 +52,15 @@ class Test_Hub(unittest.TestCase):
 
         self.hub = Hub_drive()
 
-        self.hub.rotor_diameter = 126.0 # m
+        # self.hub.rotor_diameter = 126.0 # m
         self.hub.blade_number  = 3
         self.hub.blade_root_diameter   = 3.542
         self.hub.machine_rating = 5000.0
 
-        AirDensity= 1.225 # kg/(m^3)
-        Solidity  = 0.0517
-        RatedWindSpeed = 11.05 # m/s
-        self.hub.rotor_bending_moment = (3.06 * pi / 8) * AirDensity * (RatedWindSpeed ** 2) * (Solidity * (self.hub.rotor_diameter ** 3)) / self.hub.blade_number
-
-        self.hub.gamma = 5.0
-        self.hub.MB1_location = np.array([-3.2, 0.0, 1.0])
+        # AirDensity= 1.225 # kg/(m^3)
+        # Solidity  = 0.0517
+        # RatedWindSpeed = 11.05 # m/s
+        # self.hub.rotor_bending_moment = (3.06 * pi / 8) * AirDensity * (RatedWindSpeed ** 2) * (Solidity * (self.hub.rotor_diameter ** 3)) / self.hub.blade_number
 
     def test_functionality(self):
         
@@ -171,7 +167,7 @@ class Test_Drive3pt(unittest.TestCase):
         
         self.nace.run()
         
-        self.assertEqual(round(self.nace.nacelle_mass,1), 159142.8)
+        self.assertEqual(round(self.nace.nacelle_mass,1), 191196.9)
 
 class Test_Drive4pt(unittest.TestCase):
 
@@ -225,7 +221,7 @@ class Test_Drive4pt(unittest.TestCase):
         self.nace.run()
         #sys_print(self.nace)
         
-        self.assertEqual(round(self.nace.nacelle_mass,1), 170990.5)
+        self.assertEqual(round(self.nace.nacelle_mass,1), 190223.5)
 
 '''
 class Test_LowSpeedShaft(unittest.TestCase):
@@ -397,7 +393,7 @@ class Test_Bedplate(unittest.TestCase):
         
         self.bpl.run()
         
-        self.assertEqual(round(self.bpl.mass,1), 51364.7)
+        self.assertEqual(round(self.bpl.mass,1), 64485.7)
 
 class Test_YawSystem(unittest.TestCase):
 
@@ -512,52 +508,52 @@ class Test_NacelleSystemAdder(unittest.TestCase):
 
 # Gradient tests for drive smooth
 # TODO: no unit tests since drive_smooth needs updating
-class TestBearingSmooth(unittest.TestCase):
+# class TestBearingSmooth(unittest.TestCase):
 
-    def test_gradient(self):
-        comp = BearingSmooth()
-        comp.bearing_type = 'SRB'
-        comp.lss_diameter = 0.721049014299
-        comp.rotor_diameter = 125.740528176
-        comp.bearing_switch = 'main'
+#     def test_gradient(self):
+#         comp = BearingSmooth()
+#         comp.bearing_type = 'SRB'
+#         comp.lss_diameter = 0.721049014299
+#         comp.rotor_diameter = 125.740528176
+#         comp.bearing_switch = 'main'
 
-        check_gradient_unit_test(self, comp)
-
-
-class TestYawSystemSmooth(unittest.TestCase):
-
-    def test_gradient(self):
-        comp = YawSystemSmooth()
-        comp.rotor_diameter = 125.740528176
-        comp.tower_top_diameter = 3.87
-
-        check_gradient_unit_test(self, comp)
+#         check_gradient_unit_test(self, comp)
 
 
-class TestBedplateSmooth(unittest.TestCase):
+# class TestYawSystemSmooth(unittest.TestCase):
 
-    def test_gradient(self):
-        comp = BedplateSmooth()
-        comp.hss_location = 0.785878301101
-        comp.hss_mass = 2288.26758514
-        comp.generator_location = 1.5717566022
-        comp.generator_mass = 16699.851325
-        comp.lss_location = -3.14351320441
-        comp.lss_mass = 12546.3193435
-        comp.mb1_location = -1.25740528176
-        comp.mb1_mass = 3522.06734168
-        comp.mb2_location = -4.40091848617
-        comp.mb2_mass = 5881.81400444
-        comp.tower_top_diameter = 3.87
-        comp.rotor_diameter = 125.740528176
-        comp.machine_rating = 5000.0
-        comp.rotor_mass = 93910.5225629
-        comp.rotor_bending_moment_y = -2325000.0
-        comp.rotor_force_z = -921262.226342
-        comp.h0_rear = 1.35
-        comp.h0_front = 1.7
+#     def test_gradient(self):
+#         comp = YawSystemSmooth()
+#         comp.rotor_diameter = 125.740528176
+#         comp.tower_top_diameter = 3.87
 
-        check_gradient_unit_test(self, comp)
+#         check_gradient_unit_test(self, comp)
+
+
+# class TestBedplateSmooth(unittest.TestCase):
+
+#     def test_gradient(self):
+#         comp = BedplateSmooth()
+#         comp.hss_location = 0.785878301101
+#         comp.hss_mass = 2288.26758514
+#         comp.generator_location = 1.5717566022
+#         comp.generator_mass = 16699.851325
+#         comp.lss_location = -3.14351320441
+#         comp.lss_mass = 12546.3193435
+#         comp.mb1_location = -1.25740528176
+#         comp.mb1_mass = 3522.06734168
+#         comp.mb2_location = -4.40091848617
+#         comp.mb2_mass = 5881.81400444
+#         comp.tower_top_diameter = 3.87
+#         comp.rotor_diameter = 125.740528176
+#         comp.machine_rating = 5000.0
+#         comp.rotor_mass = 93910.5225629
+#         comp.rotor_bending_moment_y = -2325000.0
+#         comp.rotor_force_z = -921262.226342
+#         comp.h0_rear = 1.35
+#         comp.h0_front = 1.7
+
+#         check_gradient_unit_test(self, comp)
         
 if __name__ == "__main__":
     unittest.main()

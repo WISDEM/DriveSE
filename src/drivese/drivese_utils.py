@@ -667,7 +667,7 @@ def setup_Bedplate(self):
   if self.transLoc > 0:
     self.rearTotalLength = self.transLoc*1.1
   else:
-    self.rearTotalLength = self.generator_location.item()*4.237/2.886 -self.tower_top_diameter/2.0 #scaled off of GE1.5
+    self.rearTotalLength = self.generator_location*4.237/2.886 -self.tower_top_diameter/2.0 #scaled off of GE1.5
 
   self.frontTotalLength = self.mb1_location + self.FW_mb1/2.
 

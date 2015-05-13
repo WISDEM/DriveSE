@@ -369,6 +369,13 @@ class Drive4pt(Assembly):
     rotor_Mz_distribution = Array(iotype='in', units ='N*m', desc = 'Mz distribution across turbine life')
     rotor_Mz_count = Array(iotype='in', desc = 'corresponding cycle-count array for Mz distribution') 
 
+    #sizing constraints for smooth analysis
+    sizing_constraints = Array(iotype='out', desc='sizing constraints in low speed shaft.  all must <= 0')
+    rootStress_margin_rear = Float(iotype='out', desc = 'bedplate constraint')
+    totalTipDefl_margin_rear = Float(iotype='out', desc = 'bedplate constraint')
+    rootStress_margin_front = Float(iotype='out', desc = 'bedplate constraint')
+    totalTipDefl_margin_front = Float(iotype='out', desc = 'bedplate constraint')
+
     def configure(self):
 
         # select components
@@ -1331,10 +1338,10 @@ class LowSpeedShaft3ptSmooth(Component):
     cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
     I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
     FW_mb = Float(iotype='out', units='m', desc='facewidth of main bearing')    
-    bearing_mass1 = Float(iotype='out', units = 'kg', desc='main bearing mass')
-    bearing_mass2 = Float(0., iotype='out', units = 'kg', desc='main bearing mass') #zero for 3-pt model
-    bearing_location1 = Array(np.array([0,0,0]),iotype='out', units = 'm', desc = 'main bearing 1 center of mass')
-    bearing_location2 = Array(np.array([0,0,0]),iotype='out', units = 'm', desc = 'main bearing 2 center of mass')
+    main_bearing_mass = Float(iotype='out', units = 'kg', desc='main bearing mass')
+    second_bearing_mass = Float(0., iotype='out', units = 'kg', desc='main bearing mass') #zero for 3-pt model
+    main_bearing_cm = Array(np.array([0,0,0]),iotype='out', units = 'm', desc = 'main bearing 1 center of mass')
+    second_bearing_cm = Array(np.array([0,0,0]),iotype='out', units = 'm', desc = 'main bearing 2 center of mass')
 
     def __init__(self):
         '''
@@ -1390,26 +1397,17 @@ class LowSpeedShaft3ptSmooth(Component):
         counter=0
         length_max = self.overhang - self.L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29
 
-        while abs(check_limit) > tol and self.L_ms_new < length_max:
-            counter =counter+1
-            if self.L_ms_new > 0:
-                 self.L_ms=self.L_ms_new
-            else:
-                  self.L_ms=self.L_ms_0
+        if self.L_ms_new > 0:
+             self.L_ms=self.L_ms_new
+        else:
+              self.L_ms=self.L_ms_0
 
-            #-----------------------
-            size_LSS_3pt(self)
-            #-----------------------
+        size_LSS_3pt(self)
 
-            check_limit = abs(abs(self.theta_y[-1])-TRB1_limit/self.n_safety_brg)
-            #print 'deflection slope'
-            #print TRB1_limit
-            #print 'threshold'
-            #print theta_y[-1]
-            self.L_ms_new = self.L_ms + dL        
+        check_limit = abs(abs(self.theta_y[-1])-TRB1_limit/self.n_safety_brg)      
 
         # fatigue check Taylor Parsons 6/2014
-        if self.check_fatigue == 1 or 2:
+        if self.check_fatigue == 1:
           #start_time = time.time()
           #material properties 34CrNiMo6 steel +QT, large diameter
           self.E=2.1e11
@@ -1438,43 +1436,28 @@ class LowSpeedShaft3ptSmooth(Component):
           # print 'm:', -1/self.SN_b
           # print 'a:', self.SN_a
 
-          if self.check_fatigue == 1:
-              #checks to make sure all inputs are reasonable
-              if self.rotor_mass < 100:
-                  [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
+          if self.rotor_mass < 100:
+              [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
 
-              #Rotor Loads calculations using DS472
-              setup_Fatigue_Loads(self)
+          #Rotor Loads calculations using DS472
+          setup_Fatigue_Loads(self)
 
-              #upwind bearing calculations
-              iterationstep=0.001
-              diameter_limit = 1.5
-              while True:
-                  get_Damage_Brng1(self)
+          #upwind bearing calculations
+          get_Damage_Brng1(self)
 
-                  # print 'Bearing Diameter:', self.D_max
-                  # print 'self.Damage:', self.Damage
-                  if self.Damage < 1 or self.D_max >= diameter_limit:
-                      # print 'Bearing Diameter:', self.D_max
-                      # print 'self.Damage:', self.Damage
-                      #print (time.time() - start_time), 'seconds of total simulation time'
-                      break
-                  else:
-                      self.D_max+=iterationstep
+          #begin bearing calculations
+          N_bearings = self.N/self.blade_number #rotation number
 
-              #begin bearing calculations
-              N_bearings = self.N/self.blade_number #rotation number
+          Fz1stoch = (-self.My_stoch)/(self.L_ms)
+          Fy1stoch = self.Mz_stoch/self.L_ms
+          Fz1determ = (self.weightGbx*self.L_gb - self.LssWeight*.5*self.L_ms - self.rotorWeight*(self.L_ms+self.L_rb)) / (self.L_ms)
 
-              Fz1stoch = (-self.My_stoch)/(self.L_ms)
-              Fy1stoch = self.Mz_stoch/self.L_ms
-              Fz1determ = (self.weightGbx*self.L_gb - self.LssWeight*.5*self.L_ms - self.rotorWeight*(self.L_ms+self.L_rb)) / (self.L_ms)
+          Fr_range = ((abs(Fz1stoch)+abs(Fz1determ))**2 +Fy1stoch**2)**.5 #radial stochastic + deterministic mean
+          Fa_range = self.Fx_stoch*cos(self.shaft_angle) + (self.rotorWeight+self.LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
 
-              Fr_range = ((abs(Fz1stoch)+abs(Fz1determ))**2 +Fy1stoch**2)**.5 #radial stochastic + deterministic mean
-              Fa_range = self.Fx_stoch*cos(self.shaft_angle) + (self.rotorWeight+self.LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
+          life_bearing = self.N_f/self.blade_number
 
-              life_bearing = self.N_f/self.blade_number
-
-              [self.D_max_a,FW_max,bearingmass] = fatigue_for_bearings(self.D_max, Fr_range, Fa_range, N_bearings, life_bearing, self.mb1Type,False)
+          [self.D_max_a,FW_max,bearingmass] = fatigue_for_bearings(self.D_max, Fr_range, Fa_range, N_bearings, life_bearing, self.mb1Type,False)
          
         #resize bearing if no fatigue check
         if self.check_fatigue == 0:
@@ -1537,8 +1520,8 @@ class LowSpeedShaft3ptSmooth(Component):
         # print 'L_as %8.f' %(L_as) #distance from main bearing to shaft center
       
         self.FW_mb=FW_max
-        self.bearing_mass1 = bearingmass
-        self.bearing_mass2 = 0.
+        self.main_bearing_mass = bearingmass
+        self.second_bearing_mass = 0.
 
 
 class LowSpeedShaft4ptSmooth(Component):
