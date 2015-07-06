@@ -587,7 +587,7 @@ class LowSpeedShaft_drive3pt(Component):
             self.flange_length = 0.3*(self.rotor_diameter/100.0)**2.0 - 0.1 * (self.rotor_diameter / 100.0) + 0.4
 
         if self.L_rb == 0: #distance from hub center to main bearing
-            self.L_rb = get_L_rb(self.rotor_diameter, False)
+            self.L_rb = get_L_rb(self.rotor_diameter, False)[0]
 
         #If user does not know important moments, crude approx
         if self.rotor_mass > 0 and self.rotor_bending_moment_y == 0: 

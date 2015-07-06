@@ -1118,6 +1118,60 @@ class blade_moment_transform(Component):
         # print
 
 
+class blade_force_transform(Component): 
+    ''' Blade_Force_Transform class          
+          The Blade_Force_Transform class is used to transform forces from the WISDEM rotor models to driveSE.
+    '''
+    # variables
+    # ensure angles are in radians. Azimuth is 3-element array with blade azimuths; b1, b2, b3 are 3-element arrays for each blade force (Fx, Fy, Fz); pitch and cone are floats
+    azimuth_angle = Array(np.array([0,2*pi/3,4*pi/3]),iotype='in',units='rad',desc='azimuth angles for each blade')
+    pitch_angle = Float(iotype ='in', units = 'rad', desc = 'pitch angle at each blade, assumed same')
+    cone_angle = Float(iotype='in', units='rad', desc='cone angle at each blade, assumed same')
+    b1 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
+    b2 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
+    b3 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
+
+    # returns
+    Fx = Float(iotype='out',units='N', desc='rotor force in x-direction')
+    Fy = Float(iotype='out',units='N', desc='rotor force in y-direction')
+    Fz = Float(iotype='out',units='N', desc='rotor force in z-direction')
+    
+    def __init__(self):
+        
+        super(blade_force_transform, self).__init__()
+    
+    def execute(self):
+        # print "input blade loads:"
+        # i=0
+        # while i<3:
+        #   print 'b1:', self.b1[i]
+        #   print 'b2:', self.b2[i]
+        #   print 'b3:', self.b3[i]
+        #   i+=1
+        # print
+
+        #nested function for transformations
+        def trans(alpha,con,phi,bFx,bFy,bFz):
+            Fx = bFx*cos(con)*cos(alpha) - bFy*(sin(con)*cos(alpha)*sin(phi)-sin(alpha)*cos(phi)) + bFz*(sin(con)*cos(alpha)*cos(phi)-sin(alpha)*sin(phi))
+            Fy = bFx*cos(con)*sin(alpha) - bFy*(sin(con)*sin(alpha)*sin(phi)+cos(alpha)*cos(phi)) + bFz*(sin(con)*sin(alpha)*cos(phi)+cos(alpha)*sin(phi))
+            Fz = bFx*(-sin(alpha)) - bFy*(-cos(alpha)*sin(phi)) + bFz*(cos(alpha)*cos(phi))
+            # print 
+            # print Fx
+            # print Fy
+            # print Fz
+            # print
+            return [Fx,Fy,Fz]
+
+        [b1Fx,b1Fy,b1Fz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[0],self.b1[0],self.b1[1],self.b1[2])
+        [b2Fx,b2Fy,b2Fz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[1],self.b2[0],self.b2[1],self.b2[2])
+        [b3Fx,b3Fy,b3Fz] = trans(self.pitch_angle,self.cone_angle,self.azimuth_angle[2],self.b3[0],self.b3[1],self.b3[2])
+
+        self.Fx = b1Fx+b2Fx+b3Fx
+        self.Fy = b1Fy+b2Fy+b3Fy
+        self.Fz = b1Fz+b2Fz+b3Fz
+
+
+
 # returns FW, mass for bearings without fatigue analysis
 def resize_for_bearings(D_shaft,type,deriv):
 # assume low load rating for bearing
@@ -1401,7 +1455,7 @@ def get_rotor_mass(machine_rating,deriv): #if user inputs forces and zero rotor 
     return out
 
 
-def get_L_rb(rotor_diameter,deriv):
+def get_L_rb(rotor_diameter,deriv=False):
     out = [0.007835*rotor_diameter+0.9642]
     if deriv:
       out.extend([.007835])
