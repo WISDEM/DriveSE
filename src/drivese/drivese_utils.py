@@ -647,9 +647,9 @@ def setup_Bedplate(self):
   self.density = 7800
 
   if self.L_rb>0:
-      self.L_rb = self.L_rb
+      L_rb = self.L_rb
   else:  
-      [self.L_rb] = get_L_rb(self.rotor_diameter,False)
+      [L_rb] = get_L_rb(self.rotor_diameter,False)
 
   #component weights and locations
   if self.transformer_mass>0: #only if uptower transformer
@@ -672,13 +672,13 @@ def setup_Bedplate(self):
   self.frontTotalLength = self.mb1_location + self.FW_mb1/2.
 
   #rotor weights and loads
-  self.rotorLoc = self.mb1_location + self.L_rb
+  self.rotorLoc = self.mb1_location + L_rb
   self.rotorFz=abs(self.rotor_force_z)
   self.rotorMy=abs(self.rotor_bending_moment_y)
 
   #If user does not know important moment, crude approx
   if self.rotor_mass > 0 and self.rotorMy == 0: 
-      self.rotorMy=get_My(self.rotor_mass,self.L_rb)
+      self.rotorMy=get_My(self.rotor_mass,L_rb)
 
   if self.rotorFz == 0 and self.rotor_mass >0:
       self.rotorFz = self.rotor_mass*self.g
