@@ -11,7 +11,7 @@ import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 
 from fusedwind.interface import implement_base
-from drivewpact.hub import HubBase#, HubSystemAdder
+from drivewpact.hub import HubBase, HubSystemAdder
 from drivese.drivese_utils import get_L_rb
 
 class Hub_System_Adder_drive(Component):
@@ -58,6 +58,7 @@ class Hub_System_Adder_drive(Component):
         self.hub_system_cm = (cm)
 
         self.hub_system_mass = self.hub_mass + self.pitch_system_mass + self.spinner_mass
+
 
         #add I definitions here
         hub_I = np.array([0.0, 0.0, 0.0])
@@ -192,11 +193,10 @@ class Hub_drive(Component):
 
     def execute(self):
 
-        if self.blade_root_diameter: #added 8/6/14 to allow analysis of hubs for unknown blade roots.
+        if self.blade_root_diameter > 0.0: #added 8/6/14 to allow analysis of hubs for unknown blade roots.
             blade_root_diameter = self.blade_root_diameter
         else:
             blade_root_diameter = 2.659*self.machine_rating**.3254
-
 
         #Model hub as a cyclinder with holes for blade root and nacelle flange.
         rCyl=1.1*blade_root_diameter/2.0
@@ -259,6 +259,7 @@ class PitchSystem_drive(Component):
                                                             # mass of pitch system based on Sunderland model
         self.mass =hubpitchFact * (0.22 * self.blade_mass * self.blade_number + 12.6 * self.rotor_bending_moment * (pitchmatldensity / pitchmatlstress))
                                                             # mass of pitch system based on Sunderland model
+
 
 #-------------------------------------------------------------------------------
 

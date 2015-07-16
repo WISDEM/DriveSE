@@ -114,14 +114,16 @@ class LowSpeedShaft_drive4pt(Component):
         self.g=9.81
 
         if self.L_rb == 0: #distance from hub center to main bearing
-          self.L_rb = 0.007835*self.rotor_diameter+0.9642
+          L_rb = 0.007835*self.rotor_diameter+0.9642
+        else:
+        	L_rb = self.L_rb
 
         #If user does not know important moments, crude approx
         if self.rotor_mass > 0 and self.rotor_bending_moment_y == 0: 
-            self.rotor_bending_moment_y=get_My(self.rotor_mass,self.L_rb)
+            self.rotor_bending_moment_y=get_My(self.rotor_mass,L_rb)
 
         if self.rotor_mass > 0 and self.rotor_bending_moment_z == 0:
-            self.rotor_bending_moment_z=get_Mz(self.rotor_mass,self.L_rb)
+            self.rotor_bending_moment_z=get_Mz(self.rotor_mass,L_rb)
 
         if self.rotor_mass ==0:
           [self.rotor_mass] = get_rotor_mass(self.machine_rating,False)
@@ -145,7 +147,7 @@ class LowSpeedShaft_drive4pt(Component):
         N_count_2=2
 
         #Distances
-        self.L_bg = 6.11-self.L_rb    #distance from first main bearing to gearbox yokes  # to add as an input
+        self.L_bg = 6.11-L_rb    #distance from first main bearing to gearbox yokes  # to add as an input
         self.L_as = self.L_ms/2.0     #distance from main bearing to shaft center
         self.L_gb = 0.0          #distance to gbx center from trunnions in x-dir # to add as an input
         self.H_gb = 1.0          #distance to gbx center from trunnions in z-dir # to add as an input     
@@ -193,7 +195,7 @@ class LowSpeedShaft_drive4pt(Component):
 
         self.n_safety_brg = 1.0
 
-        length_max = self.overhang - self.L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29/14
+        length_max = self.overhang - L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29/14
 
         while abs(check_limit) > tol and self.L_ms_new < length_max:
             counter = counter+1
@@ -328,7 +330,7 @@ class LowSpeedShaft_drive4pt(Component):
               lss_weight=self.density*9.81*(((pi/12)*(self.D_max**2+self.D_med**2+self.D_max*self.D_med)*(self.L_mb))-(pi/4*self.L_mb*self.D_in**2))
               Fy2stoch = -self.Mz_stoch/(self.L_mb) #= -Fy1 - Fy_stoch
               Fz2stoch = -(lss_weight*2./3.*self.L_mb-self.My_stoch)/(self.L_mb) + (lss_weight+self.shrinkDiscWeight+self.gbxWeight)*cos(self.shaft_angle) - self.rotorWeight #-Fz1 +Weights*cos(gamma)-Fz_stoch+Fz_mean (Fz_mean is in negative direction)
-              Fr2_range = (Fy2stoch**2+(Fz2stoch+abs(-self.rotorWeight*self.L_rb + 0.5*lss_weight+self.gbxWeight*self.L_gb/self.L_mb))**2)**0.5
+              Fr2_range = (Fy2stoch**2+(Fz2stoch+abs(-self.rotorWeight*L_rb + 0.5*lss_weight+self.gbxWeight*self.L_gb/self.L_mb))**2)**0.5
               Fa2_range = self.Fx_stoch*cos(self.shaft_angle) + (self.rotorWeight+lss_weight)*sin(self.shaft_angle) #axial stochastic + mean
 
               life_bearing = self.N_f/self.blade_number
@@ -587,14 +589,16 @@ class LowSpeedShaft_drive3pt(Component):
             self.flange_length = 0.3*(self.rotor_diameter/100.0)**2.0 - 0.1 * (self.rotor_diameter / 100.0) + 0.4
 
         if self.L_rb == 0: #distance from hub center to main bearing
-            self.L_rb = get_L_rb(self.rotor_diameter, False)[0]
+           L_rb = get_L_rb(self.rotor_diameter, False)[0]
+        else:
+        	 L_rb = self.L_rb
 
         #If user does not know important moments, crude approx
         if self.rotor_mass > 0 and self.rotor_bending_moment_y == 0: 
-            self.rotor_bending_moment_y=get_My(self.rotor_mass,self.L_rb)
+            self.rotor_bending_moment_y=get_My(self.rotor_mass,L_rb)
 
         if self.rotor_mass > 0 and self.rotor_bending_moment_z == 0:
-            self.rotor_bending_moment_z=get_Mz(self.rotor_mass,self.L_rb)
+            self.rotor_bending_moment_z=get_Mz(self.rotor_mass,L_rb)
 
         self.g = 9.81 #m/s
         self.density = 7850.0
@@ -634,7 +638,7 @@ class LowSpeedShaft_drive3pt(Component):
         self.u_knm_inlb = 8850.745454036
         self.u_in_m = 0.0254000508001
         counter=0
-        length_max = self.overhang - self.L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29
+        length_max = self.overhang - L_rb + (self.gearbox_cm[0] -self.gearbox_length/2.) #modified length limit 7/29
 
         while abs(check_limit) > tol and self.L_ms_new < length_max:
             counter =counter+1
@@ -709,7 +713,7 @@ class LowSpeedShaft_drive3pt(Component):
 
               Fz1stoch = (-self.My_stoch)/(self.L_ms)
               Fy1stoch = self.Mz_stoch/self.L_ms
-              Fz1determ = (self.weightGbx*self.L_gb - self.LssWeight*.5*self.L_ms - self.rotorWeight*(self.L_ms+self.L_rb)) / (self.L_ms)
+              Fz1determ = (self.weightGbx*self.L_gb - self.LssWeight*.5*self.L_ms - self.rotorWeight*(self.L_ms+L_rb)) / (self.L_ms)
 
               Fr_range = ((abs(Fz1stoch)+abs(Fz1determ))**2 +Fy1stoch**2)**.5 #radial stochastic + deterministic mean
               Fa_range = self.Fx_stoch*cos(self.shaft_angle) + (self.rotorWeight+self.LssWeight)*sin(self.shaft_angle) #axial stochastic + mean
