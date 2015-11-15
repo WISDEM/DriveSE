@@ -660,19 +660,20 @@ def setup_Bedplate(self):
       self.convMass = (2.4445*(self.machine_rating) + 1599.0)*0.3 #(transformer mass * .3)
 
   self.convLoc = self.generator_location * 2.0
-  self.mb1_location = abs(self.mb1_location) #abs(self.gbx_length/2.0) + abs(self.lss_length)
-  self.mb2_location = abs(self.mb2_location) #abs(self.gbx_length/2.0)
-  self.lss_location= abs(self.lss_location)
+  #TODO: removed self. since this are from connections but not sure if that disruptes upstream usage
+  mb1_location = abs(self.mb1_location) #abs(self.gbx_length/2.0) + abs(self.lss_length)
+  mb2_location = abs(self.mb2_location) #abs(self.gbx_length/2.0)
+  lss_location= abs(self.lss_location)
 
   if self.transLoc > 0:
     self.rearTotalLength = self.transLoc*1.1
   else:
     self.rearTotalLength = self.generator_location*4.237/2.886 -self.tower_top_diameter/2.0 #scaled off of GE1.5
 
-  self.frontTotalLength = self.mb1_location + self.FW_mb1/2.
+  self.frontTotalLength = mb1_location + self.FW_mb1/2.
 
   #rotor weights and loads
-  self.rotorLoc = self.mb1_location + L_rb
+  self.rotorLoc = mb1_location + L_rb
   self.rotorFz=abs(self.rotor_force_z)
   self.rotorMy=abs(self.rotor_bending_moment_y)
 
