@@ -10,9 +10,30 @@ from openmdao.main.datatypes.api import Float, Int, Array
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 
-from fusedwind.interface import implement_base
-from drivewpact.hub import HubBase, HubSystemAdder
+from fusedwind.interface import implement_base, base
 from drivese.drivese_utils import get_L_rb
+
+# Hub Base Assembly 
+@base
+class HubBase(Assembly):
+
+    # variables
+    blade_mass = Float(iotype='in', units='kg', desc='mass of one blade')
+    rotor_bending_moment = Float(iotype='in', units='N*m', desc='flapwise bending moment at blade root')
+    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
+    blade_root_diameter = Float(iotype='in', units='m', desc='blade root diameter')
+
+    # parameters
+    blade_number = Int(3, iotype='in', desc='number of turbine blades')
+
+    # outputs
+    hub_system_mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
+    hub_system_cm = Array(iotype='out', desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+    hub_system_I = Array(iotype='out', desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+
+    hub_mass = Float(0.0, iotype='out', units='kg')
+    pitch_system_mass = Float(0.0, iotype='out', units='kg')
+    spinner_mass = Float(0.0, iotype='out', units='kg')
 
 class Hub_System_Adder_drive(Component):
     ''' Get_hub_cm class

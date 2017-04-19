@@ -14,10 +14,43 @@ import scipy as scp
 import scipy.optimize as opt
 from scipy import integrate
 
-from fusedwind.interface import implement_base
-from drivewpact.drive import NacelleBase
+from fusedwind.interface import base, implement_base
 from drivese_components import LowSpeedShaft_drive, Gearbox_drive, MainBearing_drive, SecondBearing_drive, Bedplate_drive, YawSystem_drive, LowSpeedShaft_drive3pt, \
     LowSpeedShaft_drive4pt, Transformer_drive, HighSpeedSide_drive, Generator_drive, NacelleSystemAdder_drive, AboveYawMassAdder_drive, RNASystemAdder_drive
+
+#Nacelle Base Class
+@base
+class NacelleBase(Assembly):
+
+    # variables
+    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
+    rotor_mass = Float(iotype='in', units='kg', desc='rotor mass')
+    rotor_torque = Float(iotype='in', units='N*m', desc='rotor torque at rated power')
+    rotor_thrust = Float(iotype='in', units='N', desc='maximum rotor thrust')
+    rotor_speed = Float(iotype='in', units='rpm', desc='rotor speed at rated')
+    machine_rating = Float(iotype='in', units='kW', desc='machine rating of generator')
+    gear_ratio = Float(iotype='in', desc='overall gearbox ratio')
+    tower_top_diameter = Float(iotype='in', units='m', desc='diameter of tower top')
+    rotor_bending_moment = Float(iotype='in', units='N*m', desc='maximum aerodynamic bending moment')
+
+    # parameters
+    drivetrain_design = Enum('geared', ('geared', 'single_stage', 'multi_drive', 'pm_direct_drive'), iotype='in')
+    crane = Bool(iotype='in', desc='flag for presence of crane', deriv_ignore=True)
+    bevel = Int(0, iotype='in', desc='Flag for the presence of a bevel stage - 1 if present, 0 if not')
+    gear_configuration = Str(iotype='in', desc='tring that represents the configuration of the gearbox (stage number and types)')
+
+    # outputs
+    nacelle_mass = Float(iotype='out', units='kg', desc='nacelle mass')
+    nacelle_cm = Array(iotype='out', units='m', desc='center of mass of nacelle from tower top in yaw-aligned coordinate system')
+    nacelle_I = Array(iotype='out', units='kg*m**2', desc='mass moments of inertia for nacelle [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] about its center of mass')
+    low_speed_shaft_mass = Float(iotype='out', units='kg', desc='component mass')
+    main_bearing_mass = Float(iotype='out', units='kg', desc='component mass')
+    second_bearing_mass = Float(iotype='out', units='kg', desc='component mass')
+    gearbox_mass = Float(iotype='out', units='kg', desc='component mass')
+    high_speed_side_mass = Float(iotype='out', units='kg', desc='component mass')
+    generator_mass = Float(iotype='out', units='kg', desc='component mass')
+    bedplate_mass = Float(iotype='out', units='kg', desc='component mass')
+    yaw_system_mass = Float(iotype='out', units='kg', desc='component mass')
 
 @implement_base(NacelleBase)
 class Drive3pt(Assembly):
