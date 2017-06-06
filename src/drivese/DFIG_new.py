@@ -397,9 +397,12 @@ class Drive_DFIG(Assembly):
 	DFIG_I_0= Float(iotype='in', desc='Rotor current at no-load')
 	Generator_input=Float(iotype='in')
 	
-	def __init__(self,Optimiser='',Objective_function=''):
+	def __init__(self,Optimiser='CONMINdriver',Objective_function='Costs'):
 		
+				self.Optimiser=Optimiser
+				self.Objective_function=Objective_function
 				super(Drive_DFIG,self).__init__()
+        def configure(self):
 				""" Creates a new Assembly containing DFIG and an optimizer"""
 				self.add('DFIG',DFIG())
 				self.connect('DFIG_r_s','DFIG.DFIG_r_s')
@@ -419,8 +422,6 @@ class Drive_DFIG(Assembly):
 				self.connect('DFIG.DFIG_l_s','l_s')
 				self.connect('DFIG.I','I')
 				self.connect('DFIG.cm','cm')
-				self.Optimiser=Optimiser
-				self.Objective_function=Objective_function
 				Opt1=globals()[self.Optimiser]
 				self.add('driver',Opt1())
 				Obj1='DFIG'+'.'+self.Objective_function
@@ -456,7 +457,6 @@ class Drive_DFIG(Assembly):
 				
 def optim_DFIG():
 	opt_problem = Drive_DFIG('CONMINdriver','Costs')
-	print "paramanar"
 	opt_problem.DFIG_r_s= 0.4  #meter
 	opt_problem.DFIG_l_s= 1.4 #meter
 	opt_problem.DFIG_h_s = 0.1 #meter

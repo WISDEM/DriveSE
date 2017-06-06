@@ -144,7 +144,7 @@ class Drive3pt(Assembly):
     
     r_s=Float(iotype='out', desc='Optimised generator radius')
     l_s=Float(iotype='out', desc='Optimised generator length')
-				
+                                
     # new parameters
     Np = Array(np.array([0.0,0.0,0.0,]), iotype='in', desc='number of planets in each stage')
     mb1Type = Enum('SRB',('CARB','TRB1','TRB2','SRB','CRB','RB'),iotype='in',desc='Main bearing type')
@@ -240,20 +240,20 @@ class Drive3pt(Assembly):
         
         self.connect('comp.r_s','r_s')
         self.connect('comp.l_s','l_s')             
-#        self.connect('DFIG_r_s','comp.DFIG_r_s')
-#        self.connect('DFIG_l_s','comp.DFIG_l_s')
-#        self.connect('DFIG_h_s','comp.DFIG_h_s')
-#        self.connect('DFIG_h_r','comp.DFIG_h_r')
-#        self.connect('DFIG_I_0','comp.DFIG_I_0')
-#        self.connect('DFIG_B_symax','comp.DFIG_B_symax')
-#        self.connect('DFIG_S_N','comp.DFIG_S_N')
+        self.connect('DFIG_r_s','comp.DFIG_r_s')
+        self.connect('DFIG_l_s','comp.DFIG_l_s')
+        self.connect('DFIG_h_s','comp.DFIG_h_s')
+        self.connect('DFIG_h_r','comp.DFIG_h_r')
+        self.connect('DFIG_I_0','comp.DFIG_I_0')
+        self.connect('DFIG_B_symax','comp.DFIG_B_symax')
+        self.connect('DFIG_S_N','comp.DFIG_S_N')
         
         
              
         
         
         
-			
+                        
         self.connect('check_fatigue', 'lowSpeedShaft.check_fatigue')
         self.connect('weibull_A', 'lowSpeedShaft.weibull_A')
         self.connect('weibull_k', 'lowSpeedShaft.weibull_k')
@@ -682,7 +682,7 @@ class Drive4pt(Assembly):
         self.connect('nacelleSystem.nacelle_cm', 'nacelle_cm')
         self.connect('nacelleSystem.nacelle_I', 'nacelle_I')
         self.connect('mainBearing.cm','MB1_location')
-    	  
+          
 
 #------------------------------------------------------------------
 #NacelleSE drive with simplified low speed shaft and windpact models
@@ -803,7 +803,7 @@ def nacelle_example_5MW_baseline_3pt():
     # NREL 5 MW Rotor Variables
     print '----- NREL 5 MW Turbine - 3 Point Suspension -----'
     
-    nace = Drive3pt()
+    nace = Drive3pt() 
     nace.rotor_diameter = 130.0 # m
     nace.rotor_speed = 11.753 # #rpm m/s
     nace.machine_rating = 3600.0
@@ -850,25 +850,25 @@ def nacelle_example_5MW_baseline_3pt():
     nace.check_fatigue = 0 #0 if no fatigue check, 1 if parameterized fatigue check, 2 if known loads inputs
 #    nace.Objective_function = 'Costs'
 #    nace.Optimiser='CONMINdriver'
-#    opt_problem=nace.comp
-#    nace.opt_problem.run()
+#    comp=nace.comp
+#    nace.comp.run()
 #   
-    print __name__
-    if __name__=='__main__':
-    	# Generator design variables for DFIG
-    	nace.DFIG_r_s= 0.4  #meter
-    	nace.DFIG_l_s= 1.4 #meter
-    	nace.DFIG_h_s = 0.1 #meter
-    	nace.DFIG_h_r = 0.1 #meter
-    	nace.DFIG_I_0 = 29.5  # Ampere
-    	nace.DFIG_B_symax = 1. # Tesla
-    	nace.DFIG_S_N = -0.1 # Tesla
-    	#sa=nace.comp()
+    #print __name__
+    #if __name__=='__main__':
+    # Generator design variables for DFIG
+    nace.DFIG_r_s= 0.4  #meter
+    nace.DFIG_l_s= 1.4 #meter
+    nace.DFIG_h_s = 0.1 #meter
+    nace.DFIG_h_r = 0.1 #meter
+    nace.DFIG_I_0 = 29.5  # Ampere
+    nace.DFIG_B_symax = 1. # Tesla
+    nace.DFIG_S_N = -0.1 # Tesla
+        #sa=nace.comp()
     
     
     
    
-    		
+                
     #variables if check_fatigue = 1:
     nace.blade_number=3
     nace.cut_in=3. #cut-in m/s
@@ -908,23 +908,12 @@ def nacelle_example_5MW_baseline_3pt():
     nace.tower_top_diameter = 4.73 # m
     
     nace.run()
-    if __name__=="__main__":
-    	opt_problem = Drive_DFIG('CONMINdriver','Costs')
-    	print "paramanar"
-    	nace.DFIG_r_s= 0.4  #meter
-    	nace.DFIG_l_s= 1.4 #meter
-    	nace.DFIG_h_s = 0.1 #meter
-    	nace.DFIG_h_r = 0.1 #meter
-    	nace.DFIG_I_0 = 10   #Ampere
-    	nace.DFIG_B_symax = 1.  #Tesla
-    	nace.DFIG_S_N = -0.1  #Tesla
-    	opt_problem.run()
-    	raw_data = {'Parameters': ['Rating','Objective function','Air gap diameter', "Stator length","Lambda ratio","Diameter ratio", "Pole pitch(tau_p)", " Number of Stator Slots","Stator slot height(h_s)","Slots/pole/phase","Stator slot width(b_s)", " Stator slot aspect ratio","Stator tooth width(b_t)", "Stator yoke height(h_ys)","Rotor slots", "Rotor yoke height(h_yr)", "Rotor slot height(h_r)", "Rotor slot width(b_r)"," Rotor Slot aspect ratio", "Rotor tooth width(b_t)", "Peak air gap flux density","Peak air gap flux density fundamental","Peak stator yoke flux density","Peak rotor yoke flux density","Peak Stator tooth flux density","Peak rotor tooth flux density","Pole pairs", "Generator output frequency", "Generator output phase voltage", "Generator Output phase current","Optimal Slip","Stator Turns","Conductor cross-section","Stator Current density","Specific current loading","Stator resistance", "Stator leakage inductance", "Excited magnetic inductance"," Rotor winding turns","Conductor cross-section","Magnetization current","I_mag/Is"," Rotor Current density","Rotor resitance", " Rotor leakage inductance", "Generator Efficiency","Iron mass","Copper mass","Structural Steel mass","Total Mass","Total Material Cost"],
-    		'Values': [opt_problem.DFIG.P_gennom/1e6,opt_problem.Objective_function,2*opt_problem.DFIG.DFIG_r_s,opt_problem.DFIG.DFIG_l_s,opt_problem.DFIG.lambda_ratio,opt_problem.DFIG.D_ratio,opt_problem.DFIG.tau_p*1000,opt_problem.DFIG.N_slots,opt_problem.DFIG.DFIG_h_s*1000,opt_problem.DFIG.q1,opt_problem.DFIG.b_s*1000,opt_problem.DFIG.Slot_aspect_ratio1,opt_problem.DFIG.b_t*1000,opt_problem.DFIG.h_ys*1000,opt_problem.DFIG.Q_r,opt_problem.DFIG.h_yr*1000,opt_problem.DFIG.DFIG_h_r*1000,opt_problem.DFIG.b_r*1000,opt_problem.DFIG.Slot_aspect_ratio2,opt_problem.DFIG.b_tr*1000,opt_problem.DFIG.B_g,opt_problem.DFIG.B_g1,opt_problem.DFIG.DFIG_B_symax,opt_problem.DFIG.B_rymax,opt_problem.DFIG.B_tsmax,opt_problem.DFIG.B_trmax,opt_problem.DFIG.p,opt_problem.DFIG.f,opt_problem.DFIG.E_p,opt_problem.DFIG.I_s,opt_problem.DFIG.DFIG_S_N,opt_problem.DFIG.W_1a,opt_problem.DFIG.A_Cuscalc,opt_problem.DFIG.J_s,opt_problem.DFIG.A_1/1000,opt_problem.DFIG.R_s,opt_problem.DFIG.L_s,opt_problem.DFIG.L_sm,opt_problem.DFIG.W_2,opt_problem.DFIG.A_Curcalc,opt_problem.DFIG.DFIG_I_0,opt_problem.DFIG.Current_ratio,opt_problem.DFIG.J_r,opt_problem.DFIG.R_R,opt_problem.DFIG.L_r,opt_problem.DFIG.gen_eff,opt_problem.DFIG.Iron/1000,opt_problem.DFIG.Cu/1000,opt_problem.DFIG.Structure/1000,opt_problem.DFIG.M_actual/1000,opt_problem.DFIG.Costs/1000],
-    			'Limit': ['','','','','(0.2-1.5)','(1.37-1.4)','','','','','','(4-10)','','','','','','','(4-10)','','(0.7-1.2)','','2','2.1','2.1','2.1','','','(500-5000)','','(-0.002-0.3)','','','(3-6)','<60','','','','','','','(0.1-0.3)','(3-6)','','','>93','','','','',''],
-    				'Units':['MW','','m','m','-','-','mm','-','mm','','mm','','mm','mm','-','mm','mm','mm','-','mm','T','T','T','T','T','T','-','Hz','V','A','','turns','mm^2','A/mm^2','kA/m','ohms','p.u','p.u','turns','mm^2','A','','A/mm^2','ohms','p.u','%','Tons','Tons','Tons','Tons','$1000']}
-    	df=pandas.DataFrame(raw_data, columns=['Parameters','Values','Limit','Units'])
-    	print(df)
+    nace.comp.run()
+    raw_data = {'Parameters': ['Rating','Objective function','Air gap diameter', "Stator length","Lambda ratio","Diameter ratio", "Pole pitch(tau_p)", " Number of Stator Slots","Stator slot height(h_s)","Slots/pole/phase","Stator slot width(b_s)", " Stator slot aspect ratio","Stator tooth width(b_t)", "Stator yoke height(h_ys)","Rotor slots", "Rotor yoke height(h_yr)", "Rotor slot height(h_r)", "Rotor slot width(b_r)"," Rotor Slot aspect ratio", "Rotor tooth width(b_t)", "Peak air gap flux density","Peak air gap flux density fundamental","Peak stator yoke flux density","Peak rotor yoke flux density","Peak Stator tooth flux density","Peak rotor tooth flux density","Pole pairs", "Generator output frequency", "Generator output phase voltage", "Generator Output phase current","Optimal Slip","Stator Turns","Conductor cross-section","Stator Current density","Specific current loading","Stator resistance", "Stator leakage inductance", "Excited magnetic inductance"," Rotor winding turns","Conductor cross-section","Magnetization current","I_mag/Is"," Rotor Current density","Rotor resitance", " Rotor leakage inductance", "Generator Efficiency","Iron mass","Copper mass","Structural Steel mass","Total Mass","Total Material Cost"], 'Values': [nace.comp.DFIG.P_gennom/1e6,nace.comp.Objective_function,2*nace.comp.DFIG.DFIG_r_s,nace.comp.DFIG.DFIG_l_s,nace.comp.DFIG.lambda_ratio,nace.comp.DFIG.D_ratio,nace.comp.DFIG.tau_p*1000,nace.comp.DFIG.N_slots,nace.comp.DFIG.DFIG_h_s*1000,nace.comp.DFIG.q1,nace.comp.DFIG.b_s*1000,nace.comp.DFIG.Slot_aspect_ratio1,nace.comp.DFIG.b_t*1000,nace.comp.DFIG.h_ys*1000,nace.comp.DFIG.Q_r,nace.comp.DFIG.h_yr*1000,nace.comp.DFIG.DFIG_h_r*1000,nace.comp.DFIG.b_r*1000,nace.comp.DFIG.Slot_aspect_ratio2,nace.comp.DFIG.b_tr*1000,nace.comp.DFIG.B_g,nace.comp.DFIG.B_g1,nace.comp.DFIG.DFIG_B_symax,nace.comp.DFIG.B_rymax,nace.comp.DFIG.B_tsmax,nace.comp.DFIG.B_trmax,nace.comp.DFIG.p,nace.comp.DFIG.f,nace.comp.DFIG.E_p,nace.comp.DFIG.I_s,nace.comp.DFIG.DFIG_S_N,nace.comp.DFIG.W_1a,nace.comp.DFIG.A_Cuscalc,nace.comp.DFIG.J_s,nace.comp.DFIG.A_1/1000,nace.comp.DFIG.R_s,nace.comp.DFIG.L_s,nace.comp.DFIG.L_sm,nace.comp.DFIG.W_2,nace.comp.DFIG.A_Curcalc,nace.comp.DFIG.DFIG_I_0,nace.comp.DFIG.Current_ratio,nace.comp.DFIG.J_r,nace.comp.DFIG.R_R,nace.comp.DFIG.L_r,nace.comp.DFIG.gen_eff,nace.comp.DFIG.Iron/1000,nace.comp.DFIG.Cu/1000,nace.comp.DFIG.Structure/1000,nace.comp.DFIG.M_actual/1000,nace.comp.DFIG.Costs/1000],
+                        'Limit': ['','','','','(0.2-1.5)','(1.37-1.4)','','','','','','(4-10)','','','','','','','(4-10)','','(0.7-1.2)','','2','2.1','2.1','2.1','','','(500-5000)','','(-0.002-0.3)','','','(3-6)','<60','','','','','','','(0.1-0.3)','(3-6)','','','>93','','','','',''],
+                                'Units':['MW','','m','m','-','-','mm','-','mm','','mm','','mm','mm','-','mm','mm','mm','-','mm','T','T','T','T','T','T','-','Hz','V','A','','turns','mm^2','A/mm^2','kA/m','ohms','p.u','p.u','turns','mm^2','A','','A/mm^2','ohms','p.u','%','Tons','Tons','Tons','Tons','$1000']}
+    df=pandas.DataFrame(raw_data, columns=['Parameters','Values','Limit','Units'])
+    print(df)
     
     #cm_print(nace)
     sys_print(nace)
@@ -1062,43 +1051,43 @@ def sys_print(nace):
     print '-------------Nacelle system model results--------------------'
     
     raw_data = {'Parameters': ["Rating","Low speed shaft","LSS Upwind dia", " LSS Downwind dia","LSS Inner dia",\
-    	"Main Bearing-Upwind","Main Bearing-Downwind ","Gearbox","Gearbox efficiency", "Target efficiency",\
-    	"Optimised efficiency","Stage 1","Stage 2","Stage 3","HSS & brakes","Generator configuration",\
-    	"Gen-Optimisation Objective","Variable speed Electronics"," Transformer mass"," Overall Mainframe Mass",\
-    	" Bed Plate ","Electrical connections",'HVAC',"Nacelle cover"," Yaw system", " Overall Nacelle"],
-    	'Values': [nace.machine_rating,"-","-", "-", "-","-","-","-",nace.Gearbox_efficiency*100,nace.Target_Efficiency,\
-    		nace.ActualDrivetrainEfficiency,"-","-","-","-",nace.drivetrain_design,nace.Objective_function,"-", "-","-","-",\
-    		"-","-","-","-","-"],
+        "Main Bearing-Upwind","Main Bearing-Downwind ","Gearbox","Gearbox efficiency", "Target efficiency",\
+        "Optimised efficiency","Stage 1","Stage 2","Stage 3","HSS & brakes","Generator configuration",\
+        "Gen-Optimisation Objective","Variable speed Electronics"," Transformer mass"," Overall Mainframe Mass",\
+        " Bed Plate ","Electrical connections",'HVAC',"Nacelle cover"," Yaw system", " Overall Nacelle"],
+        'Values': [nace.machine_rating,"-","-", "-", "-","-","-","-",nace.Gearbox_efficiency*100,nace.Target_Efficiency,\
+                nace.ActualDrivetrainEfficiency,"-","-","-","-",nace.drivetrain_design,nace.Objective_function,"-", "-","-","-",\
+                "-","-","-","-","-"],
        'Length': ["-",nace.lowSpeedShaft.length,"-", "-","-","-","-" ,"-", "-","-","-","-","-","-","-",nace.l_s,"-",\
        "-","-","-",nace.bedplate.length,"-","-",nace.above_yaw_massAdder.length,"-","-"],
-			 'Height': ["-","-","-", "-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-",\
-			 "-",nace.above_yaw_massAdder.height,"-","-"],
-			 'Width': ["-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-",nace.bedplate.width,"-","-"],\
-			 'Diameter': ["-","-",nace.lowSpeedShaft.diameter1,nace.lowSpeedShaft.diameter2,nace.lowSpeedShaft.D_in,"-","-","-",\
-    	 "-","-","-","-","-","-","-",2*nace.r_s,"-","-","-","-","-","-","-","-","-","-"],
-    	 'Mass': ["-",nace.lowSpeedShaft.mass-nace.lowSpeedShaft.shrink_disc_mass,"-", "-", "-",nace.mainBearing.mass,nace.secondBearing.mass ,\
-			 nace.gearbox.mass, "-","-","-",(nace.gearbox.stage_masses[0]), nace.gearbox.stage_masses[1], nace.gearbox.stage_masses[2],nace.highSpeedSide.mass,\
+                         'Height': ["-","-","-", "-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-",\
+                         "-",nace.above_yaw_massAdder.height,"-","-"],
+                         'Width': ["-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-",nace.bedplate.width,"-","-"],\
+                         'Diameter': ["-","-",nace.lowSpeedShaft.diameter1,nace.lowSpeedShaft.diameter2,nace.lowSpeedShaft.D_in,"-","-","-",\
+         "-","-","-","-","-","-","-",2*nace.r_s,"-","-","-","-","-","-","-","-","-","-"],
+         'Mass': ["-",nace.lowSpeedShaft.mass-nace.lowSpeedShaft.shrink_disc_mass,"-", "-", "-",nace.mainBearing.mass,nace.secondBearing.mass ,\
+                         nace.gearbox.mass, "-","-","-",(nace.gearbox.stage_masses[0]), nace.gearbox.stage_masses[1], nace.gearbox.stage_masses[2],nace.highSpeedSide.mass,\
        nace.comp.mass,"-",(nace.above_yaw_massAdder.vs_electronics_mass), nace.transformer.mass,nace.above_yaw_massAdder.mainframe_mass,nace.bedplate.mass,nace.above_yaw_massAdder.electrical_mass,\
-			 nace.above_yaw_massAdder.hvac_mass,nace.above_yaw_massAdder.cover_mass ,nace.yawSystem.mass,nace.nacelle_mass],
-			 'CM_X': ["-",nace.lowSpeedShaft.cm[0],"-", "-", "-",nace.mainBearing.cm[0],nace.secondBearing.cm[0],nace.gearbox.cm[0],"-",\
+                         nace.above_yaw_massAdder.hvac_mass,nace.above_yaw_massAdder.cover_mass ,nace.yawSystem.mass,nace.nacelle_mass],
+                         'CM_X': ["-",nace.lowSpeedShaft.cm[0],"-", "-", "-",nace.mainBearing.cm[0],nace.secondBearing.cm[0],nace.gearbox.cm[0],"-",\
        "-","-","-","-","-",nace.highSpeedSide.cm[0],nace.comp.cm[0],"-", "-","-","-", nace.bedplate.cm[0],\
-			 "-","-","-","-",nace.nacelle_cm[0]],
-			 'CM_Y': ["-",nace.lowSpeedShaft.cm[1],"-", "-", "-",nace.mainBearing.cm[1],nace.secondBearing.cm[1],nace.gearbox.cm[1],"-",\
+                         "-","-","-","-",nace.nacelle_cm[0]],
+                         'CM_Y': ["-",nace.lowSpeedShaft.cm[1],"-", "-", "-",nace.mainBearing.cm[1],nace.secondBearing.cm[1],nace.gearbox.cm[1],"-",\
        "-","-","-","-","-",nace.highSpeedSide.cm[1],nace.comp.cm[1],"-", "-","-","-", nace.bedplate.cm[1],\
-			 "-","-","-","-",nace.nacelle_cm[1]],
-			 'CM_Z': ["-",nace.lowSpeedShaft.cm[2],"-", "-", "-",nace.mainBearing.cm[2],nace.secondBearing.cm[2],nace.gearbox.cm[2],"-",\
+                         "-","-","-","-",nace.nacelle_cm[1]],
+                         'CM_Z': ["-",nace.lowSpeedShaft.cm[2],"-", "-", "-",nace.mainBearing.cm[2],nace.secondBearing.cm[2],nace.gearbox.cm[2],"-",\
        "-","-","-","-","-",nace.highSpeedSide.cm[2],nace.comp.cm[2],"-", "-","-","-", nace.bedplate.cm[2],\
-			 "-","-","-","-",nace.nacelle_cm[2]],
-			 'I_XX': ["-",nace.lowSpeedShaft.I[0],"-", "-", "-","-","-",nace.gearbox.I[0],"-",\
+                         "-","-","-","-",nace.nacelle_cm[2]],
+                         'I_XX': ["-",nace.lowSpeedShaft.I[0],"-", "-", "-","-","-",nace.gearbox.I[0],"-",\
        "-","-","-","-","-",nace.highSpeedSide.I[0],nace.comp.I[0],"-", "-","-","-", nace.bedplate.I[0],\
-			 "-","-","-","-",nace.nacelle_I[0]],
-			 'I_YY': ["-",nace.lowSpeedShaft.I[1],"-", "-", "-","-","-",nace.gearbox.I[1],"-",\
+                         "-","-","-","-",nace.nacelle_I[0]],
+                         'I_YY': ["-",nace.lowSpeedShaft.I[1],"-", "-", "-","-","-",nace.gearbox.I[1],"-",\
        "-","-","-","-","-",nace.highSpeedSide.I[1],nace.comp.I[1],"-", "-","-","-", nace.bedplate.I[1],\
-			 "-","-","-","-",nace.nacelle_I[1]],
-			 'I_ZZ': ["-",nace.lowSpeedShaft.I[2],"-", "-", "-","-","-",nace.gearbox.I[2],"-",\
+                         "-","-","-","-",nace.nacelle_I[1]],
+                         'I_ZZ': ["-",nace.lowSpeedShaft.I[2],"-", "-", "-","-","-",nace.gearbox.I[2],"-",\
        "-","-","-","-","-",nace.highSpeedSide.I[2],nace.comp.I[2],"-", "-","-","-", nace.bedplate.I[2],\
-			 "-","-","-","-",nace.nacelle_I[2]]}
-			 
+                         "-","-","-","-",nace.nacelle_I[2]]}
+                         
     df=pandas.DataFrame(raw_data, columns=['Parameters','Values','Length','Height','Width','Diameter','Mass','CM_X','CM_Y','CM_Z','I_XX','I_YY','I_ZZ'])
     df.to_excel('3_point suspension_DFIG.xlsx')
     
