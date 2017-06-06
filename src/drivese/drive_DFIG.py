@@ -29,7 +29,11 @@ class Drive3pt(Assembly):
        DriveSE class
           The DriveSE3pt class is used to represent the nacelle system of a wind turbine with a single main bearing
     '''
-
+    def __init__(self, suboptimizer = 'CONMINdriver', subobjective='Mass'):
+        self.suboptimizer = suboptimizer
+        self.subobjective = subobjective
+        super(Drive3pt, self).__init__()
+    
     # variables
     rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
     rotor_mass = Float(iotype='in', units='kg', desc='rotor mass')
@@ -193,8 +197,7 @@ class Drive3pt(Assembly):
         self.add('yawSystem', YawSystem_drive())
         self.add('transformer',Transformer_drive())
         self.add('rna', RNASystemAdder_drive())
-        print __name__
-        self.add('comp', Drive_DFIG())
+        self.add('comp', Drive_DFIG(self.suboptimizer, self.subobjective))
         
 
         # workflow
@@ -803,7 +806,7 @@ def nacelle_example_5MW_baseline_3pt():
     # NREL 5 MW Rotor Variables
     print '----- NREL 5 MW Turbine - 3 Point Suspension -----'
     
-    nace = Drive3pt() 
+    nace = Drive3pt(suboptimizer = 'CONMINdriver', subobjective='Mass')
     nace.rotor_diameter = 130.0 # m
     nace.rotor_speed = 11.753 # #rpm m/s
     nace.machine_rating = 3600.0
