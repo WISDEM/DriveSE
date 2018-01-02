@@ -4,7 +4,7 @@ Author: [Y. Guo, R. King and T. Parsons](nrel.wisdem+drivese@gmail.com)
 
 ## Version
 
-This software is a beta version 0.1.1.
+This software is a beta version 0.1.3.
 
 ## Detailed Documentation
 
