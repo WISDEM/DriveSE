@@ -18,22 +18,22 @@ from drivese.drivese_utils import get_L_rb
 class HubBase(Assembly):
 
     # variables
-    blade_mass = Float(iotype='in', units='kg', desc='mass of one blade')
-    rotor_bending_moment = Float(iotype='in', units='N*m', desc='flapwise bending moment at blade root')
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
-    blade_root_diameter = Float(iotype='in', units='m', desc='blade root diameter')
+    self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+    self.add_param('rotor_bending_moment', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+    self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
 
     # parameters
-    blade_number = Int(3, iotype='in', desc='number of turbine blades')
+    self.add_param('blade_number', val=3, desc='number of turbine blades')
 
     # outputs
-    hub_system_mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    hub_system_cm = Array(iotype='out', desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
-    hub_system_I = Array(iotype='out', desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+    self.add_output('hub_system_mass', val=0.0, units='kg', desc='overall component mass')
+    self.add_output('hub_system_cm', val=np.array([]), desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+    self.add_output('hub_system_I', val=np.array([]), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
 
-    hub_mass = Float(0.0, iotype='out', units='kg')
-    pitch_system_mass = Float(0.0, iotype='out', units='kg')
-    spinner_mass = Float(0.0, iotype='out', units='kg')
+    self.add_output('hub_mass', val=0.0, units='kg')
+    self.add_output('pitch_system_mass', val=0.0, units='kg')
+    self.add_output('spinner_mass', val=0.0, units='kg')
 
 class Hub_System_Adder_drive(Component):
     ''' Get_hub_cm class
@@ -42,20 +42,20 @@ class Hub_System_Adder_drive(Component):
     '''
 
     # variables
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
-    L_rb = Float(0.0,iotype='in', units = 'm', desc = 'distance between hub center and upwind main bearing')
-    shaft_angle = Float(iotype = 'in', units = 'deg', desc = 'shaft angle')
-    MB1_location = Array(iotype = 'in', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
-    hub_mass = Float(iotype='in', units='kg',desc='mass of Hub')
-    hub_diameter = Float(3.0,iotype='in', units='m', desc='hub diameter')
-    hub_thickness = Float(iotype='in', units='m', desc='hub thickness')
-    pitch_system_mass = Float(iotype='in', units='kg',desc='mass of Pitch System')
-    spinner_mass = Float(iotype='in', units='kg',desc='mass of spinner')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+    self.add_param('L_rb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
+    self.add_param('shaft_angle', val=0.0, units='deg', desc='shaft angle')
+    self.add_param('MB1_location', val=np.array([]), units='m', desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+    self.add_param('hub_mass', val=0.0, units='kg', desc='mass of Hub')
+    self.add_param('hub_diameter', val=0.03.0, units='m', desc='hub diameter')
+    self.add_param('hub_thickness', val=0.0, units='m', desc='hub thickness')
+    self.add_param('pitch_system_mass', val=0.0, units='kg', desc='mass of Pitch System')
+    self.add_param('spinner_mass', val=0.0, units='kg', desc='mass of spinner')
 
     # outputs
-    hub_system_cm = Array(iotype='out', units='m',desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
-    hub_system_I = Array(iotype='out', desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
-    hub_system_mass = Float(iotype='out', units='kg',desc='mass of hub system')
+    self.add_output('hub_system_cm', val=np.array([]), units='m', desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+    self.add_output('hub_system_I', val=np.array([]), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+    self.add_output('hub_system_mass', val=0.0, units='kg', desc='mass of hub system')
 
     def __init__(self):
         ''' Initialize Get_hub_cm component
@@ -131,27 +131,27 @@ class HubSE(Assembly):
     '''
 
     # variables
-    blade_mass = Float(iotype='in', units='kg', desc='mass of one blade')
-    rotor_bending_moment = Float(iotype='in', units='N*m', desc='flapwise bending moment at blade root')
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
-    blade_root_diameter = Float(iotype='in', units='m', desc='blade root diameter')
-    machine_rating = Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
+    self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+    self.add_param('rotor_bending_moment', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+    self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
+    self.add_param('machine_rating', val=0.0, units='MW', desc='machine rating of turbine')
     
     # parameters
-    blade_number = Int(3, iotype='in', desc='number of turbine blades')
+    self.add_param('blade_number', val=3, desc='number of turbine blades')
 
     # outputs
-    hub_mass = Float(0.0, iotype='out', units='kg')
-    pitch_system_mass = Float(0.0, iotype='out', units='kg')
-    spinner_mass = Float(0.0, iotype='out', units='kg')
-    hub_diameter = Float(iotype='out', units='m', desc='hub diameter')
-    hub_thickness = Float(iotype='out', units='m', desc='hub thickness')
+    self.add_output('hub_mass', val=0.0, units='kg')
+    self.add_output('pitch_system_mass', val=0.0, units='kg')
+    self.add_output('spinner_mass', val=0.0, units='kg')
+    self.add_output('hub_diameter', val=0.0, units='m', desc='hub diameter')
+    self.add_output('hub_thickness', val=0.0, units='m', desc='hub thickness')
 
     #DUMMY OUTPUTS DO NOT USE. Calculated in hubsystemadderdrive
-    hub_system_mass = Float(0.0, iotype='out', units='kg')
-    hub_system_cm = Array(np.array([0.0,0.0,0.0]), iotype='out', units='m')
-    hub_system_I =  Array(np.array([0.0,0.0,0.0]), iotype='out')
-
+    self.add_output('hub_system_mass', val=0.0, units='kg')
+    self.add_output('hub_system_cm', val=np.array([0.0,0.0,0.0]), units='m')
+    self.add_output('hub_system_I', val=np.array([0.0,0.0,0.0]),)
+    
     def configure(self):
 
         # select components
@@ -194,16 +194,16 @@ class Hub_drive(Component):
     '''
 
     # variables
-    blade_root_diameter = Float(iotype='in', units='m', desc='blade root diameter')
-    machine_rating = Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
+    self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
+    self.add_param('machine_rating', val=0.0, units='MW', desc='machine rating of turbine')
     
     # parameters
-    blade_number = Int(3, iotype='in', desc='number of turbine blades')
+    self.add_param('blade_number', val=3, desc='number of turbine blades')
 
     # outputs
-    diameter = Float(0.0, iotype='out', units='m', desc='hub diameter')
-    thickness = Float(0.0, iotype='out',units='m',desc='hub thickness')
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
+    self.add_output('diameter', val=0.0, units='m', desc='hub diameter')
+    self.add_output('thickness', val=0.0, units='m', desc='hub thickness')
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
     
     def __init__(self):
         ''' 
@@ -245,14 +245,14 @@ class PitchSystem_drive(Component):
     '''
 
     # variables
-    blade_mass = Float(iotype='in', units='kg', desc='mass of one blade')
-    rotor_bending_moment = Float(iotype='in', units='N*m', desc='flapwise bending moment at blade root')
+    self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+    self.add_param('rotor_bending_moment', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
 
     # parameters
-    blade_number = Int(3, iotype='in', desc='number of turbine blades')
+    self.add_param('blade_number', val=3, desc='number of turbine blades')
 
     # outputs
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
 
     def __init__(self):
         '''
@@ -268,7 +268,7 @@ class PitchSystem_drive(Component):
 
         # Sunderland method for calculating pitch system masses
         pitchmatldensity = 7860.0                             # density of pitch system material (kg / m^3) - assuming BS1503-622 (same material as LSS)
-        pitchmatlstress  = 371000000.0                              # allowable stress of hub material (N / m^2)
+        pitchmatlstress  = 3710.0.0                              # allowable stress of hub material (N / m^2)
 
         # Root moment required as input, could be undone
         '''if rotor_bending_moment == 0.0:
@@ -293,10 +293,10 @@ class Spinner_drive(Component):
     '''
 
     # variables
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
 
     # outputs
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
 
     def __init__(self):
         '''

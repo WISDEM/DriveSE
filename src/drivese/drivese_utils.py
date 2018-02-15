@@ -44,17 +44,17 @@ class blade_moment_transform(Component):
     '''
     # variables
     # ensure angles are in radians. Azimuth is 3-element array with blade azimuths; b1, b2, b3 are 3-element arrays for each blade moment (Mx, My, Mz); pitch and cone are floats
-    azimuth_angle = Array(np.array([0,2*pi/3,4*pi/3]),iotype='in',units='rad',desc='azimuth angles for each blade')
-    pitch_angle = Float(iotype ='in', units = 'rad', desc = 'pitch angle at each blade, assumed same')
-    cone_angle = Float(iotype='in', units='rad', desc='cone angle at each blade, assumed same')
-    b1 = Array(iotype='in', units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
-    b2 = Array(iotype='in', units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
-    b3 = Array(iotype='in', units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
+    self.add_param('azimuth_angle', val=np.array([0,2*pi/3,4*pi/3]), units='rad', desc='azimuth angles for each blade')
+    self.add_param('pitch_angle', val=0.0, units='rad', desc='pitch angle at each blade, assumed same')
+    self.add_param('cone_angle', val=0.0, units='rad', desc='cone angle at each blade, assumed same')
+    self.add_param('b1', val=np.array([]), units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
+    self.add_param('b2', val=np.array([]), units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
+    self.add_param('b3', val=np.array([]), units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
 
     # returns
-    Mx = Float(iotype='out',units='N*m', desc='rotor moment in x-direction')
-    My = Float(iotype='out',units='N*m', desc='rotor moment in y-direction')
-    Mz = Float(iotype='out',units='N*m', desc='rotor moment in z-direction')
+    self.add_output('Mx', val=0.0, units='N*m', desc='rotor moment in x-direction')
+    self.add_output('My', val=0.0, units='N*m', desc='rotor moment in y-direction')
+    self.add_output('Mz', val=0.0, units='N*m', desc='rotor moment in z-direction')
     
     def __init__(self):
         
@@ -107,17 +107,17 @@ class blade_force_transform(Component):
     '''
     # variables
     # ensure angles are in radians. Azimuth is 3-element array with blade azimuths; b1, b2, b3 are 3-element arrays for each blade force (Fx, Fy, Fz); pitch and cone are floats
-    azimuth_angle = Array(np.array([0,2*pi/3,4*pi/3]),iotype='in',units='rad',desc='azimuth angles for each blade')
-    pitch_angle = Float(iotype ='in', units = 'rad', desc = 'pitch angle at each blade, assumed same')
-    cone_angle = Float(iotype='in', units='rad', desc='cone angle at each blade, assumed same')
-    b1 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
-    b2 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
-    b3 = Array(iotype='in', units='N', desc='forces in x,y,z directions along local blade coordinate system')
+    self.add_param('azimuth_angle', val=np.array([0,2*pi/3,4*pi/3]), units='rad', desc='azimuth angles for each blade')
+    self.add_param('pitch_angle', val=0.0, units='rad', desc='pitch angle at each blade, assumed same')
+    self.add_param('cone_angle', val=0.0, units='rad', desc='cone angle at each blade, assumed same')
+    self.add_param('b1', val=np.array([]), units='N', desc='forces in x,y,z directions along local blade coordinate system')
+    self.add_param('b2', val=np.array([]), units='N', desc='forces in x,y,z directions along local blade coordinate system')
+    self.add_param('b3', val=np.array([]), units='N', desc='forces in x,y,z directions along local blade coordinate system')
 
     # returns
-    Fx = Float(iotype='out',units='N', desc='rotor force in x-direction')
-    Fy = Float(iotype='out',units='N', desc='rotor force in y-direction')
-    Fz = Float(iotype='out',units='N', desc='rotor force in z-direction')
+    self.add_output('Fx', val=0.0, units='N', desc='rotor force in x-direction')
+    self.add_output('Fy', val=0.0, units='N', desc='rotor force in y-direction')
+    self.add_output('Fz', val=0.0, units='N', desc='rotor force in z-direction')
     
     def __init__(self):
         

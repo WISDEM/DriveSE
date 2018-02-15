@@ -27,17 +27,17 @@ class Bearing_drive(Component):
           It contains an update method to determine the mass, mass properties, and dimensions of the component.           
     '''
     # variables
-    bearing_type = Str(iotype='in',desc='Main bearing type: CARB, TRB1 or SRB')
-    bearing_mass = Float(iotype ='in', units = 'kg', desc = 'bearing mass from LSS model')
-    lss_diameter = Float(iotype='in', units='m', desc='lss outer diameter at main bearing')
-    lss_design_torque = Float(iotype='in', units='N*m', desc='lss design torque')
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
-    location = Array(np.array([0.,0.,0.]),iotype = 'in', units = 'm', desc = 'x,y,z location from shaft model')
+    self.add_param('bearing_type', val='', desc='Main bearing type: CARB, TRB1 or SRB')
+    self.add_param('bearing_mass', val=0.0, units='kg', desc='bearing mass from LSS model')
+    self.add_param('lss_diameter', val=0.0, units='m', desc='lss outer diameter at main bearing')
+    self.add_param('lss_design_torque', val=0.0, units='N*m', desc='lss design torque')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+    self.add_param('location', val=np.array([0.,0.,0.]), units='m', desc='x,y,z location from shaft model')
 
     # returns
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
+    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
     
     def __init__(self):
         
@@ -124,28 +124,28 @@ class Gearbox_drive(Component):
 
     #variables
     
-    gear_ratio = Float(iotype='in', desc='overall gearbox speedup ratio')
-    Np = Array(np.array([0.0,0.0,0.0,]), iotype='in', desc='number of planets in each stage')
-    rotor_speed = Float(iotype='in', desc='rotor rpm at rated power')
-    rotor_diameter = Float(iotype='in', desc='rotor diameter')
-    rotor_torque = Float(iotype='in', units='N*m', desc='rotor torque at rated power')
-    cm_input = Float(0,iotype = 'in', units='m', desc ='gearbox position along x-axis')
+    self.add_param('gear_ratio', val=0.0 desc='overall gearbox speedup ratio')
+    self.add_param('Np', val=np.array([0.0,0.0,0.0,]), desc='number of planets in each stage')
+    self.add_param('rotor_speed', val=0.0 desc='rotor rpm at rated power')
+    self.add_param('rotor_diameter', val=0.0 desc='rotor diameter')
+    self.add_param('rotor_torque', val=0.0, units='N*m', desc='rotor torque at rated power')
+    self.add_param('cm_input', val=0.00, units='m', desc='gearbox position along x-axis')
 
     #parameters
-    #name = Str(iotype='in', desc='gearbox name')
-    gear_configuration = Str(iotype='in', desc='string that represents the configuration of the gearbox (stage number and types)')
-    #eff = Float(iotype='in', desc='drivetrain efficiency')
-    ratio_type = Str(iotype='in', desc='optimal or empirical stage ratios')
-    shaft_type = Str(iotype='in', desc = 'normal or short shaft length')
+    self.add_param('#name', val=desc='gearbox name')
+    self.add_param('gear_configuration', val=desc='string that represents the configuration of the gearbox (stage number and types)')
+    self.add_param('#eff', val=0.0 desc='drivetrain efficiency')
+    self.add_param('ratio_type', val=desc='optimal or empirical stage ratios')
+    self.add_param('shaft_type', val=desc='normal or short shaft length')
 
     # outputs
-    stage_masses = Array(np.array([0.0, 0.0, 0.0, 0.0]), iotype='out', units='kg', desc='individual gearbox stage masses')
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
-    length = Float(iotype='out', units='m', desc='gearbox length')
-    height = Float(iotype='out', units='m', desc='gearbox height')
-    diameter = Float(iotype='out', units='m', desc='gearbox diameter')
+    self.add_output('stage_masses', val=np.array([0.0, 0.0, 0.0, 0.0]), units='kg', desc='individual gearbox stage masses')
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
+    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+    self.add_output('length', val=0.0, units='m', desc='gearbox length')
+    self.add_output('height', val=0.0, units='m', desc='gearbox height')
+    self.add_output('diameter', val=0.0, units='m', desc='gearbox diameter')
 
 
     def __init__(self):
@@ -253,9 +253,9 @@ class Gearbox_drive(Component):
         Kfact=0.0
 
         #K factor for pitting analysis
-        if self.rotor_torque < 200000.0:
+        if self.rotor_torque < 200.0:
             Kfact = 850.0
-        elif self.rotor_torque < 700000.0:
+        elif self.rotor_torque < 700.0:
             Kfact = 950.0
         else:
             Kfact = 1100.0
@@ -427,43 +427,43 @@ class Bedplate_drive(Component):
     '''
 
     #variables
-    gbx_length = Float(iotype = 'in', units = 'm', desc = 'gearbox length')
-    gbx_location = Float(iotype = 'in', units = 'm', desc = 'gearbox CM location')
-    gbx_mass = Float(iotype = 'in', units = 'kg', desc = 'gearbox mass')
-    hss_location = Float(iotype ='in', units = 'm', desc='HSS CM location')
-    hss_mass = Float(iotype ='in', units = 'kg', desc='HSS mass')
-    generator_location = Float(iotype ='in', units = 'm', desc='generator CM location')
-    generator_mass = Float(iotype ='in', units = 'kg', desc='generator mass')
-    lss_location = Float(iotype ='in', units = 'm', desc='LSS CM location')
-    lss_mass = Float(iotype ='in', units = 'kg', desc='LSS mass')
-    lss_length = Float(iotype = 'in', units = 'm', desc = 'LSS length')
-    mb1_location = Float(iotype ='in', units = 'm', desc='Upwind main bearing CM location')
-    FW_mb1 = Float(iotype = 'in', units = 'm', desc = 'Upwind main bearing facewidth')
-    mb1_mass = Float(iotype ='in', units = 'kg', desc='Upwind main bearing mass')
-    mb2_location = Float(iotype ='in', units = 'm', desc='Downwind main bearing CM location')
-    mb2_mass = Float(iotype ='in', units = 'kg', desc='Downwind main bearing mass')
-    transformer_mass = Float(iotype ='in', units = 'kg', desc='Transformer mass')
-    transformer_location = Float(iotype = 'in', units = 'm', desc = 'transformer CM location')
-    tower_top_diameter = Float(iotype ='in', units = 'm', desc='diameter of the top tower section at the yaw gear')
-    rotor_diameter = Float(iotype = 'in', units = 'm', desc='rotor diameter')
-    machine_rating = Float(iotype='in', units='kW', desc='machine_rating machine rating of the turbine')
-    rotor_mass = Float(iotype='in', units='kg', desc='rotor mass')
-    rotor_bending_moment_y = Float(iotype='in', units='N*m', desc='The bending moment about the y axis')
-    rotor_force_z = Float(iotype='in', units='N', desc='The force along the z axis applied at hub center')
-    flange_length = Float(iotype='in', units='m', desc='flange length')
-    L_rb = Float(iotype = 'in', units = 'm', desc = 'length between rotor center and upwind main bearing')
-    overhang = Float(iotype='in', units='m', desc='Overhang distance')
+    self.add_param('gbx_length', val=0.0, units='m', desc='gearbox length')
+    self.add_param('gbx_location', val=0.0, units='m', desc='gearbox CM location')
+    self.add_param('gbx_mass', val=0.0, units='kg', desc='gearbox mass')
+    self.add_param('hss_location', val=0.0, units='m', desc='HSS CM location')
+    self.add_param('hss_mass', val=0.0, units='kg', desc='HSS mass')
+    self.add_param('generator_location', val=0.0, units='m', desc='generator CM location')
+    self.add_param('generator_mass', val=0.0, units='kg', desc='generator mass')
+    self.add_param('lss_location', val=0.0, units='m', desc='LSS CM location')
+    self.add_param('lss_mass', val=0.0, units='kg', desc='LSS mass')
+    self.add_param('lss_length', val=0.0, units='m', desc='LSS length')
+    self.add_param('mb1_location', val=0.0, units='m', desc='Upwind main bearing CM location')
+    self.add_param('FW_mb1', val=0.0, units='m', desc='Upwind main bearing facewidth')
+    self.add_param('mb1_mass', val=0.0, units='kg', desc='Upwind main bearing mass')
+    self.add_param('mb2_location', val=0.0, units='m', desc='Downwind main bearing CM location')
+    self.add_param('mb2_mass', val=0.0, units='kg', desc='Downwind main bearing mass')
+    self.add_param('transformer_mass', val=0.0, units='kg', desc='Transformer mass')
+    self.add_param('transformer_location', val=0.0, units='m', desc='transformer CM location')
+    self.add_param('tower_top_diameter', val=0.0, units='m', desc='diameter of the top tower section at the yaw gear')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+    self.add_param('machine_rating', val=0.0, units='kW', desc='machine_rating machine rating of the turbine')
+    self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
+    self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='The bending moment about the y axis')
+    self.add_param('rotor_force_z', val=0.0, units='N', desc='The force along the z axis applied at hub center')
+    self.add_param('flange_length', val=0.0, units='m', desc='flange length')
+    self.add_param('L_rb', val=0.0, units='m', desc='length between rotor center and upwind main bearing')
+    self.add_param('overhang', val=0.0, units='m', desc='Overhang distance')
 
     #parameters
-    uptower_transformer = Bool(iotype = 'in', desc = 'Boolean stating if transformer is uptower')
+    self.add_param('uptower_transformer', val=desc='Boolean stating if transformer is uptower')
 
     #outputs
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
-    length = Float(iotype='out', units='m', desc='length of bedplate')
-    height = Float(iotype='out', units='m', desc='max height of bedplate')
-    width = Float(iotype='out', units='m', desc='width of bedplate')
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
+    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+    self.add_output('length', val=0.0, units='m', desc='length of bedplate')
+    self.add_output('height', val=0.0, units='m', desc='max height of bedplate')
+    self.add_output('width', val=0.0, units='m', desc='width of bedplate')
 
     def __init__(self):
         super(Bedplate_drive,self).__init__()
@@ -713,19 +713,19 @@ class YawSystem_drive(Component):
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
     #variables
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
-    rotor_thrust = Float(iotype='in', units='N', desc='maximum rotor thrust')
-    tower_top_diameter = Float(iotype='in', units='m', desc='tower top diameter')
-    above_yaw_mass = Float(iotype='in', units='kg', desc='above yaw mass')
-    bedplate_height = Float(iotype = 'in', units = 'm', desc = 'bedplate height')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+    self.add_param('rotor_thrust', val=0.0, units='N', desc='maximum rotor thrust')
+    self.add_param('tower_top_diameter', val=0.0, units='m', desc='tower top diameter')
+    self.add_param('above_yaw_mass', val=0.0, units='kg', desc='above yaw mass')
+    self.add_param('bedplate_height', val=0.0, units='m', desc='bedplate height')
 
     #parameters
-    yaw_motors_number = Int(0,iotype='in', desc='number of yaw motors')
+    self.add_param('yaw_motors_number', val=00, desc='number of yaw motors')
 
     #outputs
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
+    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
 
 
     def __init__(self):
@@ -775,20 +775,20 @@ class Transformer_drive(Component):
             It contains an update method to determine the mass, mass properties, and dimensions of the component if it is in fact uptower'''
 
     #inputs
-    machine_rating = Float(iotype='in', units='kW', desc='machine rating of the turbine')
-    uptower_transformer = Bool(iotype='in', desc = 'uptower or downtower transformer')
-    tower_top_diameter = Float(iotype = 'in', units = 'm', desc = 'tower top diameter for comparision of nacelle CM')
-    rotor_mass = Float(iotype='in', units='kg', desc='rotor mass')
-    overhang = Float(iotype='in', units='m', desc='rotor overhang distance')
-    generator_cm = Array(iotype='in', desc='center of mass of the generator in [x,y,z]')
-    rotor_diameter = Float(iotype='in',units='m', desc='rotor diameter of turbine')
-    RNA_mass = Float(iotype = 'in', units='kg', desc='mass of total RNA')
-    RNA_cm = Float(iotype='in', units='m', desc='RNA CM along x-axis')
+    self.add_param('machine_rating', val=0.0, units='kW', desc='machine rating of the turbine')
+    self.add_param('uptower_transformer', val=desc='uptower or downtower transformer')
+    self.add_param('tower_top_diameter', val=0.0, units='m', desc='tower top diameter for comparision of nacelle CM')
+    self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
+    self.add_param('overhang', val=0.0, units='m', desc='rotor overhang distance')
+    self.add_param('generator_cm', val=np.array([]), desc='center of mass of the generator in [x,y,z]')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter of turbine')
+    self.add_param('RNA_mass', val=0.0, units='kg', desc='mass of total RNA')
+    self.add_param('RNA_cm', val=0.0, units='m', desc='RNA CM along x-axis')
 
     #outputs
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
+    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
 
     def __init__(self):
         '''
@@ -855,20 +855,20 @@ class HighSpeedSide_drive(Component):
     '''
 
     # variables
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
-    rotor_torque = Float(iotype='in', units='N*m', desc='rotor torque at rated power')
-    gear_ratio = Float(iotype='in', desc='overall gearbox ratio')
-    lss_diameter = Float(iotype='in', units='m', desc='low speed shaft outer diameter')
-    gearbox_length = Float(iotype = 'in', units = 'm', desc='gearbox length')
-    gearbox_height = Float(iotype='in', units = 'm', desc = 'gearbox height')
-    gearbox_cm = Array(iotype = 'in', units = 'm', desc = 'gearbox cm [x,y,z]')
-    length_in = Float(iotype = 'in', units = 'm', desc = 'high speed shaft length determined by user. Default 0.5m')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+    self.add_param('rotor_torque', val=0.0, units='N*m', desc='rotor torque at rated power')
+    self.add_param('gear_ratio', val=0.0 desc='overall gearbox ratio')
+    self.add_param('lss_diameter', val=0.0, units='m', desc='low speed shaft outer diameter')
+    self.add_param('gearbox_length', val=0.0, units='m', desc='gearbox length')
+    self.add_param('gearbox_height', val=0.0, units='m', desc='gearbox height')
+    self.add_param('gearbox_cm', val=np.array([]), units='m', desc='gearbox cm [x,y,z]')
+    self.add_param('length_in', val=0.0, units='m', desc='high speed shaft length determined by user. Default 0.5m')
 
     # returns
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
-    length = Float(iotype='out', desc='length of high speed shaft')
+    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
+    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+    self.add_output('length', val=0.0 desc='length of high speed shaft')
 
     def __init__(self):
         '''
@@ -924,20 +924,18 @@ class Generator_drive(Component):
     '''
 
     # variables
-    rotor_diameter = Float(iotype='in', units='m', desc='rotor diameter')
-    machine_rating = Float(iotype='in', units='kW', desc='machine rating of generator')
-    gear_ratio = Float(iotype='in', desc='overall gearbox ratio')
-    highSpeedSide_length = Float( iotype = 'in', units = 'm', desc='length of high speed shaft and brake')
-    highSpeedSide_cm = Array(np.array([0.0,0.0,0.0]), iotype = 'in', units = 'm', desc='cm of high speed shaft and brake')
-    rotor_speed = Float(iotype='in', units='rpm', desc='Speed of rotor at rated power')
+    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+    self.add_param('machine_rating', val=0.0, units='kW', desc='machine rating of generator')
+    self.add_param('gear_ratio', val=0.0 desc='overall gearbox ratio')
+    self.add_param('highSpeedSide_length', val=0.0, units='m', desc='length of high speed shaft and brake')
+    self.add_param('highSpeedSide_cm', val=np.array([0.0,0.0,0.0]), units='m', desc='cm of high speed shaft and brake')
+    self.add_param('rotor_speed', val=0.0, units='rpm', desc='Speed of rotor at rated power')
 
     # parameters
-    drivetrain_design = Enum('geared', ('geared', 'single_stage', 'multi_drive', 'pm_direct_drive'), iotype='in')
-
-    # returns
-    mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    cm = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    I = Array(np.array([0.0, 0.0, 0.0]), iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+    self.add_param('drivetrain_design', val='geared', ('geared', 'single_stage', 'multi_drive', 'pm_direct_drive'), returns
+                                               self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
+                                               self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+                                               self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
 
     def __init__(self):
         '''
@@ -1005,34 +1003,34 @@ class Generator_drive(Component):
 class AboveYawMassAdder_drive(Component):
 
     # variables
-    machine_rating = Float(iotype = 'in', units='kW', desc='machine rating')
-    lss_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    main_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    second_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    gearbox_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    hss_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    generator_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    bedplate_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    bedplate_length = Float(iotype = 'in', units='m', desc='component length')
-    bedplate_width = Float(iotype = 'in', units='m', desc='component width')
-    transformer_mass = Float(iotype = 'in', units='kg', desc='component mass')
+    self.add_param('machine_rating', val=0.0, units='kW', desc='machine rating')
+    self.add_param('lss_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('main_bearing_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('second_bearing_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('gearbox_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('hss_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('generator_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('bedplate_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('bedplate_length', val=0.0, units='m', desc='component length')
+    self.add_param('bedplate_width', val=0.0, units='m', desc='component width')
+    self.add_param('transformer_mass', val=0.0, units='kg', desc='component mass')
 
     # parameters
-    crane = Bool(iotype='in', desc='flag for presence of crane')
+    self.add_param('crane', val=desc='flag for presence of crane')
 
     # returns
-    electrical_mass = Float(iotype = 'out', units='kg', desc='component mass')
-    vs_electronics_mass = Float(iotype = 'out', units='kg', desc='component mass')
-    hvac_mass = Float(iotype = 'out', units='kg', desc='component mass')
-    controls_mass = Float(iotype = 'out', units='kg', desc='component mass')
-    platforms_mass = Float(iotype = 'out', units='kg', desc='component mass')
-    crane_mass = Float(iotype = 'out', units='kg', desc='component mass')
-    mainframe_mass = Float(iotype = 'out', units='kg', desc='component mass')
-    cover_mass = Float(iotype = 'out', units='kg', desc='component mass')
-    above_yaw_mass = Float(iotype = 'out', units='kg', desc='total mass above yaw system')
-    length = Float(iotype = 'out', units='m', desc='component length')
-    width = Float(iotype = 'out', units='m', desc='component width')
-    height = Float(iotype = 'out', units='m', desc='component height')
+                                               self.add_output('electrical_mass', val=0.0, units='kg', desc='component mass')
+                                               self.add_output('vs_electronics_mass', val=0.0, units='kg', desc='component mass')
+                                               self.add_output('hvac_mass', val=0.0, units='kg', desc='component mass')
+                                               self.add_output('controls_mass', val=0.0, units='kg', desc='component mass')
+                                               self.add_output('platforms_mass', val=0.0, units='kg', desc='component mass')
+                                               self.add_output('crane_mass', val=0.0, units='kg', desc='component mass')
+                                               self.add_output('mainframe_mass', val=0.0, units='kg', desc='component mass')
+                                               self.add_output('cover_mass', val=0.0, units='kg', desc='component mass')
+                                               self.add_output('above_yaw_mass', val=0.0, units='kg', desc='total mass above yaw system')
+                                               self.add_output('length', val=0.0, units='m', desc='component length')
+                                               self.add_output('width', val=0.0, units='m', desc='component width')
+                                               self.add_output('height', val=0.0, units='m', desc='component height')
 
     def __init__(self):
         ''' Initialize above yaw mass adder component
@@ -1093,26 +1091,26 @@ class RNASystemAdder_drive(Component):
           It contains an update method to determine the mass, mass properties, and dimensions of the component. 
     '''
     #inputs
-    yawMass = Float(iotype='in', units='kg', desc='mass of yaw system')
-    lss_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    main_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    second_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    gearbox_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    hss_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    generator_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    lss_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    main_bearing_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    second_bearing_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    gearbox_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    hss_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    generator_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    overhang = Float(iotype = 'in', units='m', desc='nacelle overhang')
-    rotor_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    machine_rating = Float(iotype = 'in', units = 'kW', desc = 'machine rating ')
+    self.add_param('yawMass', val=0.0, units='kg', desc='mass of yaw system')
+    self.add_param('lss_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('main_bearing_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('second_bearing_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('gearbox_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('hss_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('generator_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('lss_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('main_bearing_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('second_bearing_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('gearbox_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('hss_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('generator_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('overhang', val=0.0, units='m', desc='nacelle overhang')
+    self.add_param('rotor_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('machine_rating', val=0.0, units='kW', desc='machine rating ')
 
     #returns
-    RNA_mass = Float(iotype = 'out', units='kg', desc='mass of total RNA')
-    RNA_cm = Float(iotype='out', units='m', desc='RNA CM along x-axis')
+                                               self.add_output('RNA_mass', val=0.0, units='kg', desc='mass of total RNA')
+                                               self.add_output('RNA_cm', val=0.0, units='m', desc='RNA CM along x-axis')
 
     def __init__(self):
         ''' Initialize RNA Adder component
@@ -1145,38 +1143,38 @@ class NacelleSystemAdder_drive(Component): #added to drive to include transforme
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
     # variables
-    above_yaw_mass = Float(iotype='in', units='kg', desc='mass above yaw system')
-    yawMass = Float(iotype='in', units='kg', desc='mass of yaw system')
-    lss_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    main_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    second_bearing_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    gearbox_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    hss_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    generator_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    bedplate_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    mainframe_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    lss_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    main_bearing_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    second_bearing_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    gearbox_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    hss_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    generator_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    bedplate_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    lss_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
-    main_bearing_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
-    second_bearing_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
-    gearbox_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
-    hss_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
-    generator_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
-    bedplate_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
-    transformer_mass = Float(iotype = 'in', units='kg', desc='component mass')
-    transformer_cm = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component CM')
-    transformer_I = Array(np.array([0.0,0.0,0.0]),iotype = 'in', units='kg', desc='component I')
+    self.add_param('above_yaw_mass', val=0.0, units='kg', desc='mass above yaw system')
+    self.add_param('yawMass', val=0.0, units='kg', desc='mass of yaw system')
+    self.add_param('lss_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('main_bearing_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('second_bearing_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('gearbox_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('hss_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('generator_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('bedplate_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('mainframe_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('lss_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('main_bearing_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('second_bearing_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('gearbox_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('hss_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('generator_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('bedplate_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('lss_I', val=np.array([0.0,0.0,0.0]), units='kg', desc='component I')
+    self.add_param('main_bearing_I', val=np.array([0.0,0.0,0.0]), units='kg', desc='component I')
+    self.add_param('second_bearing_I', val=np.array([0.0,0.0,0.0]), units='kg', desc='component I')
+    self.add_param('gearbox_I', val=np.array([0.0,0.0,0.0]), units='kg', desc='component I')
+    self.add_param('hss_I', val=np.array([0.0,0.0,0.0]), units='kg', desc='component I')
+    self.add_param('generator_I', val=np.array([0.0,0.0,0.0]), units='kg', desc='component I')
+    self.add_param('bedplate_I', val=np.array([0.0,0.0,0.0]), units='kg', desc='component I')
+    self.add_param('transformer_mass', val=0.0, units='kg', desc='component mass')
+    self.add_param('transformer_cm', val=np.array([0.0,0.0,0.0]), units='kg', desc='component CM')
+    self.add_param('transformer_I', val=np.array([0.0,0.0,0.0]), units='kg', desc='component I')
 
     # returns
-    nacelle_mass = Float(0.0, iotype='out', units='kg', desc='overall component mass')
-    nacelle_cm = Array(np.array([0.0, 0.0, 0.0]), units='m', iotype='out', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    nacelle_I = Array(np.array([0.0, 0.0, 0.0]), units='kg*m**2', iotype='out', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+    self.add_output('nacelle_mass', val=0.0, units='kg', desc='overall component mass')
+                   self.add_output('nacelle_cm', val=np.array([0.0, 0.0, 0.0]), units='m', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+                   self.add_output('nacelle_I', val=np.array([0.0, 0.0, 0.0]), units='kg*m**2', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
 
     def __init__(self):
         ''' Initialize above yaw mass adder component
