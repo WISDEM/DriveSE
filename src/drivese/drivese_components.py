@@ -18,101 +18,111 @@ from scipy import integrate
 
 from drivese_utils import fatigue_for_bearings, resize_for_bearings, get_rotor_mass, get_L_rb, get_My, get_Mz
 
-#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------
 
-class Bearing_drive(Component): 
-    ''' MainBearings class          
+
+class Bearing_drive(Component):
+    ''' MainBearings class
           The MainBearings class is used to represent the main bearing components of a wind turbine drivetrain. It contains two subcomponents (main bearing and second bearing) which also inherit from the SubComponent class.
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
-          It contains an update method to determine the mass, mass properties, and dimensions of the component.           
+          It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
     # variables
-    self.add_param('bearing_type', val='', desc='Main bearing type: CARB, TRB1 or SRB')
-    self.add_param('bearing_mass', val=0.0, units='kg', desc='bearing mass from LSS model')
-    self.add_param('lss_diameter', val=0.0, units='m', desc='lss outer diameter at main bearing')
-    self.add_param('lss_design_torque', val=0.0, units='N*m', desc='lss design torque')
+    self.add_param('bearing_type', val='',
+                   desc='Main bearing type: CARB, TRB1 or SRB')
+    self.add_param('bearing_mass', val=0.0, units='kg',
+                   desc='bearing mass from LSS model')
+    self.add_param('lss_diameter', val=0.0, units='m',
+                   desc='lss outer diameter at main bearing')
+    self.add_param('lss_design_torque', val=0.0,
+                   units='N*m', desc='lss design torque')
     self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-    self.add_param('location', val=np.array([0.,0.,0.]), units='m', desc='x,y,z location from shaft model')
+    self.add_param('location', val=np.array(
+        [0., 0., 0.]), units='m', desc='x,y,z location from shaft model')
 
     # returns
     self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
-    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
-    
+    self.add_output('cm', val=np.array(
+        [0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array(
+        [0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+
     def __init__(self):
-        
+
         super(Bearing_drive, self).__init__()
-    
+
     def execute(self):
         self.mass = self.bearing_mass
-        self.mass += self.mass*(8000.0/2700.0) #add housing weight
+        self.mass += self.mass * (8000.0 / 2700.0)  # add housing weight
 
-class MainBearing_drive(Bearing_drive): 
-    ''' MainBearings class          
+
+class MainBearing_drive(Bearing_drive):
+    ''' MainBearings class
           The MainBearings class is used to represent the main bearing components of a wind turbine drivetrain. It contains two subcomponents (main bearing and second bearing) which also inherit from the SubComponent class.
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
-          It contains an update method to determine the mass, mass properties, and dimensions of the component.           
+          It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
-    
+
     def __init__(self):
-        ''' Initializes main bearing component 
+        ''' Initializes main bearing component
         '''
-        
+
         super(MainBearing_drive, self).__init__()
-    
+
     def execute(self):
 
         super(MainBearing_drive, self).execute()
-        
+
         # calculate mass properties
-        inDiam  = self.lss_diameter
+        inDiam = self.lss_diameter
         depth = (inDiam * 1.5)
 
         if self.location[0] != 0.0:
             self.cm = self.location
 
         else:
-            cmMB = np.array([0.0,0.0,0.0])
-            cmMB = ([- (0.035 * self.rotor_diameter), 0.0, 0.025 * self.rotor_diameter])
+            cmMB = np.array([0.0, 0.0, 0.0])
+            cmMB = ([- (0.035 * self.rotor_diameter),
+                    0.0, 0.025 * self.rotor_diameter])
             self.cm = cmMB
-       
-        b1I0 = (self.mass * inDiam ** 2 ) / 4.0 
+
+        b1I0 = (self.mass * inDiam ** 2) / 4.0
         self.I = ([b1I0, b1I0 / 2.0, b1I0 / 2.0])
 
-#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------
 
-class SecondBearing_drive(Bearing_drive): 
-    ''' MainBearings class          
+
+class SecondBearing_drive(Bearing_drive):
+    ''' MainBearings class
           The MainBearings class is used to represent the main bearing components of a wind turbine drivetrain. It contains two subcomponents (main bearing and second bearing) which also inherit from the SubComponent class.
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
-          It contains an update method to determine the mass, mass properties, and dimensions of the component.           
+          It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
-    
+
     def __init__(self):
-        ''' Initializes second bearing component 
+        ''' Initializes second bearing component
         '''
-        
+
         super(SecondBearing_drive, self).__init__()
-    
+
     def execute(self):
 
         super(SecondBearing_drive, self).execute()
 
         # calculate mass properties
-        inDiam  = self.lss_diameter
+        inDiam = self.lss_diameter
         depth = (inDiam * 1.5)
 
         if self.mass > 0 and self.location[0] != 0.0:
             self.cm = self.location
         else:
-            self.cm = np.array([0,0,0])
+            self.cm = np.array([0, 0, 0])
             self.mass = 0.
 
-
-        b2I0  = (self.mass * inDiam ** 2 ) / 4.0 
+        b2I0 = (self.mass * inDiam ** 2) / 4.0
         self.I = ([b2I0, b2I0 / 2.0, b2I0 / 2.0])
 
-#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------
 
 
 class Gearbox_drive(Component):
@@ -122,16 +132,19 @@ class Gearbox_drive(Component):
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
-    #variables
-    
+    # variables
+
     self.add_param('gear_ratio', val=0.0 desc='overall gearbox speedup ratio')
-    self.add_param('Np', val=np.array([0.0,0.0,0.0,]), desc='number of planets in each stage')
+    self.add_param('Np', val=np.array(
+        [0.0, 0.0, 0.0, ]), desc='number of planets in each stage')
     self.add_param('rotor_speed', val=0.0 desc='rotor rpm at rated power')
     self.add_param('rotor_diameter', val=0.0 desc='rotor diameter')
-    self.add_param('rotor_torque', val=0.0, units='N*m', desc='rotor torque at rated power')
-    self.add_param('cm_input', val=0.00, units='m', desc='gearbox position along x-axis')
+    self.add_param('rotor_torque', val=0.0, units='N*m',
+                   desc='rotor torque at rated power')
+    self.add_param('cm_input', val=0.00, units='m',
+                   desc='gearbox position along x-axis')
 
-    #parameters
+    # parameters
     self.add_param('#name', val=desc='gearbox name')
     self.add_param('gear_configuration', val=desc='string that represents the configuration of the gearbox (stage number and types)')
     self.add_param('#eff', val=0.0 desc='drivetrain efficiency')
@@ -139,64 +152,73 @@ class Gearbox_drive(Component):
     self.add_param('shaft_type', val=desc='normal or short shaft length')
 
     # outputs
-    self.add_output('stage_masses', val=np.array([0.0, 0.0, 0.0, 0.0]), units='kg', desc='individual gearbox stage masses')
+    self.add_output('stage_masses', val=np.array(
+        [0.0, 0.0, 0.0, 0.0]), units='kg', desc='individual gearbox stage masses')
     self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
-    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+    self.add_output('cm', val=np.array(
+        [0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array(
+        [0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
     self.add_output('length', val=0.0, units='m', desc='gearbox length')
     self.add_output('height', val=0.0, units='m', desc='gearbox height')
     self.add_output('diameter', val=0.0, units='m', desc='gearbox diameter')
-
 
     def __init__(self):
         '''
         Initializes gearbox component
         '''
 
-
-
-        super(Gearbox_drive,self).__init__()
+        super(Gearbox_drive, self).__init__()
 
     def execute(self):
 
-        self.stageRatio=np.zeros([3,1])
+        self.stageRatio = np.zeros([3, 1])
 
-        self.stageTorque = np.zeros([len(self.stageRatio),1]) #filled in when ebxWeightEst is called
-        self.stageMass = np.zeros([len(self.stageRatio),1]) #filled in when ebxWeightEst is called
-        self.stageType=self.stageTypeCalc(self.gear_configuration)
-        #print self.gear_ratio
-        #print self.Np
-        #print self.ratio_type
-        #print self.gear_configuration
-        self.stageRatio=self.stageRatioCalc(self.gear_ratio,self.Np,self.ratio_type,self.gear_configuration)
-        #print self.stageRatio
+        # filled in when ebxWeightEst is called
+        self.stageTorque = np.zeros([len(self.stageRatio), 1])
+        # filled in when ebxWeightEst is called
+        self.stageMass = np.zeros([len(self.stageRatio), 1])
+        self.stageType = self.stageTypeCalc(self.gear_configuration)
+        # print self.gear_ratio
+        # print self.Np
+        # print self.ratio_type
+        # print self.gear_configuration
+        self.stageRatio = self.stageRatioCalc(
+            self.gear_ratio, self.Np, self.ratio_type, self.gear_configuration)
+        # print self.stageRatio
 
-        m=self.gbxWeightEst(self.gear_configuration,self.gear_ratio,self.Np,self.ratio_type,self.shaft_type,self.rotor_torque)
+        m = self.gbxWeightEst(self.gear_configuration, self.gear_ratio,
+                              self.Np, self.ratio_type, self.shaft_type, self.rotor_torque)
         self.mass = float(m)
-        self.stage_masses=self.stageMass
+        self.stage_masses = self.stageMass
         # calculate mass properties
 
         self.length = (0.012 * self.rotor_diameter)
         self.height = (0.015 * self.rotor_diameter)
         self.diameter = (0.75 * self.height)
 
-        cm0   = self.cm_input
-        cm1   = 0.0
-        cm2   = 0.4*self.height #TODO validate or adjust factor. origin is modified to be above bedplate top
+        cm0 = self.cm_input
+        cm1 = 0.0
+        # TODO validate or adjust factor. origin is modified to be above
+        # bedplate top
+        cm2 = 0.4 * self.height
         self.cm = np.array([cm0, cm1, cm2])
 
-        I0 = self.mass * (self.diameter ** 2 ) / 8 + (self.mass / 2) * (self.height ** 2) / 8
-        I1 = self.mass * (0.5 * (self.diameter ** 2) + (2 / 3) * (self.length ** 2) + 0.25 * (self.height ** 2)) / 8
+        I0 = self.mass * (self.diameter ** 2) / 8 + \
+                          (self.mass / 2) * (self.height ** 2) / 8
+        I1 = self.mass * (0.5 * (self.diameter ** 2) + (2 / 3)
+                          * (self.length ** 2) + 0.25 * (self.height ** 2)) / 8
         I2 = I1
         self.I = np.array([I0, I1, I2])
 
         '''def rotor_torque():
-            tq = self.gbxPower*1000 / self.eff / (self.rotor_speed * (pi / 30.0))
+            tq = self.gbxPower*1000 / self.eff / \
+                (self.rotor_speed * (pi / 30.0))
             return tq
         '''
-     
+
     def stageTypeCalc(self, config):
-        temp=[]
+        temp = []
         for character in config:
                 if character == 'e':
                     temp.append(2)
@@ -204,8 +226,7 @@ class Gearbox_drive(Component):
                     temp.append(1)
         return temp
 
-    def stageMassCalc(self, indStageRatio,indNp,indStageType):
-
+    def stageMassCalc(self, indStageRatio, indNp, indStageType):
         '''
         Computes the mass of an individual gearbox stage.
 
@@ -219,40 +240,40 @@ class Gearbox_drive(Component):
           Type of gear.  Use '1' for parallel and '2' for epicyclic.
         '''
 
-        #Application factor to include ring/housing/carrier weight
-        Kr=0.4
-        Kgamma=1.1
+        # Application factor to include ring/housing/carrier weight
+        Kr = 0.4
+        Kgamma = 1.1
 
         if indNp == 3:
-            Kgamma=1.1
+            Kgamma = 1.1
         elif indNp == 4:
-            Kgamma=1.1
+            Kgamma = 1.1
         elif indNp == 5:
-            Kgamma=1.35
+            Kgamma = 1.35
 
         if indStageType == 1:
-            indStageMass=1.0+indStageRatio+indStageRatio**2+(1.0/indStageRatio)
+            indStageMass = 1.0 + indStageRatio + \
+                indStageRatio**2 + (1.0 / indStageRatio)
 
         elif indStageType == 2:
-            sunRatio=0.5*indStageRatio - 1.0
-            indStageMass=Kgamma*((1/indNp)+(1/(indNp*sunRatio))+sunRatio+sunRatio**2+Kr*((indStageRatio-1)**2)/indNp+Kr*((indStageRatio-1)**2)/(indNp*sunRatio))
+            sunRatio = 0.5 * indStageRatio - 1.0
+            indStageMass = Kgamma * ((1 / indNp) + (1 / (indNp * sunRatio)) + sunRatio + sunRatio**2 + Kr * (
+                (indStageRatio - 1)**2) / indNp + Kr * ((indStageRatio - 1)**2) / (indNp * sunRatio))
 
         return indStageMass
-        
-    def gbxWeightEst(self, config,overallRatio,Np,ratio_type,shaft_type,torque):
 
-
+    def gbxWeightEst(self, config, overallRatio, Np, ratio_type, shaft_type, torque):
         '''
         Computes the gearbox weight based on a surface durability criteria.
         '''
 
         ## Define Application Factors ##
-        #Application factor for weight estimate
-        Ka=0.6
-        Kshaft=0.0
-        Kfact=0.0
+        # Application factor for weight estimate
+        Ka = 0.6
+        Kshaft = 0.0
+        Kfact = 0.0
 
-        #K factor for pitting analysis
+        # K factor for pitting analysis
         if self.rotor_torque < 200.0:
             Kfact = 850.0
         elif self.rotor_torque < 700.0:
@@ -260,8 +281,8 @@ class Gearbox_drive(Component):
         else:
             Kfact = 1100.0
 
-        #Unit conversion from Nm to inlb and vice-versa
-        Kunit=8.029
+        # Unit conversion from Nm to inlb and vice-versa
+        Kunit = 8.029
 
         # Shaft length factor
         if self.shaft_type == 'normal':
@@ -269,155 +290,174 @@ class Gearbox_drive(Component):
         elif self.shaft_type == 'short':
             Kshaft = 1.25
 
-        #Individual stage torques
-        torqueTemp=self.rotor_torque
+        # Individual stage torques
+        torqueTemp = self.rotor_torque
         for s in range(len(self.stageRatio)):
-            #print torqueTemp
-            #print self.stageRatio[s]
-            self.stageTorque[s]=torqueTemp/self.stageRatio[s]
-            torqueTemp=self.stageTorque[s]
-            self.stageMass[s]=Kunit*Ka/Kfact*self.stageTorque[s]*self.stageMassCalc(self.stageRatio[s],self.Np[s],self.stageType[s])
-        
-        gbxWeight=(sum(self.stageMass))*Kshaft
-        
+            # print torqueTemp
+            # print self.stageRatio[s]
+            self.stageTorque[s] = torqueTemp / self.stageRatio[s]
+            torqueTemp = self.stageTorque[s]
+            self.stageMass[s] = Kunit * Ka / Kfact * self.stageTorque[s] * \
+                self.stageMassCalc(self.stageRatio[s], self.Np[
+                                   s], self.stageType[s])
+
+        gbxWeight = (sum(self.stageMass)) * Kshaft
+
         return gbxWeight
 
-    def stageRatioCalc(self, overallRatio,Np,ratio_type,config):
+    def stageRatioCalc(self, overallRatio, Np, ratio_type, config):
         '''
         Calculates individual stage ratios using either empirical relationships from the Sunderland model or a SciPy constrained optimization routine.
         '''
 
-        K_r=0
-                    
-        #Assumes we can model everything w/Sunderland model to estimate speed ratio
+        K_r = 0
+
+        # Assumes we can model everything w/Sunderland model to estimate speed
+        # ratio
         if ratio_type == 'empirical':
-            if config == 'p': 
-                x=[overallRatio]
+            if config == 'p':
+                x = [overallRatio]
             if config == 'e':
-                x=[overallRatio]
+                x = [overallRatio]
             elif config == 'pp':
-                x=[overallRatio**0.5,overallRatio**0.5]
+                x = [overallRatio**0.5, overallRatio**0.5]
             elif config == 'ep':
-                x=[overallRatio/2.5,2.5]
-            elif config =='ee':
-                x=[overallRatio**0.5,overallRatio**0.5]
+                x = [overallRatio / 2.5, 2.5]
+            elif config == 'ee':
+                x = [overallRatio**0.5, overallRatio**0.5]
             elif config == 'eep':
-                x=[(overallRatio/3)**0.5,(overallRatio/3)**0.5,3]
+                x = [(overallRatio / 3)**0.5, (overallRatio / 3)**0.5, 3]
             elif config == 'epp':
-                x=[overallRatio**(1.0/3.0),overallRatio**(1.0/3.0),overallRatio**(1.0/3.0)]
+                x = [overallRatio**(1.0 / 3.0), overallRatio **
+                                    (1.0 / 3.0), overallRatio**(1.0 / 3.0)]
             elif config == 'eee':
-                x=[overallRatio**(1.0/3.0),overallRatio**(1.0/3.0),overallRatio**(1.0/3.0)]
+                x = [overallRatio**(1.0 / 3.0), overallRatio **
+                                    (1.0 / 3.0), overallRatio**(1.0 / 3.0)]
             elif config == 'ppp':
-                x=[overallRatio**(1.0/3.0),overallRatio**(1.0/3.0),overallRatio**(1.0/3.0)]
-        
+                x = [overallRatio**(1.0 / 3.0), overallRatio **
+                                    (1.0 / 3.0), overallRatio**(1.0 / 3.0)]
+
         elif ratio_type == 'optimal':
-            x=np.zeros([3,1])
+            x = np.zeros([3, 1])
 
             if config == 'eep':
-                x0=[overallRatio**(1.0/3.0),overallRatio**(1.0/3.0),overallRatio**(1.0/3.0)]
-                B_1=Np[0]
-                B_2=Np[1]
-                K_r1=0
-                K_r2=0 #2nd stage structure weight coefficient
+                x0 = [overallRatio**(1.0 / 3.0), overallRatio **
+                                     (1.0 / 3.0), overallRatio**(1.0 / 3.0)]
+                B_1 = Np[0]
+                B_2 = Np[1]
+                K_r1 = 0
+                K_r2 = 0  # 2nd stage structure weight coefficient
 
                 def volume(x):
-                    return (1.0/(x[0]))*((1.0/B_1)+(1.0/(B_1*((x[0]/2.0)-1.0)))+(x[0]/2.0-1.0)+ \
-                    (x[0]/2.0-1)**2+K_r1*((x[0]-1.0)**2)/B_1 + K_r1*((x[0]-1.0)**2)/(B_1*(x[0]/2.0-1.0))) + \
-                    (1.0/(x[0]*x[1]))*((1.0/B_2)+(1/(B_2*((x[1]/2.0)-1.0)))+(x[1]/2.0-1.0)+(x[1]/2.0-1.0)**2.0+K_r2*((x[1]-1.0)**2.0)/B_2 + \
-                     K_r2*((x[1]-1.0)**2.0)/(B_2*(x[1]/2.0-1.0))) + (1.0/(x[0]*x[1]*x[2]))*(1.0+(1.0/x[2])+x[2] + x[2]**2)                              
-                
-                def constr1(x,overallRatio):
-                    return x[0]*x[1]*x[2]-overallRatio
-        
-                def constr2(x,overallRatio):
-                    return overallRatio-x[0]*x[1]*x[2]
+                    return (1.0 / (x[0])) * ((1.0 / B_1) + (1.0 / (B_1 * ((x[0] / 2.0) - 1.0))) + (x[0] / 2.0 - 1.0) +
+                    (x[0] / 2.0 - 1)**2 + K_r1 * ((x[0] - 1.0)**2) / B_1 + K_r1 * ((x[0] - 1.0)**2) / (B_1 * (x[0] / 2.0 - 1.0))) + \
+                    (1.0 / (x[0] * x[1])) * ((1.0 / B_2) + (1 / (B_2 * ((x[1] / 2.0) - 1.0))) + (x[1] / 2.0 - 1.0) + (x[1] / 2.0 - 1.0)**2.0 + K_r2 * ((x[1] - 1.0)**2.0) / B_2 +
+                     K_r2 * ((x[1] - 1.0)**2.0) / (B_2 * (x[1] / 2.0 - 1.0))) + (1.0 / (x[0] * x[1] * x[2])) * (1.0 + (1.0 / x[2]) + x[2] + x[2]**2)
 
-                x=opt.fmin_cobyla(volume, x0,[constr1,constr2],consargs=[overallRatio],rhoend=1e-7, iprint = 0)
-        
+                def constr1(x, overallRatio):
+                    return x[0] * x[1] * x[2] - overallRatio
+
+                def constr2(x, overallRatio):
+                    return overallRatio - x[0] * x[1] * x[2]
+
+                x = opt.fmin_cobyla(volume, x0, [constr1, constr2], consargs=[
+                                    overallRatio], rhoend=1e-7, iprint=0)
+
             elif config == 'eep_3':
-                #fixes last stage ratio at 3
-                x0=[overallRatio**(1.0/3.0),overallRatio**(1.0/3.0),overallRatio**(1.0/3.0)]
-                B_1=Np[0]
-                B_2=Np[1]
-                K_r1=0
-                K_r2=0.8 #2nd stage structure weight coefficient
+                # fixes last stage ratio at 3
+                x0 = [overallRatio**(1.0 / 3.0), overallRatio **
+                                     (1.0 / 3.0), overallRatio**(1.0 / 3.0)]
+                B_1 = Np[0]
+                B_2 = Np[1]
+                K_r1 = 0
+                K_r2 = 0.8  # 2nd stage structure weight coefficient
 
                 def volume(x):
-                    return (1.0/(x[0]))*((1.0/B_1)+(1.0/(B_1*((x[0]/2.0)-1.0)))+(x[0]/2.0-1.0)+(x[0]/2.0-1)**2+K_r1*((x[0]-1.0)**2)/B_1 + K_r1*((x[0]-1.0)**2)/(B_1*(x[0]/2.0-1.0))) + (1.0/(x[0]*x[1]))*((1.0/B_2)+(1/(B_2*((x[1]/2.0)-1.0)))+(x[1]/2.0-1.0)+(x[1]/2.0-1.0)**2.0+K_r2*((x[1]-1.0)**2.0)/B_2 + K_r2*((x[1]-1.0)**2.0)/(B_2*(x[1]/2.0-1.0))) + (1.0/(x[0]*x[1]*x[2]))*(1.0+(1.0/x[2])+x[2] + x[2]**2)                              
-                
-                def constr1(x,overallRatio):
-                    return x[0]*x[1]*x[2]-overallRatio
-        
-                def constr2(x,overallRatio):
-                    return overallRatio-x[0]*x[1]*x[2]
-                
-                def constr3(x,overallRatio):
-                    return x[2]-3.0
-                
-                def constr4(x,overallRatio):
-                    return 3.0-x[2]
+                    return (1.0 / (x[0])) * ((1.0 / B_1) + (1.0 / (B_1 * ((x[0] / 2.0) - 1.0))) + (x[0] / 2.0 - 1.0) + (x[0] / 2.0 - 1)**2 + K_r1 * ((x[0] - 1.0)**2) / B_1 + K_r1 * ((x[0] - 1.0)**2) / (B_1 * (x[0] / 2.0 - 1.0))) + (1.0 / (x[0] * x[1])) * ((1.0 / B_2) + (1 / (B_2 * ((x[1] / 2.0) - 1.0))) + (x[1] / 2.0 - 1.0) + (x[1] / 2.0 - 1.0)**2.0 + K_r2 * ((x[1] - 1.0)**2.0) / B_2 + K_r2 * ((x[1] - 1.0)**2.0) / (B_2 * (x[1] / 2.0 - 1.0))) + (1.0 / (x[0] * x[1] * x[2])) * (1.0 + (1.0 / x[2]) + x[2] + x[2]**2)
 
-                x=opt.fmin_cobyla(volume, x0,[constr1,constr2,constr3,constr4],consargs=[overallRatio],rhoend=1e-7,iprint=0)
-            
+                def constr1(x, overallRatio):
+                    return x[0] * x[1] * x[2] - overallRatio
+
+                def constr2(x, overallRatio):
+                    return overallRatio - x[0] * x[1] * x[2]
+
+                def constr3(x, overallRatio):
+                    return x[2] - 3.0
+
+                def constr4(x, overallRatio):
+                    return 3.0 - x[2]
+
+                x = opt.fmin_cobyla(volume, x0, [constr1, constr2, constr3, constr4], consargs=[
+                                    overallRatio], rhoend=1e-7, iprint=0)
+
             elif config == 'eep_2':
-                #fixes final stage ratio at 2
-                x0=[overallRatio**(1.0/3.0),overallRatio**(1.0/3.0),overallRatio**(1.0/3.0)]
-                B_1=Np[0]
-                B_2=Np[1]
-                K_r1=0
-                K_r2=1.6 #2nd stage structure weight coefficient
+                # fixes final stage ratio at 2
+                x0 = [overallRatio**(1.0 / 3.0), overallRatio **
+                                     (1.0 / 3.0), overallRatio**(1.0 / 3.0)]
+                B_1 = Np[0]
+                B_2 = Np[1]
+                K_r1 = 0
+                K_r2 = 1.6  # 2nd stage structure weight coefficient
 
                 def volume(x):
-                    return (1.0/(x[0]))*((1.0/B_1)+(1.0/(B_1*((x[0]/2.0)-1.0)))+(x[0]/2.0-1.0)+(x[0]/2.0-1)**2+K_r1*((x[0]-1.0)**2)/B_1 + K_r1*((x[0]-1.0)**2)/(B_1*(x[0]/2.0-1.0))) + (1.0/(x[0]*x[1]))*((1.0/B_2)+(1/(B_2*((x[1]/2.0)-1.0)))+(x[1]/2.0-1.0)+(x[1]/2.0-1.0)**2.0+K_r2*((x[1]-1.0)**2.0)/B_2 + K_r2*((x[1]-1.0)**2.0)/(B_2*(x[1]/2.0-1.0))) + (1.0/(x[0]*x[1]*x[2]))*(1.0+(1.0/x[2])+x[2] + x[2]**2)                              
-                
-                def constr1(x,overallRatio):
-                    return x[0]*x[1]*x[2]-overallRatio
-        
-                def constr2(x,overallRatio):
-                    return overallRatio-x[0]*x[1]*x[2]
+                    return (1.0 / (x[0])) * ((1.0 / B_1) + (1.0 / (B_1 * ((x[0] / 2.0) - 1.0))) + (x[0] / 2.0 - 1.0) + (x[0] / 2.0 - 1)**2 + K_r1 * ((x[0] - 1.0)**2) / B_1 + K_r1 * ((x[0] - 1.0)**2) / (B_1 * (x[0] / 2.0 - 1.0))) + (1.0 / (x[0] * x[1])) * ((1.0 / B_2) + (1 / (B_2 * ((x[1] / 2.0) - 1.0))) + (x[1] / 2.0 - 1.0) + (x[1] / 2.0 - 1.0)**2.0 + K_r2 * ((x[1] - 1.0)**2.0) / B_2 + K_r2 * ((x[1] - 1.0)**2.0) / (B_2 * (x[1] / 2.0 - 1.0))) + (1.0 / (x[0] * x[1] * x[2])) * (1.0 + (1.0 / x[2]) + x[2] + x[2]**2)
 
-                x=opt.fmin_cobyla(volume, x0,[constr1,constr2],consargs=[overallRatio],rhoend=1e-7, iprint = 0)
+                def constr1(x, overallRatio):
+                    return x[0] * x[1] * x[2] - overallRatio
+
+                def constr2(x, overallRatio):
+                    return overallRatio - x[0] * x[1] * x[2]
+
+                x = opt.fmin_cobyla(volume, x0, [constr1, constr2], consargs=[
+                                    overallRatio], rhoend=1e-7, iprint=0)
             elif config == 'epp':
-                #fixes last stage ratio at 3
-                x0=[overallRatio**(1.0/3.0),overallRatio**(1.0/3.0),overallRatio**(1.0/3.0)]
-                B_1=Np[0]
-                B_2=Np[1]
-                K_r=0
-               
-                def volume(x):
-                    return (1.0/(x[0]))*((1.0/B_1)+(1.0/(B_1*((x[0]/2.0)-1.0)))+(x[0]/2.0-1.0)+(x[0]/2.0-1)**2+ \
-                    K_r*((x[0]-1.0)**2)/B_1 + K_r*((x[0]-1.0)**2)/(B_1*(x[0]/2.0-1.0))) + \
-                    (1.0/(x[0]*x[1]))*(1.0+(1.0/x[1])+x[1] + x[1]**2) \
-                    + (1.0/(x[0]*x[1]*x[2]))*(1.0+(1.0/x[2])+x[2] + x[2]**2)                              
-                
-                def constr1(x,overallRatio):
-                    return x[0]*x[1]*x[2]-overallRatio
-        
-                def constr2(x,overallRatio):
-                    return overallRatio-x[0]*x[1]*x[2]
-                
-                x=opt.fmin_cobyla(volume, x0,[constr1,constr2],consargs=[overallRatio],rhoend=1e-7,iprint=0)
-                
-            else:  # what is this subroutine for?  Yi on 04/16/2014
-                x0=[overallRatio**(1.0/3.0),overallRatio**(1.0/3.0),overallRatio**(1.0/3.0)]
-                B_1=Np[0]
-                K_r=0.0
-                def volume(x):
-                    return (1.0/(x[0]))*((1.0/B_1)+(1.0/(B_1*((x[0]/2.0)-1.0)))+(x[0]/2.0-1)+(x[0]/2.0-1.0)**2+K_r*((x[0]-1.0)**2)/B_1 + K_r*((x[0]-1)**2)/(B_1*(x[0]/2.0-1.0))) + (1.0/(x[0]*x[1]))*(1.0+(1.0/x[1])+x[1] + x[1]**2)+ (1.0/(x[0]*x[1]*x[2]))*(1.0+(1.0/x[2])+x[2] + x[2]**2)
-                                  
-                def constr1(x,overallRatio):
-                   return x[0]*x[1]*x[2]-overallRatio
-        
-                def constr2(x,overallRatio):
-                    return overallRatio-x[0]*x[1]*x[2]
+                # fixes last stage ratio at 3
+                x0 = [overallRatio**(1.0 / 3.0), overallRatio **
+                                     (1.0 / 3.0), overallRatio**(1.0 / 3.0)]
+                B_1 = Np[0]
+                B_2 = Np[1]
+                K_r = 0
 
-                x=opt.fmin_cobyla(volume, x0,[constr1,constr2],consargs=[overallRatio],rhoend=1e-7, iprint = 0)
+                def volume(x):
+                    return (1.0 / (x[0])) * ((1.0 / B_1) + (1.0 / (B_1 * ((x[0] / 2.0) - 1.0))) + (x[0] / 2.0 - 1.0) + (x[0] / 2.0 - 1)**2 +
+                    K_r * ((x[0] - 1.0)**2) / B_1 + K_r * ((x[0] - 1.0)**2) / (B_1 * (x[0] / 2.0 - 1.0))) + \
+                    (1.0 / (x[0] * x[1])) * (1.0 + (1.0 / x[1]) + x[1] + x[1]**2) \
+                    + (1.0 / (x[0] * x[1] * x[2])) * \
+                       (1.0 + (1.0 / x[2]) + x[2] + x[2]**2)
+
+                def constr1(x, overallRatio):
+                    return x[0] * x[1] * x[2] - overallRatio
+
+                def constr2(x, overallRatio):
+                    return overallRatio - x[0] * x[1] * x[2]
+
+                x = opt.fmin_cobyla(volume, x0, [constr1, constr2], consargs=[
+                                    overallRatio], rhoend=1e-7, iprint=0)
+
+            else:  # what is this subroutine for?  Yi on 04/16/2014
+                x0 = [overallRatio**(1.0 / 3.0), overallRatio **
+                                     (1.0 / 3.0), overallRatio**(1.0 / 3.0)]
+                B_1 = Np[0]
+                K_r = 0.0
+
+                def volume(x):
+                    return (1.0 / (x[0])) * ((1.0 / B_1) + (1.0 / (B_1 * ((x[0] / 2.0) - 1.0))) + (x[0] / 2.0 - 1) + (x[0] / 2.0 - 1.0)**2 + K_r * ((x[0] - 1.0)**2) / B_1 + K_r * ((x[0] - 1)**2) / (B_1 * (x[0] / 2.0 - 1.0))) + (1.0 / (x[0] * x[1])) * (1.0 + (1.0 / x[1]) + x[1] + x[1]**2) + (1.0 / (x[0] * x[1] * x[2])) * (1.0 + (1.0 / x[2]) + x[2] + x[2]**2)
+
+                def constr1(x, overallRatio):
+                   return x[0] * x[1] * x[2] - overallRatio
+
+                def constr2(x, overallRatio):
+                    return overallRatio - x[0] * x[1] * x[2]
+
+                x = opt.fmin_cobyla(volume, x0, [constr1, constr2], consargs=[
+                                    overallRatio], rhoend=1e-7, iprint=0)
         else:
-            x='fail'
-                  
+            x = 'fail'
+
         return x
-        
-#---------------------------------------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------
+
 
 class Bedplate_drive(Component):
     ''' Bedplate class
@@ -426,174 +466,211 @@ class Bedplate_drive(Component):
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
-    #variables
+    # variables
     self.add_param('gbx_length', val=0.0, units='m', desc='gearbox length')
-    self.add_param('gbx_location', val=0.0, units='m', desc='gearbox CM location')
+    self.add_param('gbx_location', val=0.0, units='m',
+                   desc='gearbox CM location')
     self.add_param('gbx_mass', val=0.0, units='kg', desc='gearbox mass')
     self.add_param('hss_location', val=0.0, units='m', desc='HSS CM location')
     self.add_param('hss_mass', val=0.0, units='kg', desc='HSS mass')
-    self.add_param('generator_location', val=0.0, units='m', desc='generator CM location')
-    self.add_param('generator_mass', val=0.0, units='kg', desc='generator mass')
+    self.add_param('generator_location', val=0.0,
+                   units='m', desc='generator CM location')
+    self.add_param('generator_mass', val=0.0,
+                   units='kg', desc='generator mass')
     self.add_param('lss_location', val=0.0, units='m', desc='LSS CM location')
     self.add_param('lss_mass', val=0.0, units='kg', desc='LSS mass')
     self.add_param('lss_length', val=0.0, units='m', desc='LSS length')
-    self.add_param('mb1_location', val=0.0, units='m', desc='Upwind main bearing CM location')
-    self.add_param('FW_mb1', val=0.0, units='m', desc='Upwind main bearing facewidth')
-    self.add_param('mb1_mass', val=0.0, units='kg', desc='Upwind main bearing mass')
-    self.add_param('mb2_location', val=0.0, units='m', desc='Downwind main bearing CM location')
-    self.add_param('mb2_mass', val=0.0, units='kg', desc='Downwind main bearing mass')
-    self.add_param('transformer_mass', val=0.0, units='kg', desc='Transformer mass')
-    self.add_param('transformer_location', val=0.0, units='m', desc='transformer CM location')
-    self.add_param('tower_top_diameter', val=0.0, units='m', desc='diameter of the top tower section at the yaw gear')
+    self.add_param('mb1_location', val=0.0, units='m',
+                   desc='Upwind main bearing CM location')
+    self.add_param('FW_mb1', val=0.0, units='m',
+                   desc='Upwind main bearing facewidth')
+    self.add_param('mb1_mass', val=0.0, units='kg',
+                   desc='Upwind main bearing mass')
+    self.add_param('mb2_location', val=0.0, units='m',
+                   desc='Downwind main bearing CM location')
+    self.add_param('mb2_mass', val=0.0, units='kg',
+                   desc='Downwind main bearing mass')
+    self.add_param('transformer_mass', val=0.0,
+                   units='kg', desc='Transformer mass')
+    self.add_param('transformer_location', val=0.0,
+                   units='m', desc='transformer CM location')
+    self.add_param('tower_top_diameter', val=0.0, units='m',
+                   desc='diameter of the top tower section at the yaw gear')
     self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-    self.add_param('machine_rating', val=0.0, units='kW', desc='machine_rating machine rating of the turbine')
+    self.add_param('machine_rating', val=0.0, units='kW',
+                   desc='machine_rating machine rating of the turbine')
     self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
-    self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='The bending moment about the y axis')
-    self.add_param('rotor_force_z', val=0.0, units='N', desc='The force along the z axis applied at hub center')
+    self.add_param('rotor_bending_moment_y', val=0.0, units='N*m',
+                   desc='The bending moment about the y axis')
+    self.add_param('rotor_force_z', val=0.0, units='N',
+                   desc='The force along the z axis applied at hub center')
     self.add_param('flange_length', val=0.0, units='m', desc='flange length')
-    self.add_param('L_rb', val=0.0, units='m', desc='length between rotor center and upwind main bearing')
+    self.add_param('L_rb', val=0.0, units='m',
+                   desc='length between rotor center and upwind main bearing')
     self.add_param('overhang', val=0.0, units='m', desc='Overhang distance')
 
-    #parameters
+    # parameters
     self.add_param('uptower_transformer', val=desc='Boolean stating if transformer is uptower')
 
-    #outputs
+    # outputs
     self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
-    self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-    self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+    self.add_output('cm', val=np.array(
+        [0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+    self.add_output('I', val=np.array(
+        [0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
     self.add_output('length', val=0.0, units='m', desc='length of bedplate')
-    self.add_output('height', val=0.0, units='m', desc='max height of bedplate')
+    self.add_output('height', val=0.0, units='m',
+                    desc='max height of bedplate')
     self.add_output('width', val=0.0, units='m', desc='width of bedplate')
 
     def __init__(self):
-        super(Bedplate_drive,self).__init__()
-
+        super(Bedplate_drive, self).__init__()
 
     def characterize_Bedplate_Rear(self):
-      self.bi = (self.b0-self.tw)/2.0
-      self.hi = self.h0-2.0*self.tf
-      self.I_b = self.b0*self.h0**3/12.0 - 2*self.bi*self.hi**3/12.0
-      self.A = self.b0*self.h0 - 2.0*self.bi*self.hi
-      self.w=self.A*self.density
-      #Tip Deflection for load not at end
+      self.bi = (self.b0 - self.tw) / 2.0
+      self.hi = self.h0 - 2.0 * self.tf
+      self.I_b = self.b0 * self.h0**3 / 12.0 - 2 * self.bi * self.hi**3 / 12.0
+      self.A = self.b0 * self.h0 - 2.0 * self.bi * self.hi
+      self.w = self.A * self.density
+      # Tip Deflection for load not at end
 
-      self.hssTipDefl = midDeflection(self.rearTotalLength,self.hss_location,self.hss_mass*self.g/2,self.E,self.I_b)
-      self.genTipDefl = midDeflection(self.rearTotalLength,self.generator_location,self.generator_mass*self.g/2,self.E,self.I_b)
-      self.convTipDefl = midDeflection(self.rearTotalLength,self.convLoc,self.convMass*self.g/2,self.E,self.I_b)
-      self.transTipDefl = midDeflection(self.rearTotalLength,self.transLoc,self.transformer_mass*self.g/2,self.E,self.I_b)
-      self.gbxTipDefl = midDeflection(self.rearTotalLength,self.gbx_location,self.gbx_mass*self.g/2,self.E,self.I_b)
-      self.selfTipDefl = distDeflection(self.rearTotalLength,self.w*self.g,self.E,self.I_b)
+      self.hssTipDefl = midDeflection(
+          self.rearTotalLength, self.hss_location, self.hss_mass * self.g / 2, self.E, self.I_b)
+      self.genTipDefl = midDeflection(
+          self.rearTotalLength, self.generator_location, self.generator_mass * self.g / 2, self.E, self.I_b)
+      self.convTipDefl = midDeflection(
+          self.rearTotalLength, self.convLoc, self.convMass * self.g / 2, self.E, self.I_b)
+      self.transTipDefl = midDeflection(
+          self.rearTotalLength, self.transLoc, self.transformer_mass * self.g / 2, self.E, self.I_b)
+      self.gbxTipDefl = midDeflection(
+          self.rearTotalLength, self.gbx_location, self.gbx_mass * self.g / 2, self.E, self.I_b)
+      self.selfTipDefl = distDeflection(
+          self.rearTotalLength, self.w * self.g, self.E, self.I_b)
 
-      self.totalTipDefl = self.hssTipDefl + self.genTipDefl + self.convTipDefl + self.transTipDefl +  self.selfTipDefl + self.gbxTipDefl
+      self.totalTipDefl = self.hssTipDefl + self.genTipDefl + self.convTipDefl + \
+          self.transTipDefl + self.selfTipDefl + self.gbxTipDefl
 
-      #root stress
-      self.totalBendingMoment=(self.hss_location*self.hss_mass + self.generator_location*self.generator_mass + self.convLoc*self.convMass + self.transLoc*self.transformer_mass + self.w*self.rearTotalLength**2/2.0)*self.g
-      self.rootStress = self.totalBendingMoment*self.h0/(2.*self.I_b)
+      # root stress
+      self.totalBendingMoment = (self.hss_location * self.hss_mass + self.generator_location * self.generator_mass +
+                                 self.convLoc * self.convMass + self.transLoc * self.transformer_mass + self.w * self.rearTotalLength**2 / 2.0) * self.g
+      self.rootStress = self.totalBendingMoment * self.h0 / (2. * self.I_b)
 
-      #mass
-      self.steelVolume = self.A*self.rearTotalLength
-      self.steelMass = self.steelVolume*self.density
+      # mass
+      self.steelVolume = self.A * self.rearTotalLength
+      self.steelMass = self.steelVolume * self.density
 
-      #2 parallel I beams
-      self.totalSteelMass = 2.0*self.steelMass
+      # 2 parallel I beams
+      self.totalSteelMass = 2.0 * self.steelMass
 
-      self.rearTotalTipDefl=self.totalTipDefl
-      self.rearBendingStress=self.rootStress
-
+      self.rearTotalTipDefl = self.totalTipDefl
+      self.rearBendingStress = self.rootStress
 
     def characterize_Bedplate_Front(self):
-      self.bi = (self.b0-self.tw)/2.0
-      self.hi = self.h0-2.0*self.tf
-      self.I_b = self.b0*self.h0**3/12.0 - 2*self.bi*self.hi**3/12.0
-      self.A = self.b0*self.h0 - 2.0*self.bi*self.hi
-      self.w=self.A*self.castDensity
+      self.bi = (self.b0 - self.tw) / 2.0
+      self.hi = self.h0 - 2.0 * self.tf
+      self.I_b = self.b0 * self.h0**3 / 12.0 - 2 * self.bi * self.hi**3 / 12.0
+      self.A = self.b0 * self.h0 - 2.0 * self.bi * self.hi
+      self.w = self.A * self.castDensity
 
-      #Tip Deflection for load not at end
-      self.gbxTipDefl = midDeflection(self.frontTotalLength,self.gbx_mass,self.gbx_mass*self.g/2.0,self.E,self.I_b)
-      self.mb1TipDefl = midDeflection(self.frontTotalLength,self.mb1_location,self.mb1_mass*self.g/2.0,self.E,self.I_b)
-      self.mb2TipDefl = midDeflection(self.frontTotalLength,self.mb2_location,self.mb2_mass*self.g/2.0,self.E,self.I_b)
-      self.lssTipDefl = midDeflection(self.frontTotalLength,self.lss_location,self.lss_mass*self.g/2.0,self.E,self.I_b)
-      self.rotorTipDefl = midDeflection(self.frontTotalLength,self.rotorLoc,self.rotor_mass*self.g/2.0,self.E,self.I_b)
-      self.rotorFzTipDefl = midDeflection(self.frontTotalLength,self.rotorLoc,self.rotorFz/2.0,self.E,self.I_b)
-      self.selfTipDefl = distDeflection(self.frontTotalLength,self.w*self.g,self.E,self.I_b)
-      self.rotorMyTipDefl = self.rotorMy/2.0*self.frontTotalLength**2/(2.0*self.E*self.I_b)
+      # Tip Deflection for load not at end
+      self.gbxTipDefl = midDeflection(
+          self.frontTotalLength, self.gbx_mass, self.gbx_mass * self.g / 2.0, self.E, self.I_b)
+      self.mb1TipDefl = midDeflection(
+          self.frontTotalLength, self.mb1_location, self.mb1_mass * self.g / 2.0, self.E, self.I_b)
+      self.mb2TipDefl = midDeflection(
+          self.frontTotalLength, self.mb2_location, self.mb2_mass * self.g / 2.0, self.E, self.I_b)
+      self.lssTipDefl = midDeflection(
+          self.frontTotalLength, self.lss_location, self.lss_mass * self.g / 2.0, self.E, self.I_b)
+      self.rotorTipDefl = midDeflection(
+          self.frontTotalLength, self.rotorLoc, self.rotor_mass * self.g / 2.0, self.E, self.I_b)
+      self.rotorFzTipDefl = midDeflection(
+          self.frontTotalLength, self.rotorLoc, self.rotorFz / 2.0, self.E, self.I_b)
+      self.selfTipDefl = distDeflection(
+          self.frontTotalLength, self.w * self.g, self.E, self.I_b)
+      self.rotorMyTipDefl = self.rotorMy / 2.0 * \
+          self.frontTotalLength**2 / (2.0 * self.E * self.I_b)
 
       self.totalTipDefl = self.mb1TipDefl + self.mb2TipDefl + self.lssTipDefl  + self.rotorTipDefl + self.selfTipDefl +\
         self.rotorMyTipDefl + self.rotorFzTipDefl + self.gbxTipDefl
 
-      #root stress
-      self.totalBendingMoment=(self.mb1_location*self.mb1_mass/2.0 + self.mb2_location*self.mb2_mass/2.0 + self.lss_location*\
-        self.lss_mass/2.0 + self.w*self.frontTotalLength**2/2.0 + self.rotorLoc*self.rotor_mass/2.0)*self.g + self.rotorLoc*\
-        self.rotorFz/2.0 +self.rotorMy/2.0
-      self.rootStress = self.totalBendingMoment*self.h0/2/self.I_b
+      # root stress
+      self.totalBendingMoment = (self.mb1_location * self.mb1_mass / 2.0 + self.mb2_location * self.mb2_mass / 2.0 + self.lss_location *
+        self.lss_mass / 2.0 + self.w * self.frontTotalLength**2 / 2.0 + self.rotorLoc * self.rotor_mass / 2.0) * self.g + self.rotorLoc *\
+        self.rotorFz / 2.0 + self.rotorMy / 2.0
+      self.rootStress = self.totalBendingMoment * self.h0 / 2 / self.I_b
 
-      #mass
-      self.castVolume = self.A*self.frontTotalLength
-      self.castMass = self.castVolume*self.castDensity
+      # mass
+      self.castVolume = self.A * self.frontTotalLength
+      self.castMass = self.castVolume * self.castDensity
 
-      #2 parallel I-beams
-      self.totalCastMass = 2.0*self.castMass
-      self.frontTotalTipDefl=self.totalTipDefl
-      self.frontBendingStress=self.rootStress
+      # 2 parallel I-beams
+      self.totalCastMass = 2.0 * self.castMass
+      self.frontTotalTipDefl = self.totalTipDefl
+      self.frontBendingStress = self.rootStress
 
     def execute(self):
-          #Model bedplate as 2 parallel I-beams with a rear steel frame and a front cast frame
-          #Deflection constraints applied at each bedplate end
-          #Stress constraint checked at root of front and rear bedplate sections
+          # Model bedplate as 2 parallel I-beams with a rear steel frame and a front cast frame
+          # Deflection constraints applied at each bedplate end
+          # Stress constraint checked at root of front and rear bedplate
+          # sections
 
           self.g = 9.81
           self.E = 2.1e11
           self.density = 7800
 
-          if self.L_rb>0:
+          if self.L_rb > 0:
               L_rb = self.L_rb
-          else:  
-              [L_rb] = get_L_rb(self.rotor_diameter,False)
+          else:
+              [L_rb] = get_L_rb(self.rotor_diameter, False)
 
-          #component weights and locations
-          if self.transformer_mass>0: #only if uptower transformer
+          # component weights and locations
+          if self.transformer_mass > 0:  # only if uptower transformer
               self.transLoc = self.transformer_location.item()
-              self.convMass = 0.3*self.transformer_mass
+              self.convMass = 0.3 * self.transformer_mass
           else:
               self.transLoc = 0
-              self.convMass = (2.4445*(self.machine_rating) + 1599.0)*0.3 #(transformer mass * .3)
+              # (transformer mass * .3)
+              self.convMass = (2.4445 * (self.machine_rating) + 1599.0) * 0.3
 
           self.convLoc = self.generator_location * 2.0
-          #TODO: removed self. since this are from connections but not sure if that disruptes upstream usage
-          mb1_location = abs(self.mb1_location) #abs(self.gbx_length/2.0) + abs(self.lss_length)
-          mb2_location = abs(self.mb2_location) #abs(self.gbx_length/2.0)
-          lss_location= abs(self.lss_location)
+          # TODO: removed self. since this are from connections but not sure if
+          # that disruptes upstream usage
+          # abs(self.gbx_length/2.0) + abs(self.lss_length)
+          mb1_location = abs(self.mb1_location)
+          mb2_location = abs(self.mb2_location)  # abs(self.gbx_length/2.0)
+          lss_location = abs(self.lss_location)
 
           if self.transLoc > 0:
-            self.rearTotalLength = self.transLoc*1.1
+            self.rearTotalLength = self.transLoc * 1.1
           else:
-            self.rearTotalLength = self.generator_location*4.237/2.886 -self.tower_top_diameter/2.0 #scaled off of GE1.5
+            self.rearTotalLength = self.generator_location * 4.237 / \
+                2.886 - self.tower_top_diameter / 2.0  # scaled off of GE1.5
 
-          self.frontTotalLength = mb1_location + self.FW_mb1/2.
+          self.frontTotalLength = mb1_location + self.FW_mb1 / 2.
 
-          #rotor weights and loads
+          # rotor weights and loads
           self.rotorLoc = mb1_location + L_rb
-          self.rotorFz=abs(self.rotor_force_z)
-          self.rotorMy=abs(self.rotor_bending_moment_y)
+          self.rotorFz = abs(self.rotor_force_z)
+          self.rotorMy = abs(self.rotor_bending_moment_y)
 
-          #If user does not know important moment, crude approx
-          if self.rotor_mass > 0 and self.rotorMy == 0: 
-              self.rotorMy=get_My(self.rotor_mass,L_rb)
+          # If user does not know important moment, crude approx
+          if self.rotor_mass > 0 and self.rotorMy == 0:
+              self.rotorMy = get_My(self.rotor_mass, L_rb)
 
-          if self.rotorFz == 0 and self.rotor_mass >0:
-              self.rotorFz = self.rotor_mass*self.g
+          if self.rotorFz == 0 and self.rotor_mass > 0:
+              self.rotorFz = self.rotor_mass * self.g
 
-          #initial I-beam dimensions
+          # initial I-beam dimensions
           self.tf = 0.01905
           self.tw = 0.0127
           self.h0 = 0.6096
-          self.b0 = self.h0/2.0
+          self.b0 = self.h0 / 2.0
 
-          #Rear Steel Frame:
-          if self.gbx_location ==0:
+          # Rear Steel Frame:
+          if self.gbx_location == 0:
               self.gbx_location = 0
               self.gbx_mass = 0
-          else: 
+          else:
               self.gbx_location = self.gbx_location
               self.gbx_mass = self.gbx_mass
 
@@ -601,21 +678,20 @@ class Bedplate_drive(Component):
           self.totalTipDefl = 1.0
           self.stressTol = 5e5
           self.deflTol = 1e-4
-          self.defl_denom = 1500. #factor in deflection check
-          self.stress_mult = 8. #modified to fit industry data
+          self.defl_denom = 1500.  # factor in deflection check
+          self.stress_mult = 8.  # modified to fit industry data
 
-          self.stressMax = 620e6 #yeild of alloy steel
-          self.deflMax = self.rearTotalLength/self.defl_denom
-
+          self.stressMax = 620e6  # yeild of alloy steel
+          self.deflMax = self.rearTotalLength / self.defl_denom
 
           counter = 0
-          while self.rootStress*self.stress_mult - self.stressMax >  self.stressTol or self.totalTipDefl - self.deflMax >  self.deflTol:
-              
+          while self.rootStress * self.stress_mult - self.stressMax > self.stressTol or self.totalTipDefl - self.deflMax > self.deflTol:
+
               counter += 1
-              
+
               self.characterize_Bedplate_Rear()
-              
-              self.tf += 0.002 
+
+              self.tf += 0.002
               self.tw += 0.002
               self.b0 += 0.006
               self.h0 += 0.006
@@ -623,7 +699,7 @@ class Bedplate_drive(Component):
 
         self.rearHeight = self.h0
         
-        #Front cast section:
+        # Front cast section:
         if self.gbx_location < 0:
             self.gbx_location = abs(self.gbx_location)
             self.gbx_mass = self.gbx_mass
@@ -659,7 +735,7 @@ class Bedplate_drive(Component):
 
       self.frontHeight = self.h0
 
-      #frame multiplier for front support
+      # frame multiplier for front support
       self.support_multiplier = 1.1+5e13*self.rotor_diameter**(-8) # based on solidworks estimates for GRC and GE bedplates. extraneous mass percentage decreases for larger machines
       # print self.rotor_diameter
       # print support_multiplier
@@ -712,17 +788,17 @@ class YawSystem_drive(Component):
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
-    #variables
+    # variables
     self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
     self.add_param('rotor_thrust', val=0.0, units='N', desc='maximum rotor thrust')
     self.add_param('tower_top_diameter', val=0.0, units='m', desc='tower top diameter')
     self.add_param('above_yaw_mass', val=0.0, units='kg', desc='above yaw mass')
     self.add_param('bedplate_height', val=0.0, units='m', desc='bedplate height')
 
-    #parameters
+    # parameters
     self.add_param('yaw_motors_number', val=00, desc='number of yaw motors')
 
-    #outputs
+    # outputs
     self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
     self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
     self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
@@ -743,13 +819,13 @@ class YawSystem_drive(Component):
         else:
           self.yaw_motors_number = 8
 
-      #Assume friction plate surface width is 1/10 the diameter
-      #Assume friction plate thickness scales with rotor diameter
+      # Assume friction plate surface width is 1/10 the diameter
+      # Assume friction plate thickness scales with rotor diameter
       frictionPlateVol=pi*self.tower_top_diameter*(self.tower_top_diameter*0.10)*(self.rotor_diameter/1000.0)
       steelDensity=8000.0
       frictionPlateMass=frictionPlateVol*steelDensity
 
-      #Assume same yaw motors as Vestas V80 for now: Bonfiglioli 709T2M
+      # Assume same yaw motors as Vestas V80 for now: Bonfiglioli 709T2M
       yawMotorMass=190.0
 
       totalYawMass=frictionPlateMass + (self.yaw_motors_number*yawMotorMass)
@@ -774,7 +850,7 @@ class Transformer_drive(Component):
             It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
             It contains an update method to determine the mass, mass properties, and dimensions of the component if it is in fact uptower'''
 
-    #inputs
+    # inputs
     self.add_param('machine_rating', val=0.0, units='kW', desc='machine rating of the turbine')
     self.add_param('uptower_transformer', val=desc='uptower or downtower transformer')
     self.add_param('tower_top_diameter', val=0.0, units='m', desc='tower top diameter for comparision of nacelle CM')
@@ -785,7 +861,7 @@ class Transformer_drive(Component):
     self.add_param('RNA_mass', val=0.0, units='kg', desc='mass of total RNA')
     self.add_param('RNA_cm', val=0.0, units='m', desc='RNA CM along x-axis')
 
-    #outputs
+    # outputs
     self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
     self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
     self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
@@ -802,7 +878,7 @@ class Transformer_drive(Component):
     def execute(self):
 
         if self.uptower_transformer == True:
-            #function places transformer where tower top CM is within tower bottom OD to reduce tower moments
+            # function places transformer where tower top CM is within tower bottom OD to reduce tower moments
             if self.rotor_mass:
                 rotor_mass = self.rotor_mass
             else:
@@ -877,7 +953,7 @@ class HighSpeedSide_drive(Component):
 
         super(HighSpeedSide_drive, self).__init__()
 
-        #controls what happens if derivatives are missing
+        # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
 
     def execute(self):
@@ -944,7 +1020,7 @@ class Generator_drive(Component):
 
         super(Generator_drive, self).__init__()
 
-        #controls what happens if derivatives are missing
+        # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
 
     def execute(self):
@@ -1038,7 +1114,7 @@ class AboveYawMassAdder_drive(Component):
 
         super(AboveYawMassAdder_drive, self).__init__()
 
-        #controls what happens if derivatives are missing
+        # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
         
     def execute(self):
@@ -1090,7 +1166,7 @@ class RNASystemAdder_drive(Component):
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component. 
     '''
-    #inputs
+    # inputs
     self.add_param('yawMass', val=0.0, units='kg', desc='mass of yaw system')
     self.add_param('lss_mass', val=0.0, units='kg', desc='component mass')
     self.add_param('main_bearing_mass', val=0.0, units='kg', desc='component mass')
@@ -1108,7 +1184,7 @@ class RNASystemAdder_drive(Component):
     self.add_param('rotor_mass', val=0.0, units='kg', desc='component mass')
     self.add_param('machine_rating', val=0.0, units='kW', desc='machine rating ')
 
-    #returns
+    # returns
                                                self.add_output('RNA_mass', val=0.0, units='kg', desc='mass of total RNA')
                                                self.add_output('RNA_cm', val=0.0, units='m', desc='RNA CM along x-axis')
 
@@ -1118,7 +1194,7 @@ class RNASystemAdder_drive(Component):
 
         super(RNASystemAdder_drive , self).__init__()
 
-        #controls what happens if derivatives are missing
+        # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
 
     def execute(self):
@@ -1182,7 +1258,7 @@ class NacelleSystemAdder_drive(Component): #added to drive to include transforme
 
         super(NacelleSystemAdder_drive , self).__init__()
 
-        #controls what happens if derivatives are missing
+        # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
 
     def execute(self):
