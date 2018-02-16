@@ -17,30 +17,27 @@ from drivese.drivese_utils import get_L_rb
 
 
 @base
-class HubBase(Assembly):
+class HubBase(Component):
+    def __init__(self):
+        super(Hub_Base, self).__init__()
 
-    # variables
-    self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
-    self.add_param('rotor_bending_moment', val=0.0, units='N*m',
-                   desc='flapwise bending moment at blade root')
-    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-    self.add_param('blade_root_diameter', val=0.0,
-                   units='m', desc='blade root diameter')
+        # variables
+        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+        self.add_param('rotor_bending_moment', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
+        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+        self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
 
-    # parameters
-    self.add_param('blade_number', val=3, desc='number of turbine blades')
+        # parameters
+        self.add_param('blade_number', val=3, desc='number of turbine blades')
 
-    # outputs
-    self.add_output('hub_system_mass', val=0.0, units='kg',
-                    desc='overall component mass')
-    self.add_output('hub_system_cm', val=np.array(
-        []), desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
-    self.add_output('hub_system_I', val=np.array(
-        []), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+        # outputs
+        self.add_output('hub_system_mass', val=0.0, units='kg',  desc='overall component mass')
+        self.add_output('hub_system_cm', val=np.array([]), desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+        self.add_output('hub_system_I', val=np.array([]), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
 
-    self.add_output('hub_mass', val=0.0, units='kg')
-    self.add_output('pitch_system_mass', val=0.0, units='kg')
-    self.add_output('spinner_mass', val=0.0, units='kg')
+        self.add_output('hub_mass', val=0.0, units='kg')
+        self.add_output('pitch_system_mass', val=0.0, units='kg')
+        self.add_output('spinner_mass', val=0.0, units='kg')
 
 
 class Hub_System_Adder_drive(Component):
@@ -49,36 +46,27 @@ class Hub_System_Adder_drive(Component):
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
     '''
 
-    # variables
-    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-    self.add_param('L_rb', val=0.0, units='m',
-                   desc='distance between hub center and upwind main bearing')
-    self.add_param('shaft_angle', val=0.0, units='deg', desc='shaft angle')
-    self.add_param('MB1_location', val=np.array([]), units='m',
-                   desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
-    self.add_param('hub_mass', val=0.0, units='kg', desc='mass of Hub')
-    self.add_param('hub_diameter', val=0.03.0, units='m', desc='hub diameter')
-    self.add_param('hub_thickness', val=0.0, units='m', desc='hub thickness')
-    self.add_param('pitch_system_mass', val=0.0,
-                   units='kg', desc='mass of Pitch System')
-    self.add_param('spinner_mass', val=0.0, units='kg', desc='mass of spinner')
-
-    # outputs
-    self.add_output('hub_system_cm', val=np.array([]), units='m',
-                    desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
-    self.add_output('hub_system_I', val=np.array(
-        []), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
-    self.add_output('hub_system_mass', val=0.0,
-                    units='kg', desc='mass of hub system')
-
     def __init__(self):
-        ''' Initialize Get_hub_cm component
-        '''
-
         super(Hub_System_Adder_drive, self).__init__()
 
         # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
+
+        # variables
+        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+        self.add_param('L_rb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
+        self.add_param('shaft_angle', val=0.0, units='deg', desc='shaft angle')
+        self.add_param('MB1_location', val=np.array([]), units='m', desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+        self.add_param('hub_mass', val=0.0, units='kg', desc='mass of Hub')
+        self.add_param('hub_diameter', val=0.03.0, units='m', desc='hub diameter')
+        self.add_param('hub_thickness', val=0.0, units='m', desc='hub thickness')
+        self.add_param('pitch_system_mass', val=0.0, units='kg', desc='mass of Pitch System')
+        self.add_param('spinner_mass', val=0.0, units='kg', desc='mass of spinner')
+
+        # outputs
+        self.add_output('hub_system_cm', val=np.array([]), units='m',  desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+        self.add_output('hub_system_I', val=np.array([]), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+        self.add_output('hub_system_mass', val=0.0,  units='kg', desc='mass of hub system')
 
     def execute(self):
         if self.L_rb > 0:
@@ -150,32 +138,29 @@ class HubSE(Assembly):
           The HubWPACT class is used to represent the hub system of a wind turbine.
     '''
 
-    # variables
-    self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
-    self.add_param('rotor_bending_moment', val=0.0, units='N*m',
-                   desc='flapwise bending moment at blade root')
-    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-    self.add_param('blade_root_diameter', val=0.0,
-                   units='m', desc='blade root diameter')
-    self.add_param('machine_rating', val=0.0, units='MW',
-                   desc='machine rating of turbine')
-
-    # parameters
-    self.add_param('blade_number', val=3, desc='number of turbine blades')
-
-    # outputs
-    self.add_output('hub_mass', val=0.0, units='kg')
-    self.add_output('pitch_system_mass', val=0.0, units='kg')
-    self.add_output('spinner_mass', val=0.0, units='kg')
-    self.add_output('hub_diameter', val=0.0, units='m', desc='hub diameter')
-    self.add_output('hub_thickness', val=0.0, units='m', desc='hub thickness')
-
-    # DUMMY OUTPUTS DO NOT USE. Calculated in hubsystemadderdrive
-    self.add_output('hub_system_mass', val=0.0, units='kg')
-    self.add_output('hub_system_cm', val=np.array([0.0, 0.0, 0.0]), units='m')
-    self.add_output('hub_system_I', val=np.array([0.0, 0.0, 0.0]),)
-
     def configure(self):
+
+        # variables
+        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+        self.add_param('rotor_bending_moment', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
+        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+        self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
+        self.add_param('machine_rating', val=0.0, units='MW', desc='machine rating of turbine')
+
+        # parameters
+        self.add_param('blade_number', val=3, desc='number of turbine blades')
+
+        # outputs
+        self.add_output('hub_mass', val=0.0, units='kg')
+        self.add_output('pitch_system_mass', val=0.0, units='kg')
+        self.add_output('spinner_mass', val=0.0, units='kg')
+        self.add_output('hub_diameter', val=0.0, units='m', desc='hub diameter')
+        self.add_output('hub_thickness', val=0.0, units='m', desc='hub thickness')
+
+        # DUMMY OUTPUTS DO NOT USE. Calculated in hubsystemadderdrive
+        self.add_output('hub_system_mass', val=0.0, units='kg')
+        self.add_output('hub_system_cm', val=np.array([0.0, 0.0, 0.0]), units='m')
+        self.add_output('hub_system_I', val=np.array([0.0, 0.0, 0.0]),)
 
         # select components
         self.add('hub', Hub_drive())
@@ -187,10 +172,8 @@ class HubSE(Assembly):
 
         # connect inputs
         self.connect('blade_mass', ['pitchSystem.blade_mass'])
-        self.connect('rotor_bending_moment', [
-                     'pitchSystem.rotor_bending_moment'])
-        self.connect('blade_number', [
-                     'hub.blade_number', 'pitchSystem.blade_number'])
+        self.connect('rotor_bending_moment', [   'pitchSystem.rotor_bending_moment'])
+        self.connect('blade_number', [   'hub.blade_number', 'pitchSystem.blade_number'])
         self.connect('rotor_diameter', 'spinner.rotor_diameter')
         self.connect('blade_root_diameter', 'hub.blade_root_diameter')
         self.connect('machine_rating', 'hub.machine_rating')
@@ -219,26 +202,20 @@ class Hub_drive(Component):
           It contains an update method to determine the mass, mass properties, and dimensions of the component.            
     '''
 
-    # variables
-    self.add_param('blade_root_diameter', val=0.0,
-                   units='m', desc='blade root diameter')
-    self.add_param('machine_rating', val=0.0, units='MW',
-                   desc='machine rating of turbine')
-
-    # parameters
-    self.add_param('blade_number', val=3, desc='number of turbine blades')
-
-    # outputs
-    self.add_output('diameter', val=0.0, units='m', desc='hub diameter')
-    self.add_output('thickness', val=0.0, units='m', desc='hub thickness')
-    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
-
     def __init__(self):
-        ''' 
-        Initializes hub component  
-        '''
-
         super(Hub_drive, self).__init__()
+
+        # variables
+        self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
+        self.add_param('machine_rating', val=0.0, units='MW', desc='machine rating of turbine')
+
+        # parameters
+        self.add_param('blade_number', val=3, desc='number of turbine blades')
+
+        # outputs
+        self.add_output('diameter', val=0.0, units='m', desc='hub diameter')
+        self.add_output('thickness', val=0.0, units='m', desc='hub thickness')
+        self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
 
     def execute(self):
 
@@ -275,26 +252,21 @@ class PitchSystem_drive(Component):
       It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
-    # variables
-    self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
-    self.add_param('rotor_bending_moment', val=0.0, units='N*m',
-                   desc='flapwise bending moment at blade root')
-
-    # parameters
-    self.add_param('blade_number', val=3, desc='number of turbine blades')
-
-    # outputs
-    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
-
     def __init__(self):
-        '''
-        Initializes pitch system
-        '''
-
         super(PitchSystem_drive, self).__init__()
 
         # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
+
+        # variables
+        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+        self.add_param('rotor_bending_moment', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
+
+        # parameters
+        self.add_param('blade_number', val=3, desc='number of turbine blades')
+
+        # outputs
+        self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
 
     def execute(self):
 
@@ -329,21 +301,17 @@ class Spinner_drive(Component):
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
-    # variables
-    self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-
-    # outputs
-    self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
-
     def __init__(self):
-        '''
-        Initializes spinner system
-        '''
-
         super(Spinner_drive, self).__init__()
 
         # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
+
+        # variables
+        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+
+        # outputs
+        self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
 
     def execute(self):
 

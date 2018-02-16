@@ -47,34 +47,25 @@ class blade_moment_transform(Component):
     ''' Blade_Moment_Transform class          
           The Blade_Moment_Transform class is used to transform moments from the WISDEM rotor models to driveSE.
     '''
-    # variables
-    # ensure angles are in radians. Azimuth is 3-element array with blade
-    # azimuths; b1, b2, b3 are 3-element arrays for each blade moment (Mx, My,
-    # Mz); pitch and cone are floats
-    self.add_param('azimuth_angle', val=np.array(
-        [0, 2 * pi / 3, 4 * pi / 3]), units='rad', desc='azimuth angles for each blade')
-    self.add_param('pitch_angle', val=0.0, units='rad',
-                   desc='pitch angle at each blade, assumed same')
-    self.add_param('cone_angle', val=0.0, units='rad',
-                   desc='cone angle at each blade, assumed same')
-    self.add_param('b1', val=np.array([]), units='N*m',
-                   desc='moments in x,y,z directions along local blade coordinate system')
-    self.add_param('b2', val=np.array([]), units='N*m',
-                   desc='moments in x,y,z directions along local blade coordinate system')
-    self.add_param('b3', val=np.array([]), units='N*m',
-                   desc='moments in x,y,z directions along local blade coordinate system')
-
-    # returns
-    self.add_output('Mx', val=0.0, units='N*m',
-                    desc='rotor moment in x-direction')
-    self.add_output('My', val=0.0, units='N*m',
-                    desc='rotor moment in y-direction')
-    self.add_output('Mz', val=0.0, units='N*m',
-                    desc='rotor moment in z-direction')
 
     def __init__(self):
-
         super(blade_moment_transform, self).__init__()
+
+        # variables
+        # ensure angles are in radians. Azimuth is 3-element array with blade
+        # azimuths; b1, b2, b3 are 3-element arrays for each blade moment (Mx, My,
+        # Mz); pitch and cone are floats
+        self.add_param('azimuth_angle', val=np.array([0, 2 * pi / 3, 4 * pi / 3]), units='rad', desc='azimuth angles for each blade')
+        self.add_param('pitch_angle', val=0.0, units='rad', desc='pitch angle at each blade, assumed same')
+        self.add_param('cone_angle', val=0.0, units='rad', desc='cone angle at each blade, assumed same')
+        self.add_param('b1', val=np.array([]), units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
+        self.add_param('b2', val=np.array([]), units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
+        self.add_param('b3', val=np.array([]), units='N*m', desc='moments in x,y,z directions along local blade coordinate system')
+
+        # returns
+        self.add_output('Mx', val=0.0, units='N*m',  desc='rotor moment in x-direction')
+        self.add_output('My', val=0.0, units='N*m',  desc='rotor moment in y-direction')
+        self.add_output('Mz', val=0.0, units='N*m',  desc='rotor moment in z-direction')
 
     def execute(self):
         # print "input blade loads:"
@@ -127,35 +118,26 @@ class blade_force_transform(Component):
     ''' Blade_Force_Transform class          
           The Blade_Force_Transform class is used to transform forces from the WISDEM rotor models to driveSE.
     '''
-    # variables
-    # ensure angles are in radians. Azimuth is 3-element array with blade
-    # azimuths; b1, b2, b3 are 3-element arrays for each blade force (Fx, Fy,
-    # Fz); pitch and cone are floats
-    self.add_param('azimuth_angle', val=np.array(
-        [0, 2 * pi / 3, 4 * pi / 3]), units='rad', desc='azimuth angles for each blade')
-    self.add_param('pitch_angle', val=0.0, units='rad',
-                   desc='pitch angle at each blade, assumed same')
-    self.add_param('cone_angle', val=0.0, units='rad',
-                   desc='cone angle at each blade, assumed same')
-    self.add_param('b1', val=np.array([]), units='N',
-                   desc='forces in x,y,z directions along local blade coordinate system')
-    self.add_param('b2', val=np.array([]), units='N',
-                   desc='forces in x,y,z directions along local blade coordinate system')
-    self.add_param('b3', val=np.array([]), units='N',
-                   desc='forces in x,y,z directions along local blade coordinate system')
-
-    # returns
-    self.add_output('Fx', val=0.0, units='N',
-                    desc='rotor force in x-direction')
-    self.add_output('Fy', val=0.0, units='N',
-                    desc='rotor force in y-direction')
-    self.add_output('Fz', val=0.0, units='N',
-                    desc='rotor force in z-direction')
 
     def __init__(self):
-
         super(blade_force_transform, self).__init__()
 
+        # variables
+        # ensure angles are in radians. Azimuth is 3-element array with blade
+        # azimuths; b1, b2, b3 are 3-element arrays for each blade force (Fx, Fy,
+        # Fz); pitch and cone are floats
+        self.add_param('azimuth_angle', val=np.array([0, 2 * pi / 3, 4 * pi / 3]), units='rad', desc='azimuth angles for each blade')
+        self.add_param('pitch_angle', val=0.0, units='rad', desc='pitch angle at each blade, assumed same')
+        self.add_param('cone_angle', val=0.0, units='rad', desc='cone angle at each blade, assumed same')
+        self.add_param('b1', val=np.array([]), units='N', desc='forces in x,y,z directions along local blade coordinate system')
+        self.add_param('b2', val=np.array([]), units='N', desc='forces in x,y,z directions along local blade coordinate system')
+        self.add_param('b3', val=np.array([]), units='N', desc='forces in x,y,z directions along local blade coordinate system')
+
+        # returns
+        self.add_output('Fx', val=0.0, units='N',  desc='rotor force in x-direction')
+        self.add_output('Fy', val=0.0, units='N',  desc='rotor force in y-direction')
+        self.add_output('Fz', val=0.0, units='N',  desc='rotor force in z-direction')
+        
     def execute(self):
         # print "input blade loads:"
         # i=0
