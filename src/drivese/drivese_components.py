@@ -6,8 +6,8 @@ Created by Ryan King 2013. Edited by Taylor Parsons 2014
 Copyright (c) NREL. All rights reserved.
 """
 
-from openmdao.main.api import Component, Assembly
-from openmdao.main.datatypes.api import Float, Bool, Int, Str, Array, Enum
+from openmdao.api import Component, Group
+from openmdao.datatypes.api import Float, Bool, Int, Str, Array, Enum
 
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
@@ -44,7 +44,7 @@ class Bearing_drive(Component):
         self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
         self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
         self.mass = self.bearing_mass
         self.mass += self.mass * (8000.0 / 2700.0)  # add housing weight
 
@@ -57,12 +57,9 @@ class MainBearing_drive(Bearing_drive):
     '''
 
     def __init__(self):
-        ''' Initializes main bearing component
-        '''
-
         super(MainBearing_drive, self).__init__()
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         super(MainBearing_drive, self).execute()
 
@@ -97,7 +94,7 @@ class SecondBearing_drive(Bearing_drive):
 
         super(SecondBearing_drive, self).__init__()
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         super(SecondBearing_drive, self).execute()
 
@@ -151,7 +148,7 @@ class Gearbox_drive(Component):
         self.add_output('height', val=0.0, units='m', desc='gearbox height')
         self.add_output('diameter', val=0.0, units='m', desc='gearbox diameter')
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         self.stageRatio = np.zeros([3, 1])
 
@@ -568,7 +565,7 @@ class Bedplate_drive(Component):
       self.frontTotalTipDefl = self.totalTipDefl
       self.frontBendingStress = self.rootStress
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
           # Model bedplate as 2 parallel I-beams with a rear steel frame and a front cast frame
           # Deflection constraints applied at each bedplate end
           # Stress constraint checked at root of front and rear bedplate
@@ -768,7 +765,7 @@ class YawSystem_drive(Component):
         self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
         self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
       if self.yaw_motors_number == 0 :
         if self.rotor_diameter < 90.0 :
@@ -830,7 +827,7 @@ class Transformer_drive(Component):
         self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
         self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         if self.uptower_transformer == True:
             # function places transformer where tower top CM is within tower bottom OD to reduce tower moments
@@ -907,7 +904,7 @@ class HighSpeedSide_drive(Component):
         self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
         self.add_output('length', val=0.0 desc='length of high speed shaft')
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
       # compute masses, dimensions and cost
       design_torque = self.rotor_torque / self.gear_ratio               # design torque [Nm] based on rotor torque and Gearbox ratio
@@ -971,7 +968,7 @@ class Generator_drive(Component):
         self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
         self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
         
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
       massCoeff = [None, 6.4737, 10.51 ,  5.34  , 37.68  ]
       massExp   = [None, 0.9223, 0.9223,  0.9223, 1      ]
@@ -1062,7 +1059,7 @@ class AboveYawMassAdder_drive(Component):
         self.add_output('width', val=0.0, units='m', desc='component width')
         self.add_output('height', val=0.0, units='m', desc='component height')
         
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
         # electronic systems, hydraulics and controls
         self.electrical_mass = 0.0
         
@@ -1107,7 +1104,7 @@ class AboveYawMassAdder_drive(Component):
 class RNASystemAdder_drive(Component):
     ''' RNASystem class
           This analysis is only to be used in placing the transformer of the drivetrain.
-          The Rotor-Nacelle-Assembly class is used to represent the RNA of the turbine without the transformer and bedplate (to resolve circular dependency issues).
+          The Rotor-Nacelle-Group class is used to represent the RNA of the turbine without the transformer and bedplate (to resolve circular dependency issues).
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component. 
     '''
@@ -1140,7 +1137,7 @@ class RNASystemAdder_drive(Component):
         self.add_output('RNA_mass', val=0.0, units='kg', desc='mass of total RNA')
         self.add_output('RNA_cm', val=0.0, units='m', desc='RNA CM along x-axis')
         
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         if self.rotor_mass>0:
             rotor_mass = self.rotor_mass
@@ -1202,7 +1199,7 @@ class NacelleSystemAdder_drive(Component): #added to drive to include transforme
         self.add_output('nacelle_cm', val=np.array([0.0, 0.0, 0.0]), units='m', desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
         self.add_output('nacelle_I', val=np.array([0.0, 0.0, 0.0]), units='kg*m**2', desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
         
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
       # aggregation of nacelle mass
       self.nacelle_mass = (self.above_yaw_mass + self.yawMass)

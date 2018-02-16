@@ -6,8 +6,8 @@ Created by Taylor Parsons 2014.
 Copyright (c) NREL. All rights reserved.
 """
 
-from openmdao.main.api import Component
-from openmdao.main.datatypes.api import Float, Array
+from openmdao.api import Component
+from openmdao.datatypes.api import Float, Array
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
@@ -67,7 +67,7 @@ class blade_moment_transform(Component):
         self.add_output('My', val=0.0, units='N*m',  desc='rotor moment in y-direction')
         self.add_output('Mz', val=0.0, units='N*m',  desc='rotor moment in z-direction')
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
         # print "input blade loads:"
         # i=0
         # while i<3:
@@ -138,7 +138,7 @@ class blade_force_transform(Component):
         self.add_output('Fy', val=0.0, units='N',  desc='rotor force in y-direction')
         self.add_output('Fz', val=0.0, units='N',  desc='rotor force in z-direction')
         
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
         # print "input blade loads:"
         # i=0
         # while i<3:

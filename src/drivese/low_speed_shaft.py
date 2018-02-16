@@ -1,6 +1,6 @@
 
-from openmdao.main.api import Component, Assembly
-from openmdao.main.datatypes.api import Float, Bool, Int, Str, Array, Enum
+from openmdao.api import Component, Group
+from openmdao.datatypes.api import Float, Bool, Int, Str, Array, Enum
 
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
@@ -526,7 +526,7 @@ class LowSpeedShaft_drive4pt(LowSpeedShaft_Base):
             d_y[kk + self.len_pts] = (deflection2(self.rotor_force_z, self.rotorWeight, self.shaft_angle, self.rotor_bending_moment_y,
                                                   F_mb1_z, F_mb2_z, self.L_rb, self.lssWeight_new, self.L_ms, self.L_mb, x_ms[kk]) + C12 * x_ms[kk] + C22) / self.E / I_2
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         # input parameters
         self.g = 9.81
@@ -1189,7 +1189,7 @@ class LowSpeedShaft_drive3pt(LowSpeedShaft_Base):
             d_y[kk] = (fx(self.rotor_force_z, weightRotor, self.shaft_angle, self.rotor_bending_moment_y,
                           self.F_mb_z, self.L_rb, self.weightLSS_new, self.L_ms, x_ms[kk]) + C1 * x_ms[kk] + C2) / self.E / I_2
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         # input parameters
         if self.flange_length == 0:
@@ -1620,7 +1620,7 @@ class LowSpeedShaft_drive(Component):
 
         return mass
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         self.mass = calc_mass(self.rotor_torque, self.rotor_bending_moment, self.rotor_mass, self.rotor_diameter, self.rotor_speed,
                               self.shaft_angle, self.shaft_length, self.shaftD1, self.shaftD2, self.machine_rating, self.shaft_ratio)

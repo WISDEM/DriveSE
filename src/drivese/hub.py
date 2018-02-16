@@ -5,15 +5,15 @@ Created by Katherine Dykes 2012.
 Copyright (c) NREL. All rights reserved.
 """
 
-from openmdao.main.api import Assembly, Component
-from openmdao.main.datatypes.api import Float, Int, Array
+from openmdao.api import Group, Component
+from openmdao.datatypes.api import Float, Int, Array
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 
 from fusedwind.interface import implement_base, base
 from drivese.drivese_utils import get_L_rb
 
-# Hub Base Assembly
+# Hub Base Group
 
 
 @base
@@ -68,7 +68,7 @@ class Hub_System_Adder_drive(Component):
         self.add_output('hub_system_I', val=np.array([]), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
         self.add_output('hub_system_mass', val=0.0,  units='kg', desc='mass of hub system')
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
         if self.L_rb > 0:
             L_rb = self.L_rb
         else:
@@ -132,7 +132,7 @@ class Hub_System_Adder_drive(Component):
 
 
 @implement_base(HubBase)
-class HubSE(Assembly):
+class HubSE(Group):
     '''
        HubWPACT class
           The HubWPACT class is used to represent the hub system of a wind turbine.
@@ -217,7 +217,7 @@ class Hub_drive(Component):
         self.add_output('thickness', val=0.0, units='m', desc='hub thickness')
         self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         # added 8/6/14 to allow analysis of hubs for unknown blade roots.
         if self.blade_root_diameter > 0.0:
@@ -268,7 +268,7 @@ class PitchSystem_drive(Component):
         # outputs
         self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         # Sunderland method for calculating pitch system masses
         # density of pitch system material (kg / m^3) - assuming BS1503-622
@@ -313,7 +313,7 @@ class Spinner_drive(Component):
         # outputs
         self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
 
-    def execute(self):
+    def solve_nonlinear(self, params, unknowns, resids):
 
         # spinner mass comes from cost and scaling model
         self.mass = 18.5 * self.rotor_diameter + (-520.5)

@@ -5,8 +5,8 @@ Created by Yi Guo, Taylor Parsons and Ryan King2014.
 Copyright (c) NREL. All rights reserved.
 """
 
-from openmdao.main.api import Component, Assembly
-from openmdao.main.datatypes.api import Float, Bool, Int, Str, Array, Enum
+from openmdao.api import Component, Group
+from openmdao.datatypes.api import Float, Bool, Int, Str, Array, Enum
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy
@@ -22,7 +22,7 @@ from drivese_components import LowSpeedShaft_drive, Gearbox_drive, MainBearing_d
 
 
 @base
-class NacelleBase(Assembly):
+class NacelleBase(Group):
 
     # variables
     rotor_diameter = val = 0.0 iotype = 'in', units = 'm', desc = 'rotor diameter')
@@ -55,7 +55,7 @@ class NacelleBase(Assembly):
     yaw_system_mass=val=0.0 iotype='out', units='kg', desc='component mass')
 
 @implement_base(NacelleBase)
-class Drive3pt(Assembly):
+class Drive3pt(Group):
     '''
        DriveSE class
           The DriveSE3pt class is used to represent the nacelle system of a wind turbine with a single main bearing
@@ -360,7 +360,7 @@ class Drive3pt(Assembly):
 
 #------------------------------------------------------------------
 @implement_base(NacelleBase)
-class Drive4pt(Assembly):
+class Drive4pt(Group):
     '''
        DriveSE class
           The DriveSE4pt class is used to represent the nacelle system of a wind turbine with two main bearings
@@ -665,7 +665,7 @@ class Drive4pt(Assembly):
 #------------------------------------------------------------------
 # NacelleSE drive with simplified low speed shaft and windpact models
 #@implement_base(NacelleBase)
-# class NacelleSE_drive(Assembly):
+# class NacelleSE_drive(Group):
 #     '''
 #        NacelleSE class
 #           The NacelleSE class is used to represent the nacelle system of a wind turbine.
