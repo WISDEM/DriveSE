@@ -17,6 +17,79 @@ class LowSpeedShaft_Base(Component):
     def __init__(self):
         super(LowSpeedShaft_Base, self).__init__()
 
+        # variables
+        self.add_param('rotor_bending_moment_x', val=0.0, units='N*m', desc='The bending moment about the x axis')
+        self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='The bending moment about the y axis')
+        self.add_param('rotor_bending_moment_z', val=0.0, units='N*m', desc='The bending moment about the z axis')
+        self.add_param('rotor_force_x', val=0.0, units='N', desc='The force along the x axis applied at hub center')
+        self.add_param('rotor_force_y', val=0.0, units='N', desc='The force along the y axis applied at hub center')
+        self.add_param('rotor_force_z', val=0.0, units='N', desc='The force along the z axis applied at hub center')
+        self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
+        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+        self.add_param('machine_rating', val=0.0, units='kW', desc='machine_rating machine rating of the turbine')
+        self.add_param('gearbox_mass', val=0.0, units='kg', desc='Gearbox mass')
+        self.add_param('carrier_mass', val=0.0, units='kg', desc='Carrier mass')
+        self.add_param('overhang', val=0.0, units='m', desc='Overhang distance')
+        self.add_param('L_rb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
+        self.add_param('DrivetrainEfficiency', val=0.0 desc='overall drivettrain efficiency')
+
+        # fatigue1 variables
+        self.add_param('rotor_freq', val=0.0, units='rpm', desc='rated rotor speed')
+        self.add_param('fatigue_exponent', val=0.0 desc='fatigue exponent of material')
+        self.add_param('S_ut', val=0.0700e6, units='Pa', desc='ultimate tensile strength of material')
+        self.add_param('weibull_A', val=0.0, units='m/s', desc='weibull scale parameter "A" of 10-minute windspeed probability distribution')
+        self.add_param('weibull_k', val=0.0 desc='weibull shape parameter "k" of 10-minute windspeed probability distribution')
+        self.add_param('blade_number', val=0.0 desc='number of blades on rotor, 2 or 3')
+        self.add_param('cut_in', val=0.0, units='m/s', desc='cut-in windspeed')
+        self.add_param('cut_out', val=0.0, units='m/s', desc='cut-out windspeed')
+        self.add_param('Vrated', val=0.0, units='m/s', desc='rated windspeed')
+        self.add_param('T_life', val=0.0, units='yr', desc='design life')
+        self.add_param('availability', val=0.0.95, desc='turbine availability')
+
+        # fatigue2 variables
+        self.add_param('rotor_thrust_distribution', val=np.array([]), units='N', desc='thrust distribution across turbine life')
+        self.add_param('rotor_thrust_count', val=np.array([]), desc='corresponding cycle array for thrust distribution')
+        self.add_param('rotor_Fy_distribution', val=np.array([]), units='N', desc='Fy distribution across turbine life')
+        self.add_param('rotor_Fy_count', val=np.array([]), desc='corresponding cycle array for Fy distribution')
+        self.add_param('rotor_Fz_distribution', val=np.array([]), units='N', desc='Fz distribution across turbine life')
+        self.add_param('rotor_Fz_count', val=np.array([]), desc='corresponding cycle array for Fz distribution')
+        self.add_param('rotor_torque_distribution', val=np.array([]), units='N*m', desc='torque distribution across turbine life')
+        self.add_param('rotor_torque_count', val=np.array([]), desc='corresponding cycle array for torque distribution')
+        self.add_param('rotor_My_distribution', val=np.array([]), units='N*m', desc='My distribution across turbine life')
+        self.add_param('rotor_My_count', val=np.array([]), desc='corresponding cycle array for My distribution')
+        self.add_param('rotor_Mz_distribution', val=np.array([]), units='N*m', desc='Mz distribution across turbine life')
+        self.add_param('rotor_Mz_count', val=np.array([]), desc='corresponding cycle array for Mz distribution')
+
+        # parameters
+        self.add_param('shrink_disc_mass', val=0.0, units='kg', desc='Mass of the shrink disc')
+        self.add_param('gearbox_cm', val=np.array([]), units='m', desc='center of mass of gearbox')
+        self.add_param('gearbox_length', val=0.0, units='m', desc='gearbox length')
+        self.add_param('flange_length', val=0.0, units='m', desc='flange length')
+        self.add_param('shaft_angle', val=0.0, units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
+        self.add_param('shaft_ratio', val=0.0 desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
+        self.add_param('mb1Type', val='SRB', ('CARB', 'TRB1', 'TRB2', 'SRB', 'CRB', 'RB'), desc='Main bearing type')
+        self.add_param('mb2Type', val='SRB', ('CARB', 'TRB1', 'TRB2', 'SRB', 'CRB', 'RB'), desc='Second bearing type')
+        self.add_param('check_fatigue', val=0, (0, 1, 2), desc='turns on and off fatigue check')
+        self.add_param('IEC_Class', val='A', ('A', 'B', 'C'), desc='IEC class letter: A, B, or C')
+
+        
+        # outputs
+        self.add_output('design_torque', val=0.0,  units='N*m', desc='lss design torque')
+        self.add_output('design_bending_load', val=0.0,  units='N', desc='lss design bending load')
+        self.add_output('length', val=0.0, units='m', desc='lss length')
+        self.add_output('diameter1', val=0.0, units='m',  desc='lss outer diameter at main bearing')
+        self.add_output('diameter2', val=0.0, units='m',  desc='lss outer diameter at second bearing')
+        self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
+        self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+        self.add_output('FW_mb1', val=0.0, units='m',  desc='facewidth of upwind main bearing')
+        self.add_output('FW_mb2', val=0.0, units='m',  desc='facewidth of main bearing')
+        self.add_output('bearing_mass1', val=0.0,  units='kg', desc='main bearing mass')
+        self.add_output('bearing_mass2', val=0.0, units='kg',  desc='second bearing mass')
+        self.add_output('bearing_location1', val=np.array([0, 0, 0]), units='m', desc='main bearing 1 center of mass')
+        self.add_output('bearing_location2', val=np.array([0, 0, 0]), units='m', desc='main bearing 2 center of mass')
+
+        
     def get_Damage_Brng2(self):
         I = (pi / 64.0) * (self.D_med**4 - self.D_in**4)
         J = I * 2
@@ -209,78 +282,6 @@ class LowSpeedShaft_drive4pt(LowSpeedShaft_Base):
 
     def __init__(self):
         super(LowSpeedShaft_drive4pt, self).__init__()
-
-        # variables
-        self.add_param('rotor_bending_moment_x', val=0.0, units='N*m', desc='The bending moment about the x axis')
-        self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='The bending moment about the y axis')
-        self.add_param('rotor_bending_moment_z', val=0.0, units='N*m', desc='The bending moment about the z axis')
-        self.add_param('rotor_force_x', val=0.0, units='N', desc='The force along the x axis applied at hub center')
-        self.add_param('rotor_force_y', val=0.0, units='N', desc='The force along the y axis applied at hub center')
-        self.add_param('rotor_force_z', val=0.0, units='N', desc='The force along the z axis applied at hub center')
-        self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
-        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-        self.add_param('machine_rating', val=0.0, units='kW', desc='machine_rating machine rating of the turbine')
-        self.add_param('gearbox_mass', val=0.0, units='kg', desc='Gearbox mass')
-        self.add_param('carrier_mass', val=0.0, units='kg', desc='Carrier mass')
-        self.add_param('overhang', val=0.0, units='m', desc='Overhang distance')
-        self.add_param('gearbox_cm', val=np.array([]), units='m', desc='center of mass of gearbox')
-        self.add_param('gearbox_length', val=0.0, units='m', desc='gearbox length')
-        self.add_param('flange_length', val=0.0, units='m', desc='flange length')
-        self.add_param('L_rb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
-        self.add_param('shaft_angle', val=0.0, units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
-        self.add_param('shaft_ratio', val=0.0 desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
-        self.add_param('DrivetrainEfficiency', val=0.0 desc='overall drivettrain efficiency')
-
-        # fatigue1 variables
-        self.add_param('rotor_freq', val=0.0, units='rpm', desc='rated rotor speed')
-        self.add_param('availability', val=0.0.95, desc='turbine availability')
-        self.add_param('fatigue_exponent', val=0.00, desc='fatigue exponent of material')
-        self.add_param('S_ut', val=0.0700e6, units='Pa', desc='ultimate tensile strength of material')
-        self.add_param('weibull_A', val=0.0, units='m/s', desc='weibull scale parameter "A" of 10-minute windspeed probability distribution')
-        self.add_param('weibull_k', val=0.0 desc='weibull shape parameter "k" of 10-minute windspeed probability distribution')
-        self.add_param('blade_number', val=0.0 desc='number of blades on rotor, 2 or 3')
-        self.add_param('cut_in', val=0.0, units='m/s', desc='cut-in windspeed')
-        self.add_param('cut_out', val=0.0, units='m/s', desc='cut-out windspeed')
-        self.add_param('Vrated', val=0.0, units='m/s', desc='rated windspeed')
-        self.add_param('T_life', val=0.0, units='yr', desc='cut-in windspeed')
-
-        # fatigue2 variables
-        self.add_param('rotor_thrust_distribution', val=np.array([]), units='N', desc='thrust distribution across turbine life')
-        self.add_param('rotor_thrust_count', val=np.array([]), desc='corresponding cycle array for thrust distribution')
-        self.add_param('rotor_Fy_distribution', val=np.array([]), units='N', desc='Fy distribution across turbine life')
-        self.add_param('rotor_Fy_count', val=np.array([]), desc='corresponding cycle array for Fy distribution')
-        self.add_param('rotor_Fz_distribution', val=np.array([]), units='N', desc='Fz distribution across turbine life')
-        self.add_param('rotor_Fz_count', val=np.array([]), desc='corresponding cycle array for Fz distribution')
-        self.add_param('rotor_torque_distribution', val=np.array([]), units='N*m', desc='torque distribution across turbine life')
-        self.add_param('rotor_torque_count', val=np.array([]), desc='corresponding cycle array for torque distribution')
-        self.add_param('rotor_My_distribution', val=np.array([]), units='N*m', desc='My distribution across turbine life')
-        self.add_param('rotor_My_count', val=np.array([]), desc='corresponding cycle array for My distribution')
-        self.add_param('rotor_Mz_distribution', val=np.array([]), units='N*m', desc='Mz distribution across turbine life')
-        self.add_param('rotor_Mz_count', val=np.array([]), desc='corresponding cycle array for Mz distribution')
-
-        # parameters
-        # shrink disk or flange addtional mass
-        self.add_param('shrink_disc_mass', val=0.0, units='kg', desc='Mass of the shrink disc')
-        self.add_param('mb1Type', val='SRB', ('CARB', 'TRB1', 'TRB2', 'SRB', 'CRB', 'RB'), desc='Main bearing type')
-        self.add_param('mb2Type', val='SRB', ('CARB', 'TRB1', 'TRB2', 'SRB', 'CRB', 'RB'), desc='Second bearing type')
-        self.add_param('check_fatigue', val=0, (0, 1, 2), desc='turns on and off fatigue check')
-        self.add_param('IEC_Class', val='A', ('A', 'B', 'C'), desc='IEC class letter: A, B, or C')
-
-        # outputs
-        self.add_output('design_torque', val=0.0,  units='N*m', desc='lss design torque')
-        self.add_output('design_bending_load', val=0.0,  units='N', desc='lss design bending load')
-        self.add_output('length', val=0.0, units='m', desc='lss length')
-        self.add_output('diameter1', val=0.0, units='m',  desc='lss outer diameter at main bearing')
-        self.add_output('diameter2', val=0.0, units='m',  desc='lss outer diameter at second bearing')
-        self.add_output('mass', val=0.0, units='kg', desc='overall component mass')
-        self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
-        self.add_output('FW_mb1', val=0.0, units='m',  desc='facewidth of upwind main bearing')
-        self.add_output('FW_mb2', val=0.0, units='m',  desc='facewidth of main bearing')
-        self.add_output('bearing_mass1', val=0.0,  units='kg', desc='main bearing mass')
-        self.add_output('bearing_mass2', val=0.0, units='kg',  desc='second bearing mass')
-        self.add_output('bearing_location1', val=np.array([0, 0, 0]), units='m', desc='main bearing 1 center of mass')
-        self.add_output('bearing_location2', val=np.array([0, 0, 0]), units='m', desc='main bearing 2 center of mass')
 
     def size_LSS_4pt_Loop_1(self):
         # Distances
@@ -972,77 +973,6 @@ class LowSpeedShaft_drive3pt(LowSpeedShaft_Base):
     '''
     def __init__(self):
         super(LowSpeedShaft_drive3pt, self).__init__()
-
-        # variables
-        self.add_param('rotor_bending_moment_x', val=0.0, units='N*m', desc='The bending moment about the x axis')
-        self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='The bending moment about the y axis')
-        self.add_param('rotor_bending_moment_z', val=0.0, units='N*m', desc='The bending moment about the z axis')
-        self.add_param('rotor_force_x', val=0.0, units='N', desc='The force along the x axis applied at hub center')
-        self.add_param('rotor_force_y', val=0.0, units='N', desc='The force along the y axis applied at hub center')
-        self.add_param('rotor_force_z', val=0.0, units='N', desc='The force along the z axis applied at hub center')
-        self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
-        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-        self.add_param('machine_rating', val=0.0, units='kW', desc='machine_rating machine rating of the turbine')
-        self.add_param('gearbox_mass', val=0.0, units='kg', desc='Gearbox mass')
-        self.add_param('carrier_mass', val=0.0, units='kg', desc='Carrier mass')
-        self.add_param('overhang', val=0.0, units='m', desc='Overhang distance')
-        self.add_param('L_rb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
-
-        # fatigue1 variables
-        self.add_param('fatigue_exponent', val=0.0 desc='fatigue exponent of material')
-        self.add_param('S_ut', val=0.0700e6, units='Pa', desc='ultimate tensile strength of material')
-        self.add_param('weibull_A', val=0.0, units='m/s', desc='weibull scale parameter "A" of 10-minute windspeed probability distribution')
-        self.add_param('weibull_k', val=0.0 desc='weibull shape parameter "k" of 10-minute windspeed probability distribution')
-        self.add_param('blade_number', val=0.0 desc='number of blades on rotor, 2 or 3')
-        self.add_param('cut_in', val=0.0, units='m/s', desc='cut-in windspeed')
-        self.add_param('cut_out', val=0.0, units='m/s', desc='cut-out windspeed')
-        self.add_param('Vrated', val=0.0, units='m/s', desc='rated windspeed')
-        self.add_param('T_life', val=0.0, units='yr', desc='design life')
-        self.add_param('DrivetrainEfficiency', val=0.0 desc='overall drivettrain efficiency')
-        self.add_param('rotor_freq', val=0.0, units='rpm', desc='rated rotor speed')
-        self.add_param('availability', val=0.0.95, desc='turbine availability')
-
-        # fatigue2 variables
-        self.add_param('rotor_thrust_distribution', val=np.array([]), units='N', desc='thrust distribution across turbine life')
-        self.add_param('rotor_thrust_count', val=np.array([]), desc='corresponding cycle array for thrust distribution')
-        self.add_param('rotor_Fy_distribution', val=np.array([]), units='N', desc='Fy distribution across turbine life')
-        self.add_param('rotor_Fy_count', val=np.array([]), desc='corresponding cycle array for Fy distribution')
-        self.add_param('rotor_Fz_distribution', val=np.array([]), units='N', desc='Fz distribution across turbine life')
-        self.add_param('rotor_Fz_count', val=np.array([]), desc='corresponding cycle array for Fz distribution')
-        self.add_param('rotor_torque_distribution', val=np.array([]), units='N*m', desc='torque distribution across turbine life')
-        self.add_param('rotor_torque_count', val=np.array([]), desc='corresponding cycle array for torque distribution')
-        self.add_param('rotor_My_distribution', val=np.array([]), units='N*m', desc='My distribution across turbine life')
-        self.add_param('rotor_My_count', val=np.array([]), desc='corresponding cycle array for My distribution')
-        self.add_param('rotor_Mz_distribution', val=np.array([]), units='N*m', desc='Mz distribution across turbine life')
-        self.add_param('rotor_Mz_count', val=np.array([]), desc='corresponding cycle array for Mz distribution')
-
-        # parameters
-        self.add_param('shrink_disc_mass', val=0.0, units='kg', desc='Mass of the shrink disc')
-        self.add_param('gearbox_cm', val=np.array([]), units='m', desc='center of mass of gearbox')
-        self.add_param('gearbox_length', val=0.0, units='m', desc='gearbox length')
-        self.add_param('flange_length', val=0.0, units='m', desc='flange length')
-        self.add_param('shaft_angle', val=0.0, units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
-        self.add_param('shaft_ratio', val=0.0 desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
-        self.add_param('mb1Type', val='SRB', ('CARB', 'TRB1', 'TRB2', 'SRB', 'CRB', 'RB'), desc='Main bearing type')
-        self.add_param('mb2Type', val='SRB', ('CARB', 'TRB1', 'TRB2', 'SRB', 'CRB', 'RB'), desc='Second bearing type')
-        self.add_param('check_fatigue', val=0, (0, 1, 2), desc='turns on and off fatigue check')
-        self.add_param('IEC_Class', val='A', ('A', 'B', 'C'), desc='IEC class letter: A, B, or C')
-
-        # outputs
-        self.add_output('design_torque', val=0.0, units='N*m', desc='lss design torque')
-        self.add_output('design_bending_load', val=0.0,  units='N', desc='lss design bending load')
-        self.add_output('length', val=0.0,  units='m', desc='lss length')
-        self.add_output('diameter1', val=0.0, units='m',  desc='lss outer diameter at main bearing')
-        self.add_output('diameter2', val=0.0, units='m',  desc='lss outer diameter at second bearing')
-        self.add_output('mass', val=0.0, units='kg',  desc='overall component mass')
-        self.add_output('cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
-        self.add_output('FW_mb', val=0.0, units='m',  desc='facewidth of main bearing')
-        self.add_output('bearing_mass1', val=0.0,  units='kg', desc='main bearing mass')
-        # zero for 3-pt model
-        self.add_output('bearing_mass2', val=0.00., units='kg', desc='main bearing mass')
-        self.add_output('bearing_location1', val=np.array([0, 0, 0]), units='m', desc='main bearing 1 center of mass')
-        self.add_output('bearing_location2', val=np.array([0, 0, 0]), units='m', desc='main bearing 2 center of mass')
 
 
     def size_LSS_3pt(self):
