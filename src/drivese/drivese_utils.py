@@ -7,7 +7,6 @@ Copyright (c) NREL. All rights reserved.
 """
 
 from openmdao.api import Component
-from openmdao.datatypes.api import Float, Array
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 import algopy

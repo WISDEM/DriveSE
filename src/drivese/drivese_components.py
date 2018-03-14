@@ -6,8 +6,7 @@ Created by Ryan King 2013. Edited by Taylor Parsons 2014
 Copyright (c) NREL. All rights reserved.
 """
 
-from openmdao.api import Component, Group
-from openmdao.datatypes.api import Float, Bool, Int, Str, Array, Enum
+from openmdao.api import Component
 
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
