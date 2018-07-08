@@ -1,7 +1,5 @@
 """
-hubSE.py
-
-Created by Katherine Dykes 2012.
+hubSE components
 Copyright (c) NREL. All rights reserved.
 """
 
@@ -9,12 +7,7 @@ from openmdao.api import Group, Component, Problem, IndepVarComp
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 
-def get_distance_hub2mb(rotor_diameter, deriv=False):
-    out = [0.007835 * rotor_diameter + 0.9642]
-    if deriv:
-        out.extend([.007835])
-    return out
-
+from drivese_utils import get_distance_hub2mb
 
 class Hub_System_Adder(Component):
     ''' Get_hub_cm class
