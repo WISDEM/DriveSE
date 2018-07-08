@@ -9,51 +9,29 @@ from openmdao.api import Group, Component, Problem, IndepVarComp
 import numpy as np
 from math import pi, cos, sqrt, radians, sin, exp, log10, log, floor, ceil
 
-#from fusedwind.interface import implement_base, base
-from drivese.drivese_utils import get_L_rb
-
-# Hub Base Group
-
-
-#@base
-class HubBase(Component):
-    def __init__(self):
-        super(Hub_Base, self).__init__()
-
-        # variables
-        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
-        self.add_param('rotor_bending_moment', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
-        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-        self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
-
-        # parameters
-        self.add_param('blade_number', val=3, desc='number of turbine blades', pass_by_obj=True)
-
-        # outputs
-        self.add_output('hub_system_mass', val=0.0, units='kg',  desc='overall component mass')
-        self.add_output('hub_system_cm', val=np.array([]), desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
-        self.add_output('hub_system_I', val=np.array([]), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
-
-        self.add_output('hub_mass', val=0.0, units='kg')
-        self.add_output('pitch_system_mass', val=0.0, units='kg')
-        self.add_output('spinner_mass', val=0.0, units='kg')
+def get_distance_hub2mb(rotor_diameter, deriv=False):
+    out = [0.007835 * rotor_diameter + 0.9642]
+    if deriv:
+        out.extend([.007835])
+    return out
 
 
-class Hub_System_Adder_drive(Component):
+class Hub_System_Adder(Component):
     ''' Get_hub_cm class
           The Get_hub_cm class is used to pass the hub cm data to upper level models.
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
     '''
 
     def __init__(self):
-        super(Hub_System_Adder_drive, self).__init__()
+
+        super(Hub_System_Adder, self).__init__()
 
         # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
 
         # variables
         self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-        self.add_param('L_rb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
+        self.add_param('distance_hub2mb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
         self.add_param('shaft_angle', val=0.0, units='deg', desc='shaft angle')
         self.add_param('MB1_location', val=np.zeros(3), units='m', desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
         self.add_param('hub_mass', val=0.0, units='kg', desc='mass of Hub')
@@ -76,13 +54,13 @@ class Hub_System_Adder_drive(Component):
         spinner_mass      = params['spinner_mass']
         pitch_system_mass = params['pitch_system_mass']
         
-        L_rb = params['L_rb']
-        if L_rb <= 0: get_L_rb(params['rotor_diameter'])
+        distance_hub2mb = params['distance_hub2mb']
+        if distance_hub2mb <= 0: get_distance_hub2mb(params['rotor_diameter'])
 
         cm = np.array([0.0, 0.0, 0.0])
-        cm[0] = params['MB1_location'][0] - L_rb
+        cm[0] = params['MB1_location'][0] - distance_hub2mb
         cm[1] = 0.0
-        cm[2] = params['MB1_location'][2] + L_rb * sin(radians(params['shaft_angle']))
+        cm[2] = params['MB1_location'][2] + distance_hub2mb * sin(radians(params['shaft_angle']))
         unknowns['hub_system_cm'] = cm
 
         unknowns['hub_system_mass'] = hub_mass + pitch_system_mass + spinner_mass
@@ -111,17 +89,9 @@ class Hub_System_Adder_drive(Component):
         # sum moments around each components CM
         unknowns['hub_system_I'] = hub_I + pitch_system_I + spinner_I
 
-        # translate to hub system CM using parallel axis theorem- because cm is assumed shared, unneeded
-        # for j in (range(0,3)):
-        #     if i != j:
-        #         I[i] +=  (hub_mass * (hub_cm[j] - hub_system_cm[j]) ** 2) + \
-        #                       (pitch_system_mass * (pitch_system_cm[j] - hub_system_cm[j]) ** 2) + \
-        #                       (spinner_mass * (spinner_cm[j] - hub_system_cm[j]) ** 2)
-
 # -------------------------------------------------
 
-
-class Hub_drive(Component):
+class Hub(Component):
     ''' Hub class    
           The Hub class is used to represent the hub component of a wind turbine. 
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
@@ -129,7 +99,7 @@ class Hub_drive(Component):
     '''
 
     def __init__(self):
-        super(Hub_drive, self).__init__()
+        super(Hub, self).__init__()
 
         # variables
         self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
@@ -167,7 +137,7 @@ class Hub_drive(Component):
         unknowns['hub_thickness'] = castThickness
 
 
-class PitchSystem_drive(Component):
+class PitchSystem(Component):
     '''
      PitchSystem class
       The PitchSystem class is used to represent the pitch system of a wind turbine.
@@ -176,7 +146,7 @@ class PitchSystem_drive(Component):
     '''
 
     def __init__(self):
-        super(PitchSystem_drive, self).__init__()
+        super(PitchSystem, self).__init__()
 
         # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
@@ -202,16 +172,14 @@ class PitchSystem_drive(Component):
 
         # default factor is 1.0 (0.54 for modern designs)
         hubpitchFact = 1.0
-        #self.mass =hubpitchFact * (0.22 * self.blade_mass * self.blade_number + 12.6 * self.blade_number * self.rotor_bending_moment * (pitchmatldensity / pitchmatlstress))
         # mass of pitch system based on Sunderland model
         unknowns['pitch_system_mass'] = (hubpitchFact * (0.22 * params['blade_mass'] * params['blade_number'] +
                                             12.6 * params['rotor_bending_moment'] * (pitchmatldensity / pitchmatlstress)) )
-        # mass of pitch system based on Sunderland model
 
 
 #-------------------------------------------------------------------------
 
-class Spinner_drive(Component):
+class Spinner(Component):
     '''
        Spinner class
           The SpinnerClass is used to represent the spinner of a wind turbine.
@@ -220,7 +188,7 @@ class Spinner_drive(Component):
     '''
 
     def __init__(self):
-        super(Spinner_drive, self).__init__()
+        super(Spinner, self).__init__()
 
         # controls what happens if derivatives are missing
         self.missing_deriv_policy = 'assume_zero'
@@ -236,15 +204,13 @@ class Spinner_drive(Component):
         # spinner mass comes from cost and scaling model
         unknowns['spinner_mass'] = 18.5 * params['rotor_diameter'] + (-520.5)
 
-
 #-------------------------------------------------------------------------
 
-
-#@implement_base(HubBase)
 class HubSE(Group):
     '''
-       HubWPACT class
-          The HubWPACT class is used to represent the hub system of a wind turbine.
+       HubSE class
+          The HubSE class is used to represent the hub system of a wind turbine. 
+          HubSE integrates the hub, pitch system and spinner / nose cone components for the hub system.
     '''
 
     def __init__(self):
@@ -260,18 +226,14 @@ class HubSE(Group):
         # parameters
         self.add('blade_number', IndepVarComp('blade_number', val=3, desc='number of turbine blades', pass_by_obj=True), promotes=['*'])
 
-        # DUMMY OUTPUTS DO NOT USE. Calculated in hubsystemadderdrive
-        #self.add_output('hub_system_mass', val=0.0, units='kg')
-        #self.add_output('hub_system_cm', val=np.array([0.0, 0.0, 0.0]), units='m')
-        #self.add_output('hub_system_I', val=np.array([0.0, 0.0, 0.0]),)
-
         # select components
-        self.add('hub', Hub_drive(), promotes=['*'])
-        self.add('pitchSystem', PitchSystem_drive(), promotes=['*'])
-        self.add('spinner', Spinner_drive(), promotes=['*'])
-        self.add('adder', Hub_System_Adder_drive(), promotes=['*'])
+        self.add('hub', Hub(), promotes=['*'])
+        self.add('pitchSystem', PitchSystem(), promotes=['*'])
+        self.add('spinner', Spinner(), promotes=['*'])
+        self.add('adder', Hub_System_Adder(), promotes=['*'])
 
 #-------------------------------------------------------------------------
+# Examples based on reference turbines including the NREL 5 MW, WindPACT 1.5 MW and the GRC 750 kW system.
 
 def example_5MW_4pt():
 
@@ -296,17 +258,16 @@ def example_5MW_4pt():
 
     prob.run()
 
-    print "NREL 5 MW turbine test"
-    print "Hub Components"
-    print '  hub         {0:8.1f} kg'.format(prob['hub_mass'])  # 31644.47
-    print '  pitch mech  {0:8.1f} kg'.format(prob['pitch_system_mass'])  # 17003.98
-    print '  nose cone   {0:8.1f} kg'.format(prob['spinner_mass'])  # 1810.50
+    print("NREL 5 MW turbine test")
+    print("Hub Components")
+    print('  hub         {0:8.1f} kg'.format(prob['hub_mass']))  # 31644.47
+    print('  pitch mech  {0:8.1f} kg'.format(prob['pitch_system_mass']))  # 17003.98
+    print('  nose cone   {0:8.1f} kg'.format(prob['spinner_mass']))  # 1810.50
     # 50458.95
-    print 'Hub system total {0:8.1f} kg'.format(prob['hub_system_mass'])
-    print '    cm {0:6.2f} {1:6.2f} {2:6.2f}'.format(prob['hub_system_cm'][0], prob['hub_system_cm'][1], prob['hub_system_cm'][2])
-    print '    I {0:6.1f} {1:6.1f} {2:6.1f}'.format(prob['hub_system_I'][0], prob['hub_system_I'][1], prob['hub_system_I'][2])
-    print
-
+    print('Hub system total {0:8.1f} kg'.format(prob['hub_system_mass']))
+    print('    cm {0:6.2f} {1:6.2f} {2:6.2f}'.format(prob['hub_system_cm'][0], prob['hub_system_cm'][1], prob['hub_system_cm'][2]))
+    print('    I {0:6.1f} {1:6.1f} {2:6.1f}'.format(prob['hub_system_I'][0], prob['hub_system_I'][1], prob['hub_system_I'][2]))
+    print()
 
 def example_1p5MW_4pt():
 
@@ -330,16 +291,16 @@ def example_1p5MW_4pt():
 
     prob.run()
 
-    print "WindPACT 1.5 MW turbine test"
-    print "Hub Components"
-    print '  hub         {0:8.1f} kg'.format(prob['hub_mass'])
-    print '  pitch mech  {0:8.1f} kg'.format(prob['pitch_system_mass'])
-    print '  nose cone   {0:8.1f} kg'.format(prob['spinner_mass'])
-    print 'HUB TOTAL     {0:8.1f} kg'.format(prob['hub_system_mass'])
-    print 'cm {0:6.2f} {1:6.2f} {2:6.2f}'.format(prob['hub_system_cm'][0], prob['hub_system_cm'][1], prob['hub_system_cm'][2])
-    print 'I {0:6.1f} {1:6.1f} {2:6.1f}'.format(prob['hub_system_I'][0], prob['hub_system_I'][1], prob['hub_system_I'][2])
-    print
-
+    print("WindPACT 1.5 MW turbine test")
+    print("Hub Components")
+    print('  hub         {0:8.1f} kg'.format(prob['hub_mass']))  # 31644.47
+    print('  pitch mech  {0:8.1f} kg'.format(prob['pitch_system_mass']))  # 17003.98
+    print('  nose cone   {0:8.1f} kg'.format(prob['spinner_mass']))  # 1810.50
+    # 50458.95
+    print('Hub system total {0:8.1f} kg'.format(prob['hub_system_mass']))
+    print('    cm {0:6.2f} {1:6.2f} {2:6.2f}'.format(prob['hub_system_cm'][0], prob['hub_system_cm'][1], prob['hub_system_cm'][2]))
+    print('    I {0:6.1f} {1:6.1f} {2:6.1f}'.format(prob['hub_system_I'][0], prob['hub_system_I'][1], prob['hub_system_I'][2]))
+    print()
 
 def example_750kW_4pt():
 
@@ -363,16 +324,44 @@ def example_750kW_4pt():
 
     prob.run()
 
-    print "windpact 750 kW turbine test"
-    print "Hub Components"
-    print '  hub         {0:8.1f} kg'.format(prob['hub_mass'])
-    print '  pitch mech  {0:8.1f} kg'.format(prob['pitch_system_mass'])
-    print '  nose cone   {0:8.1f} kg'.format(prob['spinner_mass'])
-    print 'HUB TOTAL     {0:8.1f} kg'.format(prob['hub_system_mass'])
-    print 'cm {0:6.2f} {1:6.2f} {2:6.2f}'.format(prob['hub_system_cm'][0], prob['hub_system_cm'][1], prob['hub_system_cm'][2])
-    print 'I {0:6.1f} {1:6.1f} {2:6.1f}'.format(prob['hub_system_I'][0], prob['hub_system_I'][1], prob['hub_system_I'][2])
-    print
+    print("windpact 750 kW turbine test")
+    print("Hub Components")
+    print('  hub         {0:8.1f} kg'.format(prob['hub_mass']))  # 31644.47
+    print('  pitch mech  {0:8.1f} kg'.format(prob['pitch_system_mass']))  # 17003.98
+    print('  nose cone   {0:8.1f} kg'.format(prob['spinner_mass']))  # 1810.50
+    # 50458.95
+    print('Hub system total {0:8.1f} kg'.format(prob['hub_system_mass']))
+    print('    cm {0:6.2f} {1:6.2f} {2:6.2f}'.format(prob['hub_system_cm'][0], prob['hub_system_cm'][1], prob['hub_system_cm'][2]))
+    print('    I {0:6.1f} {1:6.1f} {2:6.1f}'.format(prob['hub_system_I'][0], prob['hub_system_I'][1], prob['hub_system_I'][2]))
+    print()
 
+'''
+# Not currently used - no base component
+class HubBase(Component):
+
+    def __init__(self):
+        super(Hub_Base, self).__init__()
+
+        # variables
+        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+        self.add_param('rotor_bending_moment', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
+        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+        self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
+
+        # parameters
+        self.add_param('blade_number', val=3, desc='number of turbine blades', pass_by_obj=True)
+
+        # outputs
+        self.add_output('hub_system_mass', val=0.0, units='kg',  desc='overall component mass')
+        self.add_output('hub_system_cm', val=np.array([]), desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+        self.add_output('hub_system_I', val=np.array([]), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+
+        self.add_output('hub_mass', val=0.0, units='kg')
+        self.add_output('pitch_system_mass', val=0.0, units='kg')
+        self.add_output('spinner_mass', val=0.0, units='kg')
+'''
+
+# Main code to run hub system examples
 if __name__ == "__main__":
 
     example_5MW_4pt()
