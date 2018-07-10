@@ -12,7 +12,7 @@ from fusedwind.fused_openmdao import FUSED_Component, FUSED_Group, FUSED_add, FU
                                      FUSED_Problem, FUSED_setup, FUSED_run, FUSED_VarComp
 
 # FUSED drivetrain components
-from fused_drivese import FUSED_Gearbox, FUSED_MainBearing, FUSED_Bedplate, FUSED_YawSystem, FUSED_LowSpeedShaft3pt, \
+from drivese.fused_drivese import FUSED_Gearbox, FUSED_MainBearing, FUSED_Bedplate, FUSED_YawSystem, FUSED_LowSpeedShaft3pt, \
     FUSED_LowSpeedShaft4pt, FUSED_Transformer, FUSED_HighSpeedSide, FUSED_Generator, FUSED_NacelleSystemAdder, FUSED_AboveYawMassAdder, FUSED_RNASystemAdder
 
 def Drive3pt(drive_group, mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane):

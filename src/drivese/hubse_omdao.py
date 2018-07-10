@@ -5,7 +5,7 @@ import numpy as np
 from fusedwind.fused_openmdao import FUSED_Component, FUSED_Group, FUSED_add, FUSED_connect, FUSED_print, \
                                      FUSED_Problem, FUSED_setup, FUSED_run, FUSED_VarComp
                                      
-from fused_hubse import FUSED_Hub, FUSED_PitchSystem, FUSED_Spinner, FUSED_Hub_System_Adder
+from drivese.fused_hubse import FUSED_Hub, FUSED_PitchSystem, FUSED_Spinner, FUSED_Hub_System_Adder
 
 #-------------------------------------------------------------------------
 

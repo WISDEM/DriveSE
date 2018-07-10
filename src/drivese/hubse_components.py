@@ -6,7 +6,7 @@ Copyright (c) NREL. All rights reserved.
 import numpy as np
 from math import pi, cos, sqrt, sin, exp
 
-from drivese_utils import get_distance_hub2mb
+from drivese.drivese_utils import get_distance_hub2mb
 
 class Hub_System_Adder(object):
     ''' Get_hub_cm class

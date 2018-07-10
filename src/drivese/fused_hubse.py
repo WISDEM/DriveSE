@@ -4,7 +4,7 @@ FUSED versions of HubSE components
 
 import numpy as np
 
-from hubse_components import Hub, PitchSystem, Spinner, Hub_System_Adder
+from drivese.hubse_components import Hub, PitchSystem, Spinner, Hub_System_Adder
 
 # FUSED helper functions and interface defintions
 from fusedwind.fused_wind import FUSED_Object
