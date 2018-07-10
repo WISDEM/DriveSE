@@ -5,7 +5,6 @@ Created by Yi Guo, Taylor Parsons and Ryan King 2014.
 Copyright (c) NREL. All rights reserved.
 """
 
-from openmdao.api import Group, Problem
 import numpy as np
 
 # FUSED wrapper
