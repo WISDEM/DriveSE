@@ -42,9 +42,9 @@ class Hub_System_Adder(object):
             distance_hub2mb = get_distance_hub2mb(self.rotor_diameter)
 
         cm = np.array([0.0,0.0,0.0])
-        cm[0]     = self.MB1_location[0] - distance_hub2mb[0]
+        cm[0]     = self.MB1_location[0] - distance_hub2mb
         cm[1]     = 0.0
-        cm[2]     = self.MB1_location[2] + distance_hub2mb[0]*sin(self.shaft_angle)
+        cm[2]     = self.MB1_location[2] + distance_hub2mb*sin(self.shaft_angle)
         self.hub_system_cm = (cm)
 
         self.hub_system_mass = self.hub_mass + self.pitch_system_mass + self.spinner_mass

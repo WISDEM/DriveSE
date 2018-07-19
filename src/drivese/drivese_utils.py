@@ -33,9 +33,10 @@ def get_Mz(rotor_mass, distance_hub2mb):
 
 # function to estimate the location of the main bearing location from the hub center
 def get_distance_hub2mb(rotor_diameter, deriv=False):
-    out = [0.007835 * rotor_diameter + 0.9642]
-    if deriv:
-        out.extend([.007835])
+    out = 0.007835 * rotor_diameter + 0.9642
+    # Ignoring deriv calculation for now
+    #if deriv:
+    #    out.extend([.007835])
     return out
 
 # -------------------------------------------------

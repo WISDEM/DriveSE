@@ -1394,7 +1394,7 @@ class Bedplate(object):
         if self.distance_hub2mb > 0:
             distance_hub2mb = self.distance_hub2mb
         else:
-            [distance_hub2mb] = get_distance_hub2mb(self.rotor_diameter, False)
+            distance_hub2mb = get_distance_hub2mb(self.rotor_diameter, False)
 
         # component weights and locations
         if self.transformer_mass > 0:  # only if uptower transformer
