@@ -7,118 +7,133 @@ Copyright (c) NREL. All rights reserved.
 
 import numpy as np
 
-# FUSED wrapper
-from fusedwind.fused_openmdao import FUSED_Component, FUSED_Group, FUSED_add, FUSED_connect, FUSED_print, \
-                                     FUSED_Problem, FUSED_setup, FUSED_run, FUSED_VarComp
+from drivese.fused_drivese import Gearbox_OM, MainBearing_OM, Bedplate_OM, YawSystem_OM, LowSpeedShaft3pt_OM, \
+    LowSpeedShaft4pt_OM, Transformer_OM, HighSpeedSide_OM, Generator_OM, NacelleSystemAdder_OM, AboveYawMassAdder_OM, RNASystemAdder_OM
+from drivese.fused_hubse import Hub_OM, PitchSystem_OM, Spinner_OM, Hub_System_Adder_OM
+from openmdao.api import Group, Component, IndepVarComp, Problem
 
-# FUSED drivetrain components
-from drivese.fused_drivese import FUSED_Gearbox, FUSED_MainBearing, FUSED_Bedplate, FUSED_YawSystem, FUSED_LowSpeedShaft3pt, \
-    FUSED_LowSpeedShaft4pt, FUSED_Transformer, FUSED_HighSpeedSide, FUSED_Generator, FUSED_NacelleSystemAdder, FUSED_AboveYawMassAdder, FUSED_RNASystemAdder
+class Drive3pt(Group):
 
-def Drive3pt(drive_group, mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane):
+    def __init__(self, mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane, blade_number):
+        super(Drive3pt, self).__init__()
 
-    # Add common inputs for rotor
-    FUSED_add(drive_group, 'rotorvars',FUSED_VarComp([('rotor_diameter', 0.0),
-								    																 ('rotor_bending_moment_x', 0.0),
-								    																 ('rotor_bending_moment_y', 0.0),
-								    																 ('rotor_bending_moment_z', 0.0),
-								    																 ('rotor_thrust', 0.0),
-								    																 ('rotor_force_y',0.0),
-								    																 ('rotor_force_z', 0.0),
-								    																 ('rotor_torque', 0.0),
-								    																 ('rotor_mass', 0.0),								    																 
-								    																 ]),['*'])
 
-    # Add common inputs for drivetrain
-    FUSED_add(drive_group, 'drivevars',FUSED_VarComp([('machine_rating', 0.0),
-								    																 ('gear_ratio', 0.0),
-								    																 ('flange_length', 0.0),
-								    																 ('overhang', 0.0),
-								    																 ('distance_hub2mb', 0.0),
-								    																 ('gearbox_input_cm', 0.0),
-								    																 ('hss_input_length', 0.0),
-								    																 ]),['*'])
+        # Add common inputs for rotor
+        self.add('rotor_diameter', IndepVarComp('rotor_diameter', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_x', IndepVarComp('rotor_bending_moment_x', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_z', IndepVarComp('rotor_bending_moment_z', 0.0), promotes=['*'])
+        self.add('rotor_thrust', IndepVarComp('rotor_thrust', 0.0), promotes=['*'])
+        self.add('rotor_force_y', IndepVarComp('rotor_force_y', 0.0), promotes=['*'])
+        self.add('rotor_force_z', IndepVarComp('rotor_force_z', 0.0), promotes=['*'])
+        self.add('rotor_torque', IndepVarComp('rotor_torque', 0.0), promotes=['*'])
+        self.add('rotor_mass', IndepVarComp('rotor_mass', 0.0), promotes=['*'])
 
-    # Add common inputs for tower
-    FUSED_add(drive_group, 'towervars',FUSED_VarComp([('tower_top_diameter', 0.0)]),['*'])
+        # Add common inputs for drivetrain
+        self.add('gear_ratio', IndepVarComp('gear_ratio', 0.0), promotes=['*'])
+        self.add('shaft_angle', IndepVarComp('shaft_angle', 0.0), promotes=['*'])
+        self.add('shaft_ratio', IndepVarComp('shaft_ratio', 0.0), promotes=['*'])
+        self.add('shrink_disc_mass', IndepVarComp('shrink_disc_mass', 0.0), promotes=['*'])
+        self.add('carrier_mass', IndepVarComp('carrier_mass', 0.0), promotes=['*'])
+        self.add('flange_length', IndepVarComp('flange_length', 0.0), promotes=['*'])
+        self.add('overhang', IndepVarComp('overhang', 0.0), promotes=['*'])
+        self.add('distance_hub2mb', IndepVarComp('distance_hub2mb', 0.0), promotes=['*'])
+        self.add('gearbox_input_cm', IndepVarComp('gearbox_input_cm', 0.0), promotes=['*'])
+        self.add('hss_input_length', IndepVarComp('hss_input_length', 0.0), promotes=['*'])
 
-    # Create 3 pt drivetrain group
-    FUSED_add(drive_group, 'lowSpeedShaft', FUSED_Component(FUSED_LowSpeedShaft3pt(mb1Type, IEC_Class)), ['*'])
-    FUSED_add(drive_group, 'mainBearing', FUSED_Component(FUSED_MainBearing('main')),['lss_design_torque','rotor_diameter']) #need to make explicit connections for main bearing
-    FUSED_add(drive_group, 'gearbox', FUSED_Component(FUSED_Gearbox(gear_configuration, shaft_factor)), ['*'])
-    FUSED_add(drive_group, 'highSpeedSide', FUSED_Component(FUSED_HighSpeedSide()), ['*'])
-    FUSED_add(drive_group, 'generator', FUSED_Component(FUSED_Generator(drivetrain_design)), ['*'])
-    FUSED_add(drive_group, 'bedplate', FUSED_Component(FUSED_Bedplate(uptower_transformer)), ['*'])
-    FUSED_add(drive_group, 'transformer', FUSED_Component(FUSED_Transformer(uptower_transformer)), ['*'])
-    FUSED_add(drive_group, 'rna', FUSED_Component(FUSED_RNASystemAdder()), ['*'])
-    FUSED_add(drive_group, 'above_yaw_massAdder', FUSED_Component(FUSED_AboveYawMassAdder(crane)), ['*'])
-    FUSED_add(drive_group, 'yawSystem', FUSED_Component(FUSED_YawSystem(yaw_motors_number)), ['*'])
-    FUSED_add(drive_group, 'nacelleSystem', FUSED_Component(FUSED_NacelleSystemAdder()), ['*'])
+        # Add common inputs for tower
+        self.add('towervars',IndepVarComp([('tower_top_diameter', 0.0)]), promotes=['*'])
 
-    # Connect components where explicit connections needed (for main bearing)
-    FUSED_connect(drive_group, 'lss_mb1_mass', ['mainBearing.bearing_mass'])
-    FUSED_connect(drive_group, 'lss_diameter1', ['mainBearing.lss_diameter', 'lss_diameter'])
-    FUSED_connect(drive_group, 'lss_mb1_cm', ['mainBearing.lss_mb_cm'])
-    FUSED_connect(drive_group, 'mainBearing.mb_mass', ['mb1_mass'])
-    FUSED_connect(drive_group, 'mainBearing.mb_cm', ['mb1_cm'])
-    FUSED_connect(drive_group, 'mainBearing.mb_I', ['mb1_I'])
+        # hub
+        #self.add('hub', Hub_OM(blade_number), promotes=['*'])
+        #self.add('pitchSystem', PitchSystem_OM(blade_number), promotes=['*'])
+        #self.add('spinner', Spinner_OM(), promotes=['*'])
+        #self.add('adder', Hub_System_Adder_OM(), promotes=['*'])
+
+        # Create 3 pt drivetrain group
+        self.add('lowSpeedShaft', LowSpeedShaft3pt_OM(mb1Type, IEC_Class), promotes=['*'])
+        self.add('mainBearing', MainBearing_OM('main'), promotes=['lss_design_torque','rotor_diameter']) #need to make explicit connections for main bearing
+        self.add('gearbox', Gearbox_OM(gear_configuration, shaft_factor), promotes=['*'])
+        self.add('highSpeedSide', HighSpeedSide_OM(), promotes=['*'])
+        self.add('generator', Generator_OM(drivetrain_design), promotes=['*'])
+        self.add('bedplate', Bedplate_OM(uptower_transformer), promotes=['*'])
+        self.add('transformer', Transformer_OM(uptower_transformer), promotes=['*'])
+        self.add('rna', RNASystemAdder_OM(), promotes=['*'])
+        self.add('above_yaw_massAdder', AboveYawMassAdder_OM(crane), promotes=['*'])
+        self.add('yawSystem', YawSystem_OM(yaw_motors_number), promotes=['*'])
+        self.add('nacelleSystem', NacelleSystemAdder_OM(), promotes=['*'])
+
+        # Connect components where explicit connections needed (for main bearing)
+        self.connect('lss_mb1_mass', ['mainBearing.bearing_mass'])
+        self.connect('lss_diameter1', ['mainBearing.lss_diameter', 'lss_diameter'])
+        self.connect('lss_mb1_cm', ['mainBearing.lss_mb_cm'])
+        self.connect('mainBearing.mb_mass', ['mb1_mass'])
+        self.connect('mainBearing.mb_cm', ['mb1_cm'])
+        self.connect('mainBearing.mb_I', ['mb1_I'])
 
 #------------------------------------------------------------------
-def Drive4pt(drive_group, mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane):
+class Drive4pt(Group):
 
-    # Add common inputs for rotor
-    FUSED_add(drive_group, 'rotorvars',FUSED_VarComp([('rotor_diameter', 0.0),
-								    																 ('rotor_bending_moment_x', 0.0),
-								    																 ('rotor_bending_moment_y', 0.0),
-								    																 ('rotor_bending_moment_z', 0.0),
-								    																 ('rotor_thrust', 0.0),
-								    																 ('rotor_force_y',0.0),
-								    																 ('rotor_force_z', 0.0),
-								    																 ('rotor_torque', 0.0),
-								    																 ('rotor_mass', 0.0),								    																 
-								    																 ]),['*'])
+    def __init__(self, mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane, blade_number):
+        super(Drive4pt, self).__init__()
 
-    # Add common inputs for drivetrain
-    FUSED_add(drive_group, 'drivevars',FUSED_VarComp([('machine_rating', 0.0),
-								    																 ('gear_ratio', 0.0),
-								    																 ('flange_length', 0.0),
-								    																 ('overhang', 0.0),
-								    																 ('distance_hub2mb', 0.0),
-								    																 ('gearbox_input_cm', 0.0),
-								    																 ('hss_input_length', 0.0),
-								    																 ]),['*'])
+        # Add common inputs for rotor
+        self.add('rotor_diameter', IndepVarComp('rotor_diameter', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_x', IndepVarComp('rotor_bending_moment_x', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_z', IndepVarComp('rotor_bending_moment_z', 0.0), promotes=['*'])
+        self.add('rotor_thrust', IndepVarComp('rotor_thrust', 0.0), promotes=['*'])
+        self.add('rotor_force_y', IndepVarComp('rotor_force_y', 0.0), promotes=['*'])
+        self.add('rotor_force_z', IndepVarComp('rotor_force_z', 0.0), promotes=['*'])
+        self.add('rotor_torque', IndepVarComp('rotor_torque', 0.0), promotes=['*'])
+        self.add('rotor_mass', IndepVarComp('rotor_mass', 0.0), promotes=['*'])
 
-    # Add common inputs for tower
-    FUSED_add(drive_group, 'towervars',FUSED_VarComp([('tower_top_diameter', 0.0)]),['*'])
+        # Add common inputs for drivetrain
+        self.add('machine_rating',IndepVarComp('machine_rating', 0.0), promotes=['*'])
+        self.add('gear_ratio', IndepVarComp('gear_ratio', 0.0), promotes=['*'])
+        self.add('flange_length', IndepVarComp('flange_length', 0.0), promotes=['*'])
+        self.add('overhang', IndepVarComp('overhang', 0.0), promotes=['*'])
+        self.add('distance_hub2mb', IndepVarComp('distance_hub2mb', 0.0), promotes=['*'])
+        self.add('gearbox_input_cm', IndepVarComp('gearbox_input_cm', 0.0), promotes=['*'])
+        self.add('hss_input_length', IndepVarComp('hss_input_length', 0.0), promotes=['*'])
 
-    # select components
-    FUSED_add(drive_group, 'lowSpeedShaft', FUSED_Component(FUSED_LowSpeedShaft4pt(mb1Type, mb2Type, IEC_Class)), ['*'])
-    FUSED_add(drive_group, 'mainBearing', FUSED_Component(FUSED_MainBearing('main')), ['lss_design_torque','rotor_diameter']) #explicit connections for bearings
-    FUSED_add(drive_group, 'secondBearing', FUSED_Component(FUSED_MainBearing('second')), ['lss_design_torque','rotor_diameter']) #explicit connections for bearings
-    FUSED_add(drive_group, 'gearbox', FUSED_Component(FUSED_Gearbox(gear_configuration, shaft_factor)), ['*'])
-    FUSED_add(drive_group, 'highSpeedSide', FUSED_Component(FUSED_HighSpeedSide()), ['*'])
-    FUSED_add(drive_group, 'generator', FUSED_Component(FUSED_Generator(drivetrain_design)), ['*'])
-    FUSED_add(drive_group, 'bedplate', FUSED_Component(FUSED_Bedplate(uptower_transformer)), ['*'])
-    FUSED_add(drive_group, 'transformer', FUSED_Component(FUSED_Transformer(uptower_transformer)), ['*'])
-    FUSED_add(drive_group, 'rna', FUSED_Component(FUSED_RNASystemAdder()), ['*'])
-    FUSED_add(drive_group, 'above_yaw_massAdder', FUSED_Component(FUSED_AboveYawMassAdder(crane)), ['*'])
-    FUSED_add(drive_group, 'yawSystem', FUSED_Component(FUSED_YawSystem(yaw_motors_number)), ['*'])
-    FUSED_add(drive_group, 'nacelleSystem', FUSED_Component(FUSED_NacelleSystemAdder()), ['*'])
+        # Add common inputs for tower
+        self.add('towervars',IndepVarComp([('tower_top_diameter', 0.0)]),['*'])
 
-    # Connect components where explicit connections needed (for main bearings)
-    FUSED_connect(drive_group, 'lss_mb1_mass', ['mainBearing.bearing_mass'])
-    FUSED_connect(drive_group, 'lss_diameter1', ['mainBearing.lss_diameter', 'lss_diameter'])
-    FUSED_connect(drive_group, 'lss_mb1_cm', ['mainBearing.lss_mb_cm'])
-    FUSED_connect(drive_group, 'mainBearing.mb_mass', ['mb1_mass'])
-    FUSED_connect(drive_group, 'mainBearing.mb_cm', ['mb1_cm'])
-    FUSED_connect(drive_group, 'mainBearing.mb_I', ['mb1_I'])
+        # hub
+        self.add('hub', Hub_OM(blade_number), promotes=['*'])
+        self.add('pitchSystem', PitchSystem_OM(blade_number), promotes=['*'])
+        self.add('spinner', Spinner_OM(), promotes=['*'])
+        self.add('adder', Hub_System_Adder_OM(), promotes=['*'])
 
-    FUSED_connect(drive_group, 'lss_mb2_mass', ['secondBearing.bearing_mass'])
-    FUSED_connect(drive_group, 'lss_diameter2', ['secondBearing.lss_diameter'])
-    FUSED_connect(drive_group, 'lss_mb2_cm', ['secondBearing.lss_mb_cm'])
-    FUSED_connect(drive_group, 'secondBearing.mb_mass', ['mb2_mass'])
-    FUSED_connect(drive_group, 'secondBearing.mb_cm', ['mb2_cm'])
-    FUSED_connect(drive_group, 'secondBearing.mb_I', ['mb2_I'])
+        # select components
+        self.add('lowSpeedShaft', LowSpeedShaft4pt_OM(mb1Type, mb2Type, IEC_Class), promotes=['*'])
+        self.add('mainBearing', MainBearing_OM('main'), promotes=['lss_design_torque','rotor_diameter']) #explicit connections for bearings
+        self.add('secondBearing', MainBearing_OM('second'), promotes=['lss_design_torque','rotor_diameter']) #explicit connections for bearings
+        self.add('gearbox', Gearbox_OM(gear_configuration, shaft_factor), promotes=['*'])
+        self.add('highSpeedSide', HighSpeedSide_OM(), promotes=['*'])
+        self.add('generator', Generator_OM(drivetrain_design), promotes=['*'])
+        self.add('bedplate', Bedplate_OM(uptower_transformer), promotes=['*'])
+        self.add('transformer', Transformer_OM(uptower_transformer), promotes=['*'])
+        self.add('rna', RNASystemAdder_OM(), promotes=['*'])
+        self.add('above_yaw_massAdder', AboveYawMassAdder_OM(crane), promotes=['*'])
+        self.add('yawSystem', YawSystem_OM(yaw_motors_number), promotes=['*'])
+        self.add('nacelleSystem', NacelleSystemAdder_OM(), promotes=['*'])
+
+        # Connect components where explicit connections needed (for main bearings)
+        self.connect('lss_mb1_mass', ['mainBearing.bearing_mass'])
+        self.connect('lss_diameter1', ['mainBearing.lss_diameter', 'lss_diameter'])
+        self.connect('lss_mb1_cm', ['mainBearing.lss_mb_cm'])
+        self.connect('mainBearing.mb_mass', ['mb1_mass'])
+        self.connect('mainBearing.mb_cm', ['mb1_cm'])
+        self.connect('mainBearing.mb_I', ['mb1_I'])
+
+        self.connect('lss_mb2_mass', ['secondBearing.bearing_mass'])
+        self.connect('lss_diameter2', ['secondBearing.lss_diameter'])
+        self.connect('lss_mb2_cm', ['secondBearing.lss_mb_cm'])
+        self.connect('secondBearing.mb_mass', ['mb2_mass'])
+        self.connect('secondBearing.mb_cm', ['mb2_cm'])
+        self.connect('secondBearing.mb_I', ['mb2_I'])
 
 #------------------------------------------------------------------
 # examples
@@ -135,12 +150,10 @@ def nacelle_example_5MW_baseline_3pt():
     uptower_transformer=True
     crane=True  # onboard crane present
     yaw_motors_number = 0 # default value - will be internally calculated
+    blade_number = 3
 
-    nace=FUSED_Group()
-    Drive3pt(nace, mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane)
-
-    prob=FUSED_Problem(nace)
-    FUSED_setup(prob)
+    prob=Problem(root=Drive3pt(mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane, blade_number))
+    prob.setup()
 
     # Rotor and load inputs
     prob['rotor_diameter']=126.0  # m
@@ -176,10 +189,10 @@ def nacelle_example_5MW_baseline_3pt():
     # Tower inputs
     prob['tower_top_diameter']=3.78  # m
 
-    FUSED_run(prob)
+    prob.run()
 
     print('----- NREL 5 MW Turbine - 3 Point Suspension -----')
-    FUSED_print(nace)
+    print(prob.root.unknowns.dump())
 
 def nacelle_example_5MW_baseline_4pt():
 
@@ -194,12 +207,11 @@ def nacelle_example_5MW_baseline_4pt():
     uptower_transformer=True
     crane=True  # onboard crane present
     yaw_motors_number = 0 # default value - will be internally calculated
+    blade_number = 3
 
-    nace=FUSED_Group()
-    Drive4pt(nace, mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane)
 
-    prob=FUSED_Problem(nace)
-    FUSED_setup(prob)
+    prob=Problem(root=Drive4pt(mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane, blade_number))
+    prob.setup()
 
     # Rotor and load inputs
     prob['rotor_diameter']=126.0  # m
@@ -235,10 +247,10 @@ def nacelle_example_5MW_baseline_4pt():
     # Tower inputs
     prob['tower_top_diameter']=3.78  # m
 
-    FUSED_run(prob)
+    prob.run()
 
     print('----- NREL 5 MW Turbine - 4 Point Suspension -----')
-    FUSED_print(nace)
+    print(prob.root.unknowns.dump())
 
 
 '''

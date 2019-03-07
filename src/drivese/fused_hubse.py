@@ -5,11 +5,9 @@ FUSED versions of HubSE components
 import numpy as np
 
 from drivese.hubse_components import Hub, PitchSystem, Spinner, Hub_System_Adder
+from openmdao.api import Component, Group
 
-# FUSED helper functions and interface defintions
-from fusedwind.fused_wind import FUSED_Object
-
-class FUSED_Hub_System_Adder(FUSED_Object):
+class Hub_System_Adder_OM(Component):
     ''' Get_hub_cm class
           The Get_hub_cm class is used to pass the hub cm data to upper level models.
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
@@ -17,27 +15,27 @@ class FUSED_Hub_System_Adder(FUSED_Object):
 
     def __init__(self):
 
-        super(FUSED_Hub_System_Adder, self).__init__()
+        super(Hub_System_Adder_OM, self).__init__()
 
         # variables
-        self.add_input(**{'name' : 'rotor_diameter', 'val' : 0.0, 'units' : 'm', 'desc' : 'rotor diameter'})
-        self.add_input(**{'name' : 'distance_hub2mb', 'val' : 0.0, 'units' : 'm', 'desc' : 'distance between hub center and upwind main bearing'})
-        self.add_input(**{'name' : 'shaft_angle', 'val' : 0.0, 'units' : 'deg', 'desc' : 'shaft angle'})
-        self.add_input(**{'name' : 'MB1_location', 'val' : np.zeros(3), 'shape' : (3,), 'units' : 'm', 'desc' : 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system'})
-        self.add_input(**{'name' : 'hub_mass', 'val' : 0.0, 'units' : 'kg', 'desc' : 'mass of Hub'})
-        self.add_input(**{'name' : 'hub_diameter', 'val' : 0.03, 'units' : 'm', 'desc' : 'hub diameter'})
-        self.add_input(**{'name' : 'hub_thickness', 'val' : 0.0, 'units' : 'm', 'desc' : 'hub thickness'})
-        self.add_input(**{'name' : 'pitch_system_mass', 'val' : 0.0, 'units' : 'kg', 'desc' : 'mass of Pitch System'})
-        self.add_input(**{'name' : 'spinner_mass', 'val' : 0.0, 'units' : 'kg', 'desc' : 'mass of spinner'})
+        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+        self.add_param('distance_hub2mb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
+        self.add_param('shaft_angle', val=0.0, units='rad', desc='shaft angle')
+        self.add_param('MB1_location', val=np.zeros(3), shape=(3,), units='m', desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+        self.add_param('hub_mass', val=0.0, units='kg', desc='mass of Hub')
+        self.add_param('hub_diameter', val=0.03, units='m', desc='hub diameter')
+        self.add_param('hub_thickness', val=0.0, units='m', desc='hub thickness')
+        self.add_param('pitch_system_mass', val=0.0, units='kg', desc='mass of Pitch System')
+        self.add_param('spinner_mass', val=0.0, units='kg', desc='mass of spinner')
 
         # outputs
-        self.add_output(**{'name' : 'hub_system_cm', 'val' : np.zeros(3), 'shape' : (3,), 'units' : 'm',  'desc' : 'center of mass of the hub relative to tower to in yaw-aligned c.s.'})
-        self.add_output(**{'name' : 'hub_system_I', 'val' : np.zeros(3), 'shape' : (3,), 'desc' : 'mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.'})
-        self.add_output(**{'name' : 'hub_system_mass', 'val' : 0.0,  'units' : 'kg', 'desc' : 'mass of hub system'})
+        self.add_output('hub_system_cm', val=np.zeros(3), shape=(3,), units='m',  desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+        self.add_output('hub_system_I', val=np.zeros(3), shape=(3,), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+        self.add_output('hub_system_mass', val=0.0,  units='kg', desc='mass of hub system')
 
         self.hub_adder = Hub_System_Adder()
 
-    def compute(self, inputs, outputs):
+    def solve_nonlinear(self, inputs, outputs, resid):
     
         (outputs['hub_system_mass'], outputs['hub_system_cm'], outputs['hub_system_I']) \
              = self.hub_adder.compute(inputs['rotor_diameter'], inputs['distance_hub2mb'], inputs['shaft_angle'], inputs['MB1_location'], \
@@ -47,7 +45,7 @@ class FUSED_Hub_System_Adder(FUSED_Object):
 
 # -------------------------------------------------
 
-class FUSED_Hub(FUSED_Object):
+class Hub_OM(Component):
     ''' Hub class    
           The Hub class is used to represent the hub component of a wind turbine. 
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
@@ -56,20 +54,20 @@ class FUSED_Hub(FUSED_Object):
 
     def __init__(self, blade_number):
 
-        super(FUSED_Hub, self).__init__()
+        super(Hub_OM, self).__init__()
 
         # variables
-        self.add_input(**{'name' : 'blade_root_diameter', 'val' : 0.0, 'units' : 'm', 'desc' : 'blade root diameter'})
-        self.add_input(**{'name' : 'machine_rating', 'val' : 0.0, 'units' : 'MW', 'desc' : 'machine rating of turbine'})
+        self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
+        self.add_param('machine_rating', val=0.0, units='MW', desc='machine rating of turbine')
 
         # outputs
-        self.add_output(**{'name' : 'hub_diameter', 'val' : 0.0, 'units' : 'm', 'desc' : 'hub diameter'})
-        self.add_output(**{'name' : 'hub_thickness', 'val' : 0.0, 'units' : 'm', 'desc' : 'hub thickness'})
-        self.add_output(**{'name' : 'hub_mass', 'val' : 0.0, 'units' : 'kg', 'desc' : 'overall component mass'})
+        self.add_output('hub_diameter', val=0.0, units='m', desc='hub diameter')
+        self.add_output('hub_thickness', val=0.0, units='m', desc='hub thickness')
+        self.add_output('hub_mass', val=0.0, units='kg', desc='overall component mass')
 
         self.hub = Hub(blade_number)
 
-    def compute(self, inputs, outputs):
+    def solve_nonlinear(self, inputs, outputs, resid):
     
         (outputs['hub_mass'], outputs['hub_diameter'], outputs['hub_thickness']) \
             = self.hub.compute(inputs['blade_root_diameter'], inputs['machine_rating'])
@@ -77,7 +75,7 @@ class FUSED_Hub(FUSED_Object):
         return outputs
 
 
-class FUSED_PitchSystem(FUSED_Object):
+class PitchSystem_OM(Component):
     '''
      PitchSystem class
       The PitchSystem class is used to represent the pitch system of a wind turbine.
@@ -87,18 +85,18 @@ class FUSED_PitchSystem(FUSED_Object):
 
     def __init__(self, blade_number):
 
-        super(FUSED_PitchSystem, self).__init__()
+        super(PitchSystem_OM, self).__init__()
 
         # variables
-        self.add_input(**{'name' : 'blade_mass', 'val' : 0.0, 'units' : 'kg', 'desc' : 'mass of one blade'})
-        self.add_input(**{'name' : 'rotor_bending_moment_y', 'val' : 0.0, 'units' : 'N*m', 'desc' : 'flapwise bending moment at blade root'})
+        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+        self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
 
         # outputs
-        self.add_output(**{'name' : 'pitch_system_mass', 'val' : 0.0, 'units' : 'kg', 'desc' : 'overall component mass'})
+        self.add_output('pitch_system_mass', val=0.0, units='kg', desc='overall component mass')
 
         self.pitch = PitchSystem(blade_number)
 
-    def compute(self, inputs, outputs):
+    def solve_nonlinear(self, inputs, outputs, resid):
     
         (outputs['pitch_system_mass']) \
             = self.pitch.compute(inputs['blade_mass'], inputs['rotor_bending_moment_y'])
@@ -108,7 +106,7 @@ class FUSED_PitchSystem(FUSED_Object):
 
 #-------------------------------------------------------------------------
 
-class FUSED_Spinner(FUSED_Object):
+class Spinner_OM(Component):
     '''
        Spinner class
           The SpinnerClass is used to represent the spinner of a wind turbine.
@@ -118,17 +116,17 @@ class FUSED_Spinner(FUSED_Object):
 
     def __init__(self):
 
-        super(FUSED_Spinner, self).__init__()
+        super(Spinner_OM, self).__init__()
 
         # variables
-        self.add_input(**{'name' : 'rotor_diameter', 'val' : 0.0, 'units' : 'm', 'desc' : 'rotor diameter'})
+        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
 
         # outputs
-        self.add_output(**{'name' : 'spinner_mass', 'val' : 0.0, 'units' : 'kg', 'desc' : 'overall component mass'})
+        self.add_output('spinner_mass', val=0.0, units='kg', desc='overall component mass')
 
         self.spinner = Spinner()
 
-    def compute(self, inputs, outputs):
+    def solve_nonlinear(self, inputs, outputs, resid):
 
         (outputs['spinner_mass']) \
             =self.spinner.compute(inputs['rotor_diameter'])    

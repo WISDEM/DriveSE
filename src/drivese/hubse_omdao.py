@@ -1,45 +1,41 @@
 
 import numpy as np
 
-# FUSED wrapper
-from fusedwind.fused_openmdao import FUSED_Component, FUSED_Group, FUSED_add, FUSED_connect, FUSED_print, \
-                                     FUSED_Problem, FUSED_setup, FUSED_run, FUSED_VarComp
-                                     
-from drivese.fused_hubse import FUSED_Hub, FUSED_PitchSystem, FUSED_Spinner, FUSED_Hub_System_Adder
+from openmdao.api import Group, Problem, IndepVarComp
+from drivese.fused_hubse import Hub_OM, PitchSystem_OM, Spinner_OM, Hub_System_Adder_OM
 
 #-------------------------------------------------------------------------
 
-def HubSE(hubgroup, blade_number):
-    '''
-       HubSE class
-          The HubSE class is used to represent the hub system of a wind turbine. 
-          HubSE integrates the hub, pitch system and spinner / nose cone components for the hub system.
-    '''
+class HubSE(Group):
 
-    # Add common inputs for rotor
-    FUSED_add(hubgroup, 'rotorvars',FUSED_VarComp([('rotor_diameter', 0.0),
-                                                     ('rotor_bending_moment_y', 0.0),                                                  
-                                                     ]),['*'])
+    def __init__(self, blade_number):
+        super(HubSE, self).__init__()
+        '''
+           HubSE class
+              The HubSE class is used to represent the hub system of a wind turbine. 
+              HubSE integrates the hub, pitch system and spinner / nose cone components for the hub system.
+        '''
 
-    FUSED_add(hubgroup, 'hub', FUSED_Component(FUSED_Hub(blade_number)), ['*'])
-    FUSED_add(hubgroup, 'pitchSystem', FUSED_Component(FUSED_PitchSystem(blade_number)), ['*'])
-    FUSED_add(hubgroup, 'spinner', FUSED_Component(FUSED_Spinner()), ['*'])
-    FUSED_add(hubgroup,'adder', FUSED_Component(FUSED_Hub_System_Adder()), ['*'])
+        # Add common inputs for rotor
+        self.add('rotor_diameter', IndepVarComp('rotor_diameter', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
 
-#-------------------------------------------------------------------------
-# Examples based on reference turbines including the NREL 5 MW, WindPACT 1.5 MW and the GRC 750 kW system.
-
+        self.add('hub', Hub_OM(blade_number), ['*'])
+        self.add('pitchSystem', PitchSystem_OM(blade_number), ['*'])
+        self.add('spinner', Spinner_OM(), ['*'])
+        self.add('adder', Hub_System_Adder_OM(), ['*'])
+        
+        #-------------------------------------------------------------------------
+        # Examples based on reference turbines including the NREL 5 MW, WindPACT 1.5 MW and the GRC 750 kW system.
+        
 def example_5MW_4pt():
-
+    
     # simple test of module
-
+    
     blade_number = 3
 
-    hubsys=FUSED_Group()
-    HubSE(hubsys, blade_number)
-
-    prob=FUSED_Problem(hubsys)
-    FUSED_setup(prob)
+    prob=Problem(root=HubSE(blade_number))
+    prob.setup()
 
     prob['rotor_diameter'] = 126.0  # m
     prob['blade_root_diameter'] = 3.542
@@ -55,10 +51,10 @@ def example_5MW_4pt():
     prob['rotor_bending_moment_y'] = (3.06 * np.pi / 8) * AirDensity * (
         RatedWindSpeed ** 2) * (Solidity * (prob['rotor_diameter'] ** 3)) / blade_number
 
-    FUSED_run(prob)
+    prob.run()
 
     print("NREL 5 MW turbine test")
-    FUSED_print(hubsys)
+    print(prob.root.unknowns.dump())
 
 '''
 # TODO: update other examples for the hub system
@@ -85,7 +81,7 @@ def example_1p5MW_4pt():
     prob.run()
 
     print("WindPACT 1.5 MW turbine test")
-    print("Hub FUSED_Objects")
+    print("Hub Objects")
     print('  hub         {0:8.1f} kg'.format(prob['hub_mass']))  # 31644.47
     print('  pitch mech  {0:8.1f} kg'.format(prob['pitch_system_mass']))  # 17003.98
     print('  nose cone   {0:8.1f} kg'.format(prob['spinner_mass']))  # 1810.50
@@ -118,7 +114,7 @@ def example_750kW_4pt():
     prob.run()
 
     print("windpact 750 kW turbine test")
-    print("Hub FUSED_Objects")
+    print("Hub Objects")
     print('  hub         {0:8.1f} kg'.format(prob['hub_mass']))  # 31644.47
     print('  pitch mech  {0:8.1f} kg'.format(prob['pitch_system_mass']))  # 17003.98
     print('  nose cone   {0:8.1f} kg'.format(prob['spinner_mass']))  # 1810.50
