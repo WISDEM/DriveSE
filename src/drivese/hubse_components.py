@@ -9,22 +9,42 @@ from math import pi, cos, sqrt, sin, exp
 from drivese.drivese_utils import get_distance_hub2mb
 
 class Hub_System_Adder(object):
-    ''' Get_hub_cm class
-          The Get_hub_cm class is used to pass the hub cm data to upper level models.
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+    ''' 
+    Compute hub mass, cm, and I
     '''
 
-    def __init__(self):
+    def __init__(self, blade_number):
 
         super(Hub_System_Adder, self).__init__()
+        self.mass_adder = Hub_Mass_Adder(blade_number)
+        self.cm_adder   = Hub_CM_Adder()
 
-    def compute(self, rotor_diameter, distance_hub2mb, shaft_angle, MB1_location, hub_mass, hub_diameter, hub_thickness, pitch_system_mass, spinner_mass):
+    def compute(self, rotor_diameter, blade_mass, distance_hub2mb, shaft_angle, MB1_location, hub_mass, hub_diameter, hub_thickness, pitch_system_mass, spinner_mass):
+
+        (self.rotor_mass, self.hub_system_mass, self.hub_system_I) = self.mass_adder.compute(blade_mass, hub_mass, hub_diameter,
+                                                                                             hub_thickness, pitch_system_mass, spinner_mass)
+        self.hub_system_cm = self.cm_adder.compute(rotor_diameter, distance_hub2mb, shaft_angle, MB1_location)
+
+        return(self.rotor_mass, self.hub_system_mass, self.hub_system_cm, self.hub_system_I)
+
+# -------------------------------------------------
+
+
+class Hub_Mass_Adder(object):
+    ''' 
+    Compute hub mass and I
+    Excluding cm here, because it has a dependency on main bearing location, which can only be calculated once the full rotor mass is set
+    '''
+
+    def __init__(self, blade_number):
+
+        super(Hub_Mass_Adder, self).__init__()
+        self.blade_number = blade_number
+
+    def compute(self, blade_mass, hub_mass, hub_diameter, hub_thickness, pitch_system_mass, spinner_mass):
 
         # variables
-        self.rotor_diameter = rotor_diameter #Float(iotype='in', units='m', desc='rotor diameter')
-        self.distance_hub2mb = distance_hub2mb #Float(0.0,iotype='in', units = 'm', desc = 'distance between hub center and upwind main bearing')
-        self.shaft_angle = shaft_angle #Float(iotype = 'in', units = 'deg', desc = 'shaft angle')
-        self.MB1_location = MB1_location #Array(iotype = 'in', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+        self.blade_mass = blade_mass #Float(iotype='in', units='kg', desc='mass of one blade')
         self.hub_mass = hub_mass #Float(iotype='in', units='kg',desc='mass of Hub')
         self.hub_diameter = hub_diameter #Float(3.0,iotype='in', units='m', desc='hub diameter')
         self.hub_thickness = hub_thickness #Float(iotype='in', units='m', desc='hub thickness')
@@ -32,22 +52,12 @@ class Hub_System_Adder(object):
         self.spinner_mass = spinner_mass #Float(iotype='in', units='kg',desc='mass of spinner')
         
         # outputs
-        self.hub_system_cm = np.array([0.0, 0.0, 0.0]) #Array(iotype='out', units='m',desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
         self.hub_system_I = np.array([0.0, 0.0, 0.0]) #Array(iotype='out', desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
         self.hub_system_mass = 0.0 #Float(iotype='out', units='kg',desc='mass of hub system')
-
-        if self.distance_hub2mb>0:
-            distance_hub2mb = self.distance_hub2mb
-        else:
-            distance_hub2mb = get_distance_hub2mb(self.rotor_diameter)
-
-        cm = np.array([0.0,0.0,0.0])
-        cm[0]     = self.MB1_location[0] - distance_hub2mb
-        cm[1]     = 0.0
-        cm[2]     = self.MB1_location[2] + distance_hub2mb*sin(self.shaft_angle)
-        self.hub_system_cm = (cm)
+        self.rotor_mass = 0.0
 
         self.hub_system_mass = self.hub_mass + self.pitch_system_mass + self.spinner_mass
+        self.rotor_mass = self.hub_system_mass + self.blade_number*self.blade_mass
 
         #add I definitions here
         hub_I = np.array([0.0, 0.0, 0.0])
@@ -76,14 +86,51 @@ class Hub_System_Adder(object):
 
 
         #add moments of inertia
-        I = np.zeros(3)
-        for i in (range(0,3)):                        # calculating MOI, at nacelle center of gravity with origin at tower top center / yaw mass center, ignoring masses of non-drivetrain components / auxiliary systems
+        #I = np.zeros(3)
+        #for i in (range(0,3)):                        # calculating MOI, at nacelle center of gravity with origin at tower top center / yaw mass center, ignoring masses of non-drivetrain components / auxiliary systems
             # calculate moments around CM
             # sum moments around each components CM
-            I[i]  =  hub_I[i] + pitch_system_I[i] + spinner_I[i]
-        self.hub_system_I = I
+            #I[i]  =  hub_I[i] + pitch_system_I[i] + spinner_I[i]
+        self.hub_system_I = np.r_[hub_I + pitch_system_I + spinner_I, np.zeros(3)]
 
-        return(self.hub_system_mass, self.hub_system_cm, self.hub_system_I)
+        return(self.rotor_mass, self.hub_system_mass, self.hub_system_I)
+
+# -------------------------------------------------
+
+
+class Hub_CM_Adder(object):
+    ''' 
+    Compute hub cm
+    Separating cm here, because it has a dependency on main bearing location, which can only be calculated once the full rotor mass is set
+    '''
+
+    def __init__(self):
+
+        super(Hub_CM_Adder, self).__init__()
+
+    def compute(self, rotor_diameter, distance_hub2mb, shaft_angle, MB1_location):
+
+        # variables
+        self.rotor_diameter = rotor_diameter #Float(iotype='in', units='m', desc='rotor diameter')
+        self.distance_hub2mb = distance_hub2mb #Float(0.0,iotype='in', units = 'm', desc = 'distance between hub center and upwind main bearing')
+        self.shaft_angle = shaft_angle #Float(iotype = 'in', units = 'deg', desc = 'shaft angle')
+        self.MB1_location = MB1_location #Array(iotype = 'in', units = 'm', desc = 'center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+        
+        # outputs
+        self.hub_system_cm = np.array([0.0, 0.0, 0.0]) #Array(iotype='out', units='m',desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+        
+        if self.distance_hub2mb>0:
+            distance_hub2mb = self.distance_hub2mb
+        else:
+            distance_hub2mb = get_distance_hub2mb(self.rotor_diameter)
+
+        cm = np.array([0.0,0.0,0.0])
+        cm[0]     = self.MB1_location[0] - distance_hub2mb
+        cm[1]     = 0.0
+        cm[2]     = self.MB1_location[2] + distance_hub2mb*sin(self.shaft_angle)
+        self.hub_system_cm = (cm)
+
+        return(self.hub_system_cm)
 
 # -------------------------------------------------
 
@@ -104,7 +151,7 @@ class Hub(object):
 
         # variables
         self.blade_root_diameter = blade_root_diameter #Float(iotype='in', units='m', desc='blade root diameter')
-        self.machine_rating = machine_rating #Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
+        self.machine_rating = 1e3*machine_rating #kw->MW Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
         
         # parameters
         #blade_number = Int(3, iotype='in', desc='number of turbine blades')
@@ -192,9 +239,6 @@ class Spinner(object):
         # variables
         self.rotor_diameter = rotor_diameter #Float(iotype='in', units='m', desc='rotor diameter')
     
-        # outputs
-        self.mass = 0.0#Float(0.0, iotype='out', units='kg', desc='overall component mass')
-
         # spinner mass comes from cost and scaling model
         self.mass =18.5 * self.rotor_diameter + (-520.5)   # spinner mass comes from cost and scaling model
         

@@ -13,6 +13,7 @@ import scipy.optimize as opt
 from math import pi, cos, sqrt, sin, exp, log10, log
 
 from drivese.drivese_utils import get_rotor_mass, get_distance_hub2mb, get_My, get_Mz, resize_for_bearings 
+from commonse.utilities import assembleI, unassembleI
 
 #-------------------------------------------------------------------------
 # Drivetrain component models
@@ -1344,7 +1345,7 @@ class Bedplate(object):
                       lss_location, lss_mass, lss_length, mb1_cm, mb1_facewidth, mb1_mass, mb2_cm, mb2_mass, \
                       transformer_mass, transformer_cm, \
                       tower_top_diameter, rotor_diameter, machine_rating, rotor_mass, rotor_bending_moment_y, rotor_force_z, \
-                      flange_length, distance_hub2mb, overhang):
+                      flange_length, distance_hub2mb):
 
         '''Model bedplate as 2 parallel I-beams with a rear steel frame and a front cast frame
            Deflection constraints applied at each bedplate end
@@ -1376,7 +1377,6 @@ class Bedplate(object):
         self.rotor_force_z = rotor_force_z #Float(iotype='in', units='N', desc='The force along the z axis applied at hub center')
         self.flange_length = flange_length #Float(iotype='in', units='m', desc='flange length')
         self.distance_hub2mb = distance_hub2mb #Float(iotype = 'in', units = 'm', desc = 'length between rotor center and upwind main bearing')
-        self.overhang = overhang #Float(iotype='in', units='m', desc='Overhang distance')
     
         #outputs
         self.mass = 0.0 #Float(0.0, iotype='out', units='kg', desc='overall component mass')
@@ -1612,13 +1612,12 @@ class Transformer(object):
 
         self.uptower_transformer = uptower_transformer #Bool(iotype='in', desc = 'uptower or downtower transformer')
 
-    def compute(self, machine_rating, tower_top_diameter, rotor_mass, overhang, generator_cm, rotor_diameter, RNA_mass, RNA_cm):
+    def compute(self, machine_rating, tower_top_diameter, rotor_mass, generator_cm, rotor_diameter, RNA_mass, RNA_cm):
 
         #inputs
         self.machine_rating = machine_rating #Float(iotype='in', units='kW', desc='machine rating of the turbine')
         self.tower_top_diameter = tower_top_diameter #Float(iotype = 'in', units = 'm', desc = 'tower top diameter for comparision of nacelle CM')
         self.rotor_mass = rotor_mass #Float(iotype='in', units='kg', desc='rotor mass')
-        self.overhang = overhang #Float(iotype='in', units='m', desc='rotor overhang distance')
         self.generator_cm = generator_cm #Array(iotype='in', desc='center of mass of the generator in [x,y,z]')
         self.rotor_diameter = rotor_diameter #Float(iotype='in',units='m', desc='rotor diameter of turbine')
         self.RNA_mass = RNA_mass #Float(iotype = 'in', units='kg', desc='mass of total RNA')
@@ -2005,35 +2004,31 @@ class NacelleSystemAdder(object): #added to drive to include transformer
         self.nacelle_mass = (self.above_yaw_mass + self.yaw_mass)
   
         # calculation of mass center and moments of inertia
-        cm = np.array([0.0,0.0,0.0])
-        for i in (range(0,3)):
-            # calculate center of mass (use mainframe_mass in place of bedplate_mass - assume lumped around bedplate_cm)
-            cm[i] = ( (self.lss_mass * self.lss_cm[i] + self.transformer_cm[i] * self.transformer_mass + 
-                       self.mb1_mass * self.mb1_cm[i] + self.mb2_mass * self.mb2_cm[i] + 
-                       self.gearbox_mass * self.gearbox_cm[i] + self.hss_mass * self.hss_cm[i] + 
-                       self.generator_mass * self.generator_cm[i] + self.mainframe_mass * self.bedplate_cm[i] ) / 
-                      (self.lss_mass + self.mb1_mass + self.mb2_mass + 
-                       self.gearbox_mass + self.hss_mass + self.generator_mass + self.mainframe_mass) )
-        self.nacelle_cm = cm
+        self.nacelle_cm = ( (self.lss_mass*self.lss_cm + self.transformer_cm*self.transformer_mass + 
+                             self.mb1_mass*self.mb1_cm + self.mb2_mass*self.mb2_cm + 
+                             self.gearbox_mass*self.gearbox_cm + self.hss_mass*self.hss_cm + 
+                             self.generator_mass*self.generator_cm + self.mainframe_mass*self.bedplate_cm +
+                             self.yaw_mass*np.zeros(3)) / 
+                            (self.lss_mass + self.mb1_mass + self.mb2_mass + self.gearbox_mass +
+                             self.hss_mass + self.generator_mass + self.mainframe_mass + self.yaw_mass) )
   
-        I = np.zeros(3)
-        for i in (range(0,3)):                        # calculating MOI, at nacelle center of gravity with origin at tower top center / yaw mass center, ignoring masses of non-drivetrain components / auxiliary systems
-            # calculate moments around CM
-            # sum moments around each components CM (adjust for mass of mainframe) # TODO: add yaw MMI
-            I[i]  =  self.lss_I[i] + self.mb1_I[i] + self.mb2_I[i] + self.gearbox_I[i] + self.transformer_I[i] +\
-                          self.hss_I[i] + self.generator_I[i] + self.bedplate_I[i] * (self.mainframe_mass / self.bedplate_mass)
-            # translate to nacelle CM using parallel axis theorem (use mass of mainframe en lieu of bedplate to account for auxiliary equipment)
-            for j in (range(0,3)):
-                if i != j:
-                    I[i] += (self.lss_mass * (self.lss_cm[j] - cm[j]) ** 2 + 
-                             self.mb1_mass * (self.mb1_cm[j] - cm[j]) ** 2 + 
-                             self.mb2_mass * (self.mb2_cm[j] - cm[j]) ** 2 + 
-                             self.gearbox_mass * (self.gearbox_cm[j] - cm[j]) ** 2 + 
-                             self.transformer_mass * (self.transformer_cm[j] - cm[j]) ** 2 + 
-                             self.hss_mass * (self.hss_cm[j] - cm[j]) ** 2 + 
-                             self.generator_mass * (self.generator_cm[j] - cm[j]) ** 2 + 
-                             self.mainframe_mass * (self.bedplate_cm[j] - cm[j]) ** 2 )
-        self.nacelle_I = I
+        # calculating MOI, at nacelle center of gravity with origin at tower top center / yaw mass center, ignoring masses of non-drivetrain components / auxiliary systems
+        I   = np.zeros((3,3))
+        def appendI(xmass, xcm, xI):
+            r    = xcm - self.nacelle_cm
+            Icg  = assembleI( np.r_[xI, np.zeros(3)] )
+            Iadd = xmass*(np.dot(r, r)*np.eye(3) - np.outer(r, r))
+            return Iadd
+        I += appendI(self.lss_mass, self.lss_cm, self.lss_I)
+        I += appendI(self.hss_mass, self.hss_cm, self.hss_I)
+        I += appendI(self.mb1_mass, self.mb1_cm, self.mb1_I)
+        I += appendI(self.mb2_mass, self.mb2_cm, self.mb2_I)
+        I += appendI(self.gearbox_mass, self.gearbox_cm, self.gearbox_I)
+        I += appendI(self.transformer_mass, self.transformer_cm, self.transformer_I)
+        I += appendI(self.generator_mass, self.generator_cm, self.generator_I)
+        # Mainframe mass includes bedplate mass and other components that assume the bedplate cm
+        I += appendI(self.mainframe_mass, self.bedplate_cm, (self.mainframe_mass/self.bedplate_mass)*self.bedplate_I)
+        self.nacelle_I = unassembleI(I)
 
         return(self.nacelle_mass, self.nacelle_cm, self.nacelle_I)
 
