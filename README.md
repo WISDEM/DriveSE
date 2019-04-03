@@ -1,41 +1,22 @@
+# DriveSE
+
 DriveSE is a set of models to size wind turbine components from the hub system, drivetrain and overall nacelle.  It replaces the Drive WindPACT (DriveWPACT) model which was based on older technology and empirical data.  The new models are physics-based and provide sizing of components based off of key system configuration parameters as well as the aerodynamic loads from the rotor. 
 
-Author: [Y. Guo, R. King and T. Parsons](nrel.wisdem+drivese@gmail.com)
+Author: [NREL WISDEM Team](mailto:systems.engineering@nrel.gov) 
 
-## Version
+## Documentation
 
-This software is a beta version 0.1.3.
-
-## Detailed Documentation
-
-For detailed documentation see <http://wisdem.github.io/DriveSE/>
-
-## Prerequisites
-
-General: NumPy, SciPy, Swig, pyWin32, MatlPlotLib, Lxml, OpenMDAO
-
-## Dependencies:
-
-Wind Plant Framework: [FUSED-Wind](http://fusedwind.org) (Framework for Unified Systems Engineering and Design of Wind Plants)
-
-Sub-Models: CommonSE, DriveWPACT
-
-Supporting python packages: Pandas, Algopy, Zope.interface, Sphinx, Xlrd, PyOpt, py2exe, Pyzmq, Sphinxcontrib-bibtex, Sphinxcontrib-zopeext, Numpydoc, Ipython
+See local documentation in the `docs`-directory or access the online version at <http://wisdem.github.io/DriveSE/>
 
 ## Installation
 
-First, clone the [repository](https://github.com/WISDEM/DriveSE)
-or download the releases and uncompress/unpack (DriveSE.py-|release|.tar.gz or DriveSE.py-|release|.zip) from the website link at the bottom the [DriveSE site](http://nwtc.nrel.gov/DriveSE).
+For detailed installation instructions of WISDEM modules see <https://github.com/WISDEM/WISDEM> or to install DriveSE by itself do:
 
-Install DriveSE within an activated OpenMDAO environment:
-
-	$ plugin install
-
-It is not recommended to install the software outside of OpenMDAO.
+    $ python setup.py install
 
 ## Run Unit Tests
 
-To check if installation was successful try to import the module within an activated OpenMDAO environment.
+To check if installation was successful try to import the package:
 
 	$ python
 	> import drivese.drive
