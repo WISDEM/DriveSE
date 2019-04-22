@@ -484,12 +484,12 @@ class AboveYawMassAdder_OM(Component):
                outputs['mainframe_mass'], outputs['cover_mass'], outputs['above_yaw_mass'], outputs['nacelle_length'], outputs['nacelle_width'], outputs['nacelle_height']) \
             = self.aboveyawmass.compute(inputs['machine_rating'], inputs['lss_mass'], inputs['mb1_mass'], inputs['mb2_mass'], inputs['gearbox_mass'], \
                       inputs['hss_mass'], inputs['generator_mass'], inputs['bedplate_mass'], inputs['bedplate_length'], inputs['bedplate_width'], inputs['transformer_mass'])
-        print(inputs['machine_rating'], inputs['lss_mass'], inputs['mb1_mass'], inputs['mb2_mass'], inputs['gearbox_mass'],
-              inputs['hss_mass'], inputs['generator_mass'], inputs['bedplate_mass'], inputs['bedplate_length'],
-              inputs['bedplate_width'], inputs['transformer_mass'])
-        print(outputs['electrical_mass'], outputs['vs_electronics_mass'], outputs['hvac_mass'], outputs['controls_mass'],
-              outputs['platforms_mass'], outputs['crane_mass'], outputs['mainframe_mass'], outputs['cover_mass'],
-              outputs['above_yaw_mass'], outputs['nacelle_length'], outputs['nacelle_width'], outputs['nacelle_height'])
+        # print(inputs['machine_rating'], inputs['lss_mass'], inputs['mb1_mass'], inputs['mb2_mass'], inputs['gearbox_mass'],
+        #       inputs['hss_mass'], inputs['generator_mass'], inputs['bedplate_mass'], inputs['bedplate_length'],
+        #       inputs['bedplate_width'], inputs['transformer_mass'])
+        # print(outputs['electrical_mass'], outputs['vs_electronics_mass'], outputs['hvac_mass'], outputs['controls_mass'],
+        #       outputs['platforms_mass'], outputs['crane_mass'], outputs['mainframe_mass'], outputs['cover_mass'],
+        #       outputs['above_yaw_mass'], outputs['nacelle_length'], outputs['nacelle_width'], outputs['nacelle_height'])
 
         return outputs
 
@@ -779,8 +779,8 @@ def nacelle_example_5MW_baseline_3pt():
 
     prob.run()
 
-    print('----- NREL 5 MW Turbine - 3 Point Suspension -----')
-    print(prob.root.unknowns.dump())
+    # print('----- NREL 5 MW Turbine - 3 Point Suspension -----')
+    # print(prob.root.unknowns.dump())
 
 def nacelle_example_5MW_baseline_4pt():
 
@@ -836,8 +836,8 @@ def nacelle_example_5MW_baseline_4pt():
 
     prob.run()
 
-    print('----- NREL 5 MW Turbine - 4 Point Suspension -----')
-    print(prob.root.unknowns.dump())
+    # print('----- NREL 5 MW Turbine - 4 Point Suspension -----')
+    # print(prob.root.unknowns.dump())
 
 
 '''

@@ -69,14 +69,14 @@ class Hub_Mass_Adder_OM(Component):
         self.add_output('hub_system_I', val=np.zeros(6), shape=(3,), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
         self.add_output('hub_system_mass', val=0.0,  units='kg', desc='mass of hub system')
         self.add_output('rotor_mass', val=0.0,  units='kg', desc='mass of rotor')
+        self.add_output('hub_I', val=np.zeros(3), desc='Hub inertia about rotor axis (does not include pitch and spinner masses)')
 
         self.hub_adder = Hub_Mass_Adder(blade_number)
 
     def solve_nonlinear(self, inputs, outputs, resid):
     
-        (outputs['rotor_mass'], outputs['hub_system_mass'], outputs['hub_system_I']) \
-             = self.hub_adder.compute(inputs['blade_mass'], inputs['hub_mass'], inputs['hub_diameter'], inputs['hub_thickness'],
-                                      inputs['pitch_system_mass'], inputs['spinner_mass'])        
+        (outputs['rotor_mass'], outputs['hub_system_mass'], outputs['hub_system_I'], outputs['hub_I'])\
+             = self.hub_adder.compute(inputs['blade_mass'], inputs['hub_mass'], inputs['hub_diameter'], inputs['hub_thickness'], inputs['pitch_system_mass'], inputs['spinner_mass'])        
         
         return outputs
 

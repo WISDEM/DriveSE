@@ -21,11 +21,11 @@ class Hub_System_Adder(object):
 
     def compute(self, rotor_diameter, blade_mass, distance_hub2mb, shaft_angle, MB1_location, hub_mass, hub_diameter, hub_thickness, pitch_system_mass, spinner_mass):
 
-        (self.rotor_mass, self.hub_system_mass, self.hub_system_I) = self.mass_adder.compute(blade_mass, hub_mass, hub_diameter,
+        (self.rotor_mass, self.hub_system_mass, self.hub_system_I, self.hub_I) = self.mass_adder.compute(blade_mass, hub_mass, hub_diameter,
                                                                                              hub_thickness, pitch_system_mass, spinner_mass)
         self.hub_system_cm = self.cm_adder.compute(rotor_diameter, distance_hub2mb, shaft_angle, MB1_location)
 
-        return(self.rotor_mass, self.hub_system_mass, self.hub_system_cm, self.hub_system_I)
+        return(self.rotor_mass, self.hub_system_mass, self.hub_system_cm, self.hub_system_I, self.hub_I)
 
 # -------------------------------------------------
 
@@ -93,7 +93,7 @@ class Hub_Mass_Adder(object):
             #I[i]  =  hub_I[i] + pitch_system_I[i] + spinner_I[i]
         self.hub_system_I = np.r_[hub_I + pitch_system_I + spinner_I, np.zeros(3)]
 
-        return(self.rotor_mass, self.hub_system_mass, self.hub_system_I)
+        return(self.rotor_mass, self.hub_system_mass, self.hub_system_I, hub_I)
 
 # -------------------------------------------------
 
