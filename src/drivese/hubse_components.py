@@ -151,7 +151,7 @@ class Hub(object):
 
         # variables
         self.blade_root_diameter = blade_root_diameter #Float(iotype='in', units='m', desc='blade root diameter')
-        self.machine_rating = 1e3*machine_rating #kw->MW Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
+        self.machine_rating = 1e-3*machine_rating #kw->MW Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
         
         # parameters
         #blade_number = Int(3, iotype='in', desc='number of turbine blades')
