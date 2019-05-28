@@ -387,28 +387,28 @@ class LowSpeedShaft4pt(object):
         self.u_in_m = 0.0254000508001
 
         # Main bearing defelection check
-        if self.mb1Type == 'TRB1' or 'TRB2':
+        if self.mb1Type == 'TRB1' or self.mb1Type == 'TRB2':
             Bearing_Limit = 3.0 / 60.0 / 180.0 * pi
         elif self.mb1Type == 'CRB':
             Bearing_Limit = 4.0 / 60.0 / 180.0 * pi
-        elif self.mb1Type == 'SRB' or 'RB':
+        elif self.mb1Type == 'SRB' or self.mb1Type == 'RB':
             Bearing_Limit = 0.078
         elif self.mb1Type == 'RB':
-            Bearing_Limit = 0.002
+            Bearing_Limit = 0.002 # never reached - see elif above
         elif self.mb1Type == 'CARB':
             Bearing_Limit = 0.5 / 180 * pi
         else:
             Bearing_Limit = False
 
         # Second bearing defelection check
-        if self.mb2Type == 'TRB1' or 'TRB2':
+        if self.mb2Type == 'TRB1' or self.mb2Type == 'TRB2':
             Bearing_Limit2 = 3.0 / 60.0 / 180.0 * pi
         elif self.mb2Type == 'CRB':
             Bearing_Limit2 = 4.0 / 60.0 / 180.0 * pi
-        elif self.mb2Type == 'SRB' or 'RB':
+        elif self.mb2Type == 'SRB' or self.mb2Type == 'RB':
             Bearing_Limit2 = 0.078
         elif self.mb2Type == 'RB':
-            Bearing_Limit2 = 0.002
+            Bearing_Limit2 = 0.002 # never reached - see elif above
         elif self.mb2Type == 'CARB':
             Bearing_Limit2 = 0.5 / 180 * pi
         else:
@@ -474,9 +474,9 @@ class LowSpeedShaft4pt(object):
                     abs(self.theta_y[-1]) - Bearing_Limit / self.n_safety_brg)
 
                 if check_limit < 0:
-                    self.L_ms__gb_new = self.L_ms_gb + dL
+                    self.L_ms_gb_new = self.L_ms_gb + dL
                 else:
-                    self.L_ms__gb_new = self.L_ms_gb + dL
+                    self.L_ms_gb_new = self.L_ms_gb + dL
 
                 check_limit_ms = abs(
                     abs(self.theta_y[-1]) - Bearing_Limit2 / self.n_safety_brg)
@@ -769,14 +769,14 @@ class LowSpeedShaft3pt(object):
         T = self.rotor_bending_moment_x / 1000.0
 
         # Main bearing defelection check
-        if self.mb1Type == 'TRB1' or 'TRB2':
+        if self.mb1Type == 'TRB1' or self.mb1Type == 'TRB2':
             Bearing_Limit = 3.0 / 60.0 / 180.0 * pi
         elif self.mb1Type == 'CRB':
             Bearing_Limit = 4.0 / 60.0 / 180.0 * pi
-        elif self.mb1Type == 'SRB' or 'RB':
+        elif self.mb1Type == 'SRB' or self.mb1Type == 'RB':
             Bearing_Limit = 0.078
         elif self.mb1Type == 'RB':
-            Bearing_Limit = 0.002
+            Bearing_Limit = 0.002 # never reached - see elif above
         elif self.mb1Type == 'CARB':
             Bearing_Limit = 0.5 / 180 * pi
         else:
