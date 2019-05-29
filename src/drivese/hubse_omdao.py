@@ -69,14 +69,14 @@ class Hub_Mass_Adder_OM(Component):
         self.add_output('hub_system_I', val=np.zeros(6), shape=(3,), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
         self.add_output('hub_system_mass', val=0.0,  units='kg', desc='mass of hub system')
         self.add_output('rotor_mass', val=0.0,  units='kg', desc='mass of rotor')
+        self.add_output('hub_I', val=np.zeros(3), desc='Hub inertia about rotor axis (does not include pitch and spinner masses)')
 
         self.hub_adder = Hub_Mass_Adder(blade_number)
 
     def solve_nonlinear(self, inputs, outputs, resid):
     
-        (outputs['rotor_mass'], outputs['hub_system_mass'], outputs['hub_system_I']) \
-             = self.hub_adder.compute(inputs['blade_mass'], inputs['hub_mass'], inputs['hub_diameter'], inputs['hub_thickness'],
-                                      inputs['pitch_system_mass'], inputs['spinner_mass'])        
+        (outputs['rotor_mass'], outputs['hub_system_mass'], outputs['hub_system_I'], outputs['hub_I'])\
+             = self.hub_adder.compute(inputs['blade_mass'], inputs['hub_mass'], inputs['hub_diameter'], inputs['hub_thickness'], inputs['pitch_system_mass'], inputs['spinner_mass'])        
         
         return outputs
 
@@ -201,7 +201,7 @@ class Spinner_OM(Component):
         
         return outputs
 
-
+#%%-----------------------
 
 # Main code to run hub system examples
 if __name__ == "__main__":
@@ -225,10 +225,6 @@ class HubSE(Group):
         self.add('spinner', Spinner_OM(), ['*'])
         self.add('adder', Hub_System_Adder_OM(blade_number), ['*'])
         
-        #-------------------------------------------------------------------------
-        # Examples based on reference turbines including the NREL 5 MW, WindPACT 1.5 MW and the GRC 750 kW system.
-        
-
 class HubMassOnlySE(Group):
 
     def __init__(self, blade_number):
@@ -237,16 +233,18 @@ class HubMassOnlySE(Group):
            HubSE class
               The HubSE class is used to represent the hub system of a wind turbine. 
               HubSE integrates the hub, pitch system and spinner / nose cone components for the hub system.
-              Mass ly here, because it CM has a dependency on main bearing location, which can only be calculated once the full rotor mass is set
+              Mass only here, because CM has a dependency on main bearing location, which can only be calculated once the full rotor mass is set
         '''
         self.add('hub', Hub_OM(blade_number), ['*'])
         self.add('pitchSystem', PitchSystem_OM(blade_number), ['*'])
         self.add('spinner', Spinner_OM(), ['*'])
         self.add('adder', Hub_Mass_Adder_OM(blade_number), ['*'])
         
+#%%----------------------------
+        
         #-------------------------------------------------------------------------
         # Examples based on reference turbines including the NREL 5 MW, WindPACT 1.5 MW and the GRC 750 kW system.
-        
+
 def example_5MW_4pt():
     
     # simple test of module
@@ -267,12 +265,40 @@ def example_5MW_4pt():
     AirDensity = 1.225  # kg/(m^3)
     Solidity = 0.0517
     RatedWindSpeed = 11.05  # m/s
-    prob['rotor_bending_moment_y'] = (3.06 * np.pi / 8) * AirDensity * (
-        RatedWindSpeed ** 2) * (Solidity * (prob['rotor_diameter'] ** 3)) / blade_number
+    prob['rotor_bending_moment_y'] = (3.06 * np.pi / 8) * AirDensity \
+         * (RatedWindSpeed ** 2) * (Solidity * (prob['rotor_diameter'] ** 3)) / blade_number
 
     prob.run()
 
     print("NREL 5 MW turbine test")
+    print(prob.root.unknowns.dump())
+
+#%%----------------------------
+        
+def example_BAR_4pt():
+    
+    # created 2019 05 03 by GNS - copied and modified example_5MW_4pt()
+    
+    blade_number = 3
+
+    prob=Problem(root=HubSE(blade_number))
+    prob.setup()
+
+    prob['rotor_diameter'] = 200.0  # m
+    prob['blade_root_diameter'] = 4.5
+    prob['machine_rating'] = 5000.0
+    prob['blade_mass'] = 61400.0  # kg
+    prob['shaft_angle'] = np.radians(5)
+
+    AirDensity = 1.225  # kg/(m^3)
+    Solidity = 0.0517
+    RatedWindSpeed = 11.05  # m/s
+    prob['rotor_bending_moment_y'] = (3.06 * np.pi / 8) * AirDensity \
+         * (RatedWindSpeed ** 2) * (Solidity * (prob['rotor_diameter'] ** 3)) / blade_number
+
+    prob.run()
+
+    print("NREL BAR turbine test")
     print(prob.root.unknowns.dump())
 
 '''

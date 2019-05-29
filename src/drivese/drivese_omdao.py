@@ -3,11 +3,18 @@ DriveSE.py
 
 Created by Yi Guo, Taylor Parsons and Ryan King 2014.
 Copyright (c) NREL. All rights reserved.
+
+Functions nacelle_example_5MW_baseline_[34]pt() did not define blade_mass
+  We've added prob['blade_mass'] = 17740.0 (copied from hubse_omdao.py)
+  GNS 2019 05 13
 """
 
 import numpy as np
+import sys
 
-from drivese.drivese_components import LowSpeedShaft4pt, LowSpeedShaft3pt, Gearbox, MainBearing, Bedplate, YawSystem, \
+#from drivese.drivese_components import LowSpeedShaft4pt, LowSpeedShaft3pt, Gearbox, MainBearing, Bedplate, YawSystem, \
+#                                       Transformer, HighSpeedSide, Generator, NacelleSystemAdder, AboveYawMassAdder, RNASystemAdder
+from drivese.drivese_components_clean import LowSpeedShaft4pt, LowSpeedShaft3pt, Gearbox, MainBearing, Bedplate, YawSystem, \
                                        Transformer, HighSpeedSide, Generator, NacelleSystemAdder, AboveYawMassAdder, RNASystemAdder
 from drivese.hubse_omdao import HubSE, HubMassOnlySE, Hub_CM_Adder_OM
 from openmdao.api import Group, Component, IndepVarComp, Problem
@@ -727,7 +734,7 @@ class Drive4pt(Group):
 #------------------------------------------------------------------
 # examples
 
-def nacelle_example_5MW_baseline_3pt():
+def nacelle_example_5MW_baseline_3pt(debug=False):
 
     # NREL 5 MW Drivetrain variables
     # geared 3-stage Gearbox with induction generator machine
@@ -741,59 +748,72 @@ def nacelle_example_5MW_baseline_3pt():
     yaw_motors_number = 0 # default value - will be internally calculated
     blade_number = 3
 
-    prob=Problem(root=Drive3pt(mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane, blade_number))
+    prob=Problem(root=Drive3pt(mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
+                               uptower_transformer, yaw_motors_number, crane, blade_number))
     prob.setup()
 
     # Rotor and load inputs
-    prob['rotor_diameter']=126.0  # m
-    prob['rotor_rpm']=12.1  # rpm m/s
-    prob['machine_rating']=5000.0
-    prob['drivetrain_efficiency']=0.95
-    prob['rotor_torque']=1.5 * (prob['machine_rating'] * 1000 / \
-                             prob['drivetrain_efficiency']) / (prob['rotor_rpm'] * (np.pi / 30))
-    prob['rotor_thrust']=599610.0  # N
-    prob['rotor_mass']=0.0  # accounted for in F_z # kg
-    prob['rotor_bending_moment_x']=330770.0  # Nm
-    prob['rotor_bending_moment_y']=-16665000.0  # Nm
-    prob['rotor_bending_moment_z']=2896300.0  # Nm
-    prob['rotor_thrust']=599610.0  # N
-    prob['rotor_force_y']=186780.0  # N
-    prob['rotor_force_z']=-842710.0  # N
+    prob['rotor_diameter'] = 126.0  # m
+    prob['rotor_rpm'] = 12.1  # rpm m/s
+    prob['machine_rating'] = 5000.0
+    prob['drivetrain_efficiency'] = 0.95
+    prob['rotor_torque'] = 1.5 * (prob['machine_rating'] * 1000 / prob['drivetrain_efficiency']) \
+                              / (prob['rotor_rpm'] * (np.pi / 30))
+    #prob['rotor_thrust'] = 599610.0  # N
+    prob['rotor_mass'] = 0.0  # accounted for in F_z # kg
+    prob['rotor_bending_moment_x'] =    330770.0  # Nm
+    prob['rotor_bending_moment_y'] = -16665000.0  # Nm
+    prob['rotor_bending_moment_z'] =   2896300.0  # Nm
+    prob['rotor_thrust'] =   599610.0  # N
+    prob['rotor_force_y'] =  186780.0  # N
+    prob['rotor_force_z'] = -842710.0  # N
 
     # Drivetrain inputs
-    prob['machine_rating']=5000.0  # kW
-    prob['gear_ratio']=96.76  # 97:1 as listed in the 5 MW reference document
-    prob['shaft_angle']=5.0*np.pi / 180.0  # rad
-    prob['shaft_ratio']=0.10
-    prob['planet_numbers']=[3, 3, 1]
-    prob['shrink_disc_mass']=333.3 * prob['machine_rating'] / 1000.0  # estimated
-    prob['carrier_mass']=8000.0  # estimated
-    prob['flange_length']=0.5
-    prob['overhang']=5.0
-    prob['distance_hub2mb']=1.912  # length from hub center to main bearing, leave zero if unknown
+    prob['machine_rating'] = 5000.0  # kW
+    prob['gear_ratio'] = 96.76  # 97:1 as listed in the 5 MW reference document
+    prob['shaft_angle'] = 5.0*np.pi / 180.0  # rad
+    prob['shaft_ratio'] = 0.10
+    prob['planet_numbers'] = [3, 3, 1]
+    prob['shrink_disc_mass'] = 333.3 * prob['machine_rating'] / 1000.0  # estimated
+    prob['carrier_mass'] = 8000.0  # estimated
+    prob['flange_length'] = 0.5
+    prob['overhang'] = 5.0
+    prob['distance_hub2mb'] = 1.912  # length from hub center to main bearing, leave zero if unknown
     prob['gearbox_input_xcm'] = 0.1
     prob['hss_input_length'] = 1.5
 
+    # try this:
+    prob['blade_mass'] = 17740.0
+    
     # Tower inputs
-    prob['tower_top_diameter']=3.78  # m
+    prob['tower_top_diameter'] = 3.78  # m
 
     prob.run()
 
-    print('----- NREL 5 MW Turbine - 3 Point Suspension -----')
-    print(prob.root.unknowns.dump())
+    if debug:
+        print('----- NREL 5 MW Turbine - 3 Point Suspension -----')
+        print(prob.root.unknowns.dump())
+        
+        # dump to file - gns 2019 04 29
+        ofname = 'N5_3pt_dump.txt'
+        ofh = open(ofname, 'w')
+        ofh.write('----- NREL 5 MW Turbine - 3 Point Suspension -----\n')
+        prob.root.unknowns.dump(out_stream=ofh)
+        ofh.close()
+        sys.stderr.write('Dumped unknowns to {}\n'.format(ofname))
 
-def nacelle_example_5MW_baseline_4pt():
+def nacelle_example_5MW_baseline_4pt(debug=False):
 
     # NREL 5 MW Drivetrain variables
     # geared 3-stage Gearbox with induction generator machine
-    drivetrain_design='geared'
-    gear_configuration='eep'  # epicyclic-epicyclic-parallel
-    mb1Type='CARB'
-    mb2Type='SRB'
-    IEC_Class='B'
-    shaft_factor='normal'
-    uptower_transformer=True
-    crane=True  # onboard crane present
+    drivetrain_design = 'geared'
+    gear_configuration = 'eep'  # epicyclic-epicyclic-parallel
+    mb1Type = 'CARB'
+    mb2Type = 'SRB'
+    IEC_Class = 'B'
+    shaft_factor = 'normal'
+    uptower_transformer = True
+    crane = True  # onboard crane present
     yaw_motors_number = 0 # default value - will be internally calculated
     blade_number = 3
 
@@ -802,43 +822,54 @@ def nacelle_example_5MW_baseline_4pt():
     prob.setup()
 
     # Rotor and load inputs
-    prob['rotor_diameter']=126.0  # m
-    prob['rotor_rpm']=12.1  # rpm m/s
-    prob['machine_rating']=5000.0
-    prob['drivetrain_efficiency']=0.95
-    prob['rotor_torque']=1.5 * (prob['machine_rating'] * 1000 / \
+    prob['rotor_diameter'] = 126.0  # m
+    prob['rotor_rpm'] = 12.1  # rpm m/s
+    prob['machine_rating'] = 5000.0
+    prob['drivetrain_efficiency'] = 0.95
+    prob['rotor_torque'] = 1.5 * (prob['machine_rating'] * 1000 / \
                              prob['drivetrain_efficiency']) / (prob['rotor_rpm'] * (np.pi / 30))
-    prob['rotor_thrust']=599610.0  # N
-    prob['rotor_mass']=0.0  # accounted for in F_z # kg
-    prob['rotor_bending_moment_x']=330770.0  # Nm
-    prob['rotor_bending_moment_y']=-16665000.0  # Nm
-    prob['rotor_bending_moment_z']=2896300.0  # Nm
-    prob['rotor_thrust']=599610.0  # N
-    prob['rotor_force_y']=186780.0  # N
-    prob['rotor_force_z']=-842710.0  # N
+    #prob['rotor_thrust'] = 599610.0  # N
+    prob['rotor_mass'] = 0.0  # accounted for in F_z # kg
+    prob['rotor_bending_moment_x'] =    330770.0  # Nm
+    prob['rotor_bending_moment_y'] = -16665000.0  # Nm
+    prob['rotor_bending_moment_z'] =   2896300.0  # Nm
+    prob['rotor_thrust'] =   599610.0  # N
+    prob['rotor_force_y'] =  186780.0  # N
+    prob['rotor_force_z'] = -842710.0  # N
 
     # Drivetrain inputs
-    prob['machine_rating']=5000.0  # kW
-    prob['gear_ratio']=96.76  # 97:1 as listed in the 5 MW reference document
-    prob['shaft_angle']=5.0*np.pi / 180.0  # rad
-    prob['shaft_ratio']=0.10
-    prob['planet_numbers']=[3, 3, 1]
-    prob['shrink_disc_mass']=333.3 * prob['machine_rating'] / 1000.0  # estimated
-    prob['carrier_mass']=8000.0  # estimated
-    prob['flange_length']=0.5
-    prob['overhang']=5.0
-    prob['distance_hub2mb']=1.912  # length from hub center to main bearing, leave zero if unknown
+    prob['machine_rating'] = 5000.0  # kW
+    prob['gear_ratio'] = 96.76  # 97:1 as listed in the 5 MW reference document
+    prob['shaft_angle'] = 5.0*np.pi / 180.0  # rad
+    prob['shaft_ratio'] = 0.10
+    prob['planet_numbers'] = [3, 3, 1]
+    prob['shrink_disc_mass'] = 333.3 * prob['machine_rating'] / 1000.0  # estimated
+    prob['carrier_mass'] = 8000.0  # estimated
+    prob['flange_length'] = 0.5
+    prob['overhang'] = 5.0
+    prob['distance_hub2mb'] = 1.912  # length from hub center to main bearing, leave zero if unknown
     prob['gearbox_input_xcm'] = 0.1
     prob['hss_input_length'] = 1.5
 
+    # try this:
+    prob['blade_mass'] = 17740.0
+    
     # Tower inputs
-    prob['tower_top_diameter']=3.78  # m
+    prob['tower_top_diameter'] = 3.78  # m
 
     prob.run()
 
-    print('----- NREL 5 MW Turbine - 4 Point Suspension -----')
-    print(prob.root.unknowns.dump())
-
+    if debug:
+        print('----- NREL 5 MW Turbine - 4 Point Suspension -----')
+        print(prob.root.unknowns.dump())
+        
+        # dump to file - gns 2019 04 29
+        ofname = 'N5_4pt_dump.txt'
+        ofh = open(ofname, 'w')
+        ofh.write('----- NREL 5 MW Turbine - 4 Point Suspension -----\n')
+        prob.root.unknowns.dump(out_stream=ofh)
+        ofh.close()
+        sys.stderr.write('Dumped unknowns to {}\n'.format(ofname))
 
 '''
 #Need to update for new structure of drivetrain
@@ -1182,9 +1213,12 @@ def nacelle_example_p75_4pt():
 if __name__ == '__main__':
     ''' Main runs through tests of several drivetrain configurations with known component masses and dimensions '''
 
-    nacelle_example_5MW_baseline_3pt()
+    debug = True
+    #debug = False
+    
+    #nacelle_example_5MW_baseline_3pt(debug=debug)
 
-    nacelle_example_5MW_baseline_4pt()
+    nacelle_example_5MW_baseline_4pt(debug=debug)
     
     '''
     nacelle_example_1p5MW_3pt()

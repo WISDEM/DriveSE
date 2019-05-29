@@ -5,6 +5,7 @@ Copyright (c) NREL. All rights reserved.
 
 import numpy as np
 from math import pi, cos, sqrt, sin, exp
+import sys
 
 from drivese.drivese_utils import get_distance_hub2mb
 
@@ -21,11 +22,11 @@ class Hub_System_Adder(object):
 
     def compute(self, rotor_diameter, blade_mass, distance_hub2mb, shaft_angle, MB1_location, hub_mass, hub_diameter, hub_thickness, pitch_system_mass, spinner_mass):
 
-        (self.rotor_mass, self.hub_system_mass, self.hub_system_I) = self.mass_adder.compute(blade_mass, hub_mass, hub_diameter,
+        (self.rotor_mass, self.hub_system_mass, self.hub_system_I, self.hub_I) = self.mass_adder.compute(blade_mass, hub_mass, hub_diameter,
                                                                                              hub_thickness, pitch_system_mass, spinner_mass)
         self.hub_system_cm = self.cm_adder.compute(rotor_diameter, distance_hub2mb, shaft_angle, MB1_location)
 
-        return(self.rotor_mass, self.hub_system_mass, self.hub_system_cm, self.hub_system_I)
+        return(self.rotor_mass, self.hub_system_mass, self.hub_system_cm, self.hub_system_I, self.hub_I)
 
 # -------------------------------------------------
 
@@ -93,7 +94,7 @@ class Hub_Mass_Adder(object):
             #I[i]  =  hub_I[i] + pitch_system_I[i] + spinner_I[i]
         self.hub_system_I = np.r_[hub_I + pitch_system_I + spinner_I, np.zeros(3)]
 
-        return(self.rotor_mass, self.hub_system_mass, self.hub_system_I)
+        return(self.rotor_mass, self.hub_system_mass, self.hub_system_I, hub_I)
 
 # -------------------------------------------------
 
@@ -138,7 +139,10 @@ class Hub(object):
     ''' Hub class    
           The Hub class is used to represent the hub component of a wind turbine. 
           It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
-          It contains an update method to determine the mass, mass properties, and dimensions of the component.            
+          It contains an update method to determine the mass, mass properties, and dimensions of the component. 
+
+        2019 04 24 - GNS
+          Conversion from kW to MW actually coverted to W - proper factor of 1e-3 is now used           
     '''
 
     def __init__(self, blade_number):
@@ -151,7 +155,8 @@ class Hub(object):
 
         # variables
         self.blade_root_diameter = blade_root_diameter #Float(iotype='in', units='m', desc='blade root diameter')
-        self.machine_rating = 1e3*machine_rating #kw->MW Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
+        #self.machine_rating = 1e3*machine_rating #kw->MW Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine')
+        self.machine_rating = 1e-3*machine_rating #kw->MW Float(iotype = 'in', units = 'MW', desc = 'machine rating of turbine') GNS 2019 04 24
         
         # parameters
         #blade_number = Int(3, iotype='in', desc='number of turbine blades')
@@ -164,23 +169,28 @@ class Hub(object):
         if self.blade_root_diameter > 0.0: #added 8/6/14 to allow analysis of hubs for unknown blade roots.
             blade_root_diameter = self.blade_root_diameter
         else:
-            blade_root_diameter = 2.659*self.machine_rating**.3254
+            blade_root_diameter = 2.659 * self.machine_rating**0.3254
 
-        #Model hub as a cyclinder with holes for blade root and nacelle flange.
-        rCyl=1.1*blade_root_diameter/2.0
-        hCyl=2.8*blade_root_diameter/2.0
-        castThickness = rCyl/10.0
-        approxCylVol=2*pi*rCyl*castThickness*hCyl
-        bladeRootVol=pi*(blade_root_diameter/2.0)**2*castThickness
+        # Model hub as a cylinder with holes for blade root and nacelle flange.
+        rCyl = 1.1 * blade_root_diameter / 2.0
+        hCyl = 2.8 * blade_root_diameter / 2.0
+        castThickness = rCyl / 10.0
+        approxCylVol = 2 * pi * rCyl * castThickness * hCyl
+        bladeRootVol = pi * (blade_root_diameter/2.0)**2 * castThickness
 
         #assume nacelle flange opening is similar to blade root opening
-        approxCylNetVol = approxCylVol - (1.0 + self.blade_number)*bladeRootVol
+        approxCylNetVol = approxCylVol - (1.0 + self.blade_number) * bladeRootVol
         castDensity = 7200.0 # kg/m^3
-        self.mass=approxCylNetVol*castDensity
+        self.mass = approxCylNetVol * castDensity
 
         # calculate mass properties
-        self.diameter=2*rCyl
-        self.thickness=castThickness
+        self.diameter = 2 * rCyl
+        self.thickness = castThickness
+        
+        sys.stderr.write('\nHub:: BRD {:.2f} m  mrate {:.2f}\n'.format(blade_root_diameter,
+                         self.machine_rating)) 
+        sys.stderr.write('Hub out:: Mass {:.2f} kg  Diam {:.2f} m  Ht {:.2f} m Thick {:.2f} Cyl {:.2f} m3  NetCyl {:.2f} m3\n'.format(self.mass, 
+                         self.diameter, hCyl, self.thickness, approxCylVol, approxCylNetVol))
         
         return(self.mass, self.diameter, self.thickness)
 
@@ -216,9 +226,14 @@ class PitchSystem(object):
         pitchmatlstress  = 371000000.0                              # allowable stress of hub material (N / m^2)
 
         hubpitchFact      = 1.0                                 # default factor is 1.0 (0.54 for modern designs)
-        self.mass =hubpitchFact * (0.22 * self.blade_mass * self.blade_number + 12.6 * self.rotor_bending_moment_y * (pitchmatldensity / pitchmatlstress))
+        self.mass = hubpitchFact * (0.22 * self.blade_mass * self.blade_number \
+                                    + 12.6 * np.abs(self.rotor_bending_moment_y) * (pitchmatldensity / pitchmatlstress))
+                                    #+ 12.6 * self.rotor_bending_moment_y * (pitchmatldensity / pitchmatlstress))
                                                             # mass of pitch system based on Sunderland model
-
+                             # 2019 04 29 - mass is probably a function of abs(rotor_moment_y) - without abs, we can get negative masses
+                             
+        sys.stderr.write('\nPitchSystem: blade mass {:.1f} kg rbmy {:.1f} Nm\n'.format(blade_mass, self.rotor_bending_moment_y))
+        sys.stderr.write('PitchSystem: mass {:.1f} kg\n'.format(self.mass))
         return(self.mass)
 
 #-------------------------------------------------------------------------
@@ -240,7 +255,7 @@ class Spinner(object):
         self.rotor_diameter = rotor_diameter #Float(iotype='in', units='m', desc='rotor diameter')
     
         # spinner mass comes from cost and scaling model
-        self.mass =18.5 * self.rotor_diameter + (-520.5)   # spinner mass comes from cost and scaling model
+        self.mass = 18.5 * self.rotor_diameter + (-520.5)   # spinner mass comes from cost and scaling model
         
         return(self.mass)
 
