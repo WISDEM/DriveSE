@@ -3,6 +3,7 @@
 import numpy as np
 import scipy as scp
 from math import pi, cos, sqrt, sin, exp, log10, log
+import sys
 
 #-------------------------------------------------------------------------
 # Supporting functions
@@ -41,7 +42,7 @@ def get_distance_hub2mb(rotor_diameter, deriv=False):
 
 # -------------------------------------------------
 # Bearing support functions
-# returns FW, mass for bearings without fatigue analysis
+# returns facewidth, mass for bearings without fatigue analysis
 def resize_for_bearings(D_shaft, type, deriv):
     # assume low load rating for bearing
     if type == 'CARB':  # p = Fr, so X=1, Y=0
@@ -69,11 +70,111 @@ def resize_for_bearings(D_shaft, type, deriv):
         if deriv == True:
             out.extend([1.0, 0.0, 229.47 * 1.8036 * D_shaft**0.8036])
 
-    # shaft diameter, FW, mass. if deriv==True, provides derivatives.
+    # shaft diameter, facewidth, mass. if deriv==True, provides derivatives.
     return out
 
 
-# Transform functions for rotor forces and moments (not currently used)
+#%%---------------------------------------------------------------
+# Revised mainshaft flange calculations - added July 2019
+    
+def mainshaftFlangeCalc(D_in, D_face_MB, flange_thickness, debug=False):
+    ''' Compute mass, center of mass, and cost of mainshaft flange
+    
+        Rxx identifiers in comments are the row numbers in the original Excel spreadsheet
+    
+        Parameters
+        ----------
+        D_in : float
+          Mainshaft Inner Bore Diameter (from DriveSE == D_max * shaft_ratio (0.10))
+        D_face_MB : float
+          Mainshaft Up-Wind Bearing Face Diameter (from DriveSE == D_max ??)
+        flange_thickness : float
+          Mainshaft Flange Thickness (from HubSE - SphHub::main_flange_thick ??)
+          
+        Returns
+        -------
+        flange_length : float
+          flange length in m
+        mass_flange : float
+          flange mass in kg
+        cm_flange : float
+          flange center of mass location in m
+        cost_flange : float
+          flange cost in $
+    '''
+	
+    PCT_SHOULDER_HT_ID = 3.15     # R12 Main Bearing Shaft Shoulder Height (as a percentage of ID)  3.150  %
+    RATIO_SHOULDER_W2H = 6        # R15 Main Bearing Shaft Shoulder Width to Height Ratio  6.000  
+    RATIO_SHOULDER_STEPDOWN = 3   # R17 Main Bearing Shaft Shoulder Width Step down ratio  3.000  
+    RATIO_R2D = 0.3               # R20 r/d ratio (Petersons SCF Guide)  0.30  
+    FLANGE_BOLT_SIZE = 0.048      # R23 Flange Bolt Size (Diameter)  0.048  m
+    FLANGE_BOLT_DIAM_INCR = 0.003 # R24 Flange Bolt Diameter Increase  0.003  m
+    RATIO_DIST2BHD = 1.5          # R26 Distance from Bolt Circle Center to Flange Edge (as ratio of Bolt Hole Diameter)  1.500  
+    DENSITY_42CrMo4 = 7800        # R36 Density of Forging (42CrMo4 Steel)  7800  kg/m3
+    DENSITY_S355    = 7850        # R37 Density of Structural Steel (S355 Steel)  7850  kg/m3
+    COST_FORGING = 3.5            # R61 Mainshaft Flange Forging Cost (42CrMo4)  3.5  USD/kg
+    COST_LOCKPLATE = 3.0          # R62 Rotor Lock Plate Cost (S355)  3  USD/kg
+    
+    density_forging = DENSITY_42CrMo4
+    
+    # Mainshaft Flange Geometry                                                                                           
+                                                                                      #      
+    shoulder_diam = D_face_MB * ((100 + PCT_SHOULDER_HT_ID) / 100)                    #  R13 Main Bearing Shaft Shoulder Height Diameter  1.155  m
+    shoulder_height = (shoulder_diam - D_face_MB) / 2                                 #  R14 Main Bearing Shaft Shoulder Height  0.018  m
+    shoulder_width = shoulder_height * RATIO_SHOULDER_W2H                             #  R16 Main Bearing Shaft Shoulder Width  0.106  m
+    shoulder_stepdown_width = shoulder_width / RATIO_SHOULDER_STEPDOWN                #  R18 Main Bearing Shaft Shoulder Width Step down Width  0.035  m
+    tot_shoulder_width = shoulder_width + shoulder_stepdown_width                     #      
+                                                                                      #   
+    flange_trans_radius = D_face_MB * RATIO_R2D                                       #  R21 Mainshaft to Mainshaft Flange Transition Radius  0.336  m
+    flange_length = shoulder_width + shoulder_stepdown_width \
+                  + flange_trans_radius + flange_thickness                            #  R30 Mainshaft Flange Length (Total)  0.817  m
+    
+    bolt_circle_ID = D_face_MB + (2 * flange_trans_radius)                            #  R22 Flange Bolt Circle  ID  1.792  m
+    bolt_hole_diam = FLANGE_BOLT_SIZE + FLANGE_BOLT_DIAM_INCR                         #  R25 Flange Bolt Hole Diameter  0.051  m
+    bolt_circ_flange_len = 2 * (RATIO_DIST2BHD * bolt_hole_diam)                      #  R27 Bolt Circle Flange Length (Distance between ID and OD)  0.153  m
+    bolt_circle_OD = bolt_circle_ID + (2 * bolt_circ_flange_len)                      #  R28 Bolt Circle OD (Mainshaft OD)  2.098  m
+                                                                                      #
+    # Mainshaft Flange Design Allowable and Material Properties                       #
+    # Mainshaft Flange Mass Calculations                                              #
+    # Mainshaft Flange Volume(s) - subcomponents   
+                                       #
+    vol_shoulder  = (pi/4) * tot_shoulder_width  * (shoulder_diam**2 - D_in**2)       #  R40 Mainshaft Volume (Main bearing Shoulder)  0.120  m3
+    vol_tzone1    = (pi/4) * flange_trans_radius * (D_face_MB**2     - D_in**2)       #  R41 Mainshaft Volume (Transition zone 1-base)  0.265  m3
+    vol_tzone2    = (1 - pi/4) * (pi/4) * flange_trans_radius \
+                             * ((D_face_MB + flange_trans_radius)**2 - D_in**2)       #  R42 Mainshaft Volume (Transition zone 2-fillet)  0.106  m3
+    vol_bcflange  = (pi/4) * flange_thickness *   (bolt_circle_OD**2 - D_in**2)       #  R43 Mainshaft Volume (Bolt Circle Flange)  1.109  m3
+    vol_flange = vol_shoulder + vol_tzone1 + vol_tzone2 + vol_bcflange                #  R44 Mainshaft Volume (TOTAL)  1.600  m3
+                                                                                      #   
+    mass_flange = vol_flange * density_forging                                        #  R46 Mainshaft Flange Mass (TOTAL)  12,478.4  kg
+                                                                                      #  
+    # Mainshaft Flange Centroid Calculations 
+                                             #  
+    mass_shoulder = vol_shoulder * density_forging                                    #  R49 Mainshaft Mass (Main bearing Shoulder)  937.7  kg
+    mass_tzone1   = vol_tzone1   * density_forging                                    #  R51 Mainshaft Mass (Transition zone 1-base)  2,067.4  kg
+    mass_tzone2   = vol_tzone2   * density_forging                                    #  R53 Mainshaft Mass (Transition zone 2-fillet)  826.0  kg
+    mass_bcflange = vol_bcflange * density_forging                                    #  R55 Mainshaft Mass (Bolt Circle Flange)  8,647.3  kg
+                                                                    
+    cm_shoulder = 0.5 * tot_shoulder_width                                            #  R50 Center of Mass (Main bearing Shoulder)    0.071  m
+    cm_tzone1   = tot_shoulder_width + (flange_trans_radius/2)                        #  R52 Center of Mass (Transition zone 1-base)  0.309  m
+    cm_tzone2   = tot_shoulder_width + (2 * flange_trans_radius/3)                    #  R54 Center of Mass (Transition zone 2-fillet)   0.365  m
+    cm_bcflange = tot_shoulder_width + (flange_thickness/2) + flange_trans_radius     #  R56 Center of Mass (Bolt Circle Flange)  0.647  m
+                                                                                      #  
+    cm_flange = ((mass_shoulder * cm_shoulder) \
+                  + (mass_tzone1   * cm_tzone1) \
+                  + (mass_tzone2   * cm_tzone2) \
+                  + (mass_bcflange * cm_bcflange)) \
+             / (mass_shoulder + mass_tzone1 + mass_tzone2 + mass_bcflange)            #  R58 Mainshaft Center of Mass  0.529  m
+
+    cost_flange = mass_flange * COST_FORGING                                          #  R64 Total Mainshaft Flange Cost  43,674.50  USD 
+	                                                                                  #  R65 Total Rotor Lock Cost    USD
+    # TODO: add lockplate - mass, cm, cost
+    
+    if debug:
+        sys.stderr.write('msFlange: len {:.2f} m  mass {:.1f} kg  cm {:.2f} m  cost ${:.2f}\n'.format(flange_length, mass_flange, cm_flange, cost_flange))
+
+    return flange_length, mass_flange, cm_flange, cost_flange
+
+#%% Transform functions for rotor forces and moments (not currently used)
 # ---------------------------------------------------------------------
 class blade_moment_transform(object):
     ''' Blade_Moment_Transform class          
