@@ -84,3 +84,8 @@ nosetests.xml
 Icon?
 ehthumbs.db
 Thumbs.db
+
+# GNS additions
+*.bak
+*OLD.py
+*.txt
