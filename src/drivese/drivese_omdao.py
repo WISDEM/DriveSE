@@ -642,7 +642,7 @@ class Drive3pt(Group):
     '''
 
     def __init__(self, mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
-                 uptower_transformer, yaw_motors_number, crane, blade_number, debug=False):
+                 uptower_transformer, yaw_motors_number, crane, blade_number, debug=False, topLevelFlag=False):
         super(Drive3pt, self).__init__()
 
 
@@ -675,21 +675,22 @@ class Drive3pt(Group):
         # Add common inputs for tower
         self.add('tower_top_diameter',IndepVarComp([('tower_top_diameter', 0.0)]), promotes=['*'])
 
-        # Add some more IndepVarComps to get rid of 'no associated unknowns' message
-        self.add('rotor_diameter',         IndepVarComp('rotor_diameter',         0.0), promotes=['*'])
-        self.add('rotor_rpm',              IndepVarComp('rotor_rpm',              0.0), promotes=['*'])
-        self.add('rotor_torque',           IndepVarComp('rotor_torque',           0.0), promotes=['*'])
-        self.add('rotor_thrust',           IndepVarComp('rotor_thrust',           0.0), promotes=['*'])
-        self.add('rotor_bending_moment_x', IndepVarComp('rotor_bending_moment_x', 0.0), promotes=['*'])
-        self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
-        self.add('rotor_bending_moment_z', IndepVarComp('rotor_bending_moment_z', 0.0), promotes=['*'])
-        self.add('rotor_force_y',          IndepVarComp('rotor_force_y',          0.0), promotes=['*'])
-        self.add('rotor_force_z',          IndepVarComp('rotor_force_z',          0.0), promotes=['*'])
-        self.add('blade_mass',             IndepVarComp('blade_mass',             0.0), promotes=['*'])
-        self.add('blade_root_diameter',    IndepVarComp('blade_root_diameter',    0.0), promotes=['*'])
-        self.add('blade_length',           IndepVarComp('blade_length',           0.0), promotes=['*'])
-        self.add('drivetrain_efficiency',  IndepVarComp('drivetrain_efficiency',  0.0), promotes=['*'])
-        self.add('machine_rating',         IndepVarComp('machine_rating',         0.0), promotes=['*'])
+        if topLevelFlag:
+            # Add some more IndepVarComps to get rid of 'no associated unknowns' message
+            self.add('rotor_diameter',         IndepVarComp('rotor_diameter',         0.0), promotes=['*'])
+            self.add('rotor_rpm',              IndepVarComp('rotor_rpm',              0.0), promotes=['*'])
+            self.add('rotor_torque',           IndepVarComp('rotor_torque',           0.0), promotes=['*'])
+            self.add('rotor_thrust',           IndepVarComp('rotor_thrust',           0.0), promotes=['*'])
+            self.add('rotor_bending_moment_x', IndepVarComp('rotor_bending_moment_x', 0.0), promotes=['*'])
+            self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
+            self.add('rotor_bending_moment_z', IndepVarComp('rotor_bending_moment_z', 0.0), promotes=['*'])
+            self.add('rotor_force_y',          IndepVarComp('rotor_force_y',          0.0), promotes=['*'])
+            self.add('rotor_force_z',          IndepVarComp('rotor_force_z',          0.0), promotes=['*'])
+            self.add('blade_mass',             IndepVarComp('blade_mass',             0.0), promotes=['*'])
+            self.add('blade_root_diameter',    IndepVarComp('blade_root_diameter',    0.0), promotes=['*'])
+            self.add('blade_length',           IndepVarComp('blade_length',           0.0), promotes=['*'])
+            self.add('drivetrain_efficiency',  IndepVarComp('drivetrain_efficiency',  0.0), promotes=['*'])
+            self.add('machine_rating',         IndepVarComp('machine_rating',         0.0), promotes=['*'])
         
         # Create 3 pt drivetrain group
         self.add('hub',                 HubMassOnlySE(blade_number, debug=debug), promotes=['*'])
@@ -742,7 +743,7 @@ class Drive4pt(Group):
     '''
 
     def __init__(self, mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
-                 uptower_transformer, yaw_motors_number, crane, blade_number, debug=False):
+                 uptower_transformer, yaw_motors_number, crane, blade_number, debug=False, topLevelFlag=False):
         super(Drive4pt, self).__init__()
 
         # Add common inputs for rotor
@@ -774,21 +775,22 @@ class Drive4pt(Group):
         # Add common inputs for tower
         self.add('tower_top_diameter',IndepVarComp([('tower_top_diameter', 0.0)]), promotes=['*'])
 
-        # Add some more IndepVarComps to get rid of 'no associated unknowns' message
-        self.add('rotor_diameter',         IndepVarComp('rotor_diameter',         0.0), promotes=['*'])
-        self.add('rotor_rpm',              IndepVarComp('rotor_rpm',              0.0), promotes=['*'])
-        self.add('rotor_torque',           IndepVarComp('rotor_torque',           0.0), promotes=['*'])
-        self.add('rotor_thrust',           IndepVarComp('rotor_thrust',           0.0), promotes=['*'])
-        self.add('rotor_bending_moment_x', IndepVarComp('rotor_bending_moment_x', 0.0), promotes=['*'])
-        self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
-        self.add('rotor_bending_moment_z', IndepVarComp('rotor_bending_moment_z', 0.0), promotes=['*'])
-        self.add('rotor_force_y',          IndepVarComp('rotor_force_y',          0.0), promotes=['*'])
-        self.add('rotor_force_z',          IndepVarComp('rotor_force_z',          0.0), promotes=['*'])
-        self.add('blade_mass',             IndepVarComp('blade_mass',             0.0), promotes=['*'])
-        self.add('blade_root_diameter',    IndepVarComp('blade_root_diameter',    0.0), promotes=['*'])
-        self.add('blade_length',           IndepVarComp('blade_length',           0.0), promotes=['*'])
-        self.add('drivetrain_efficiency',  IndepVarComp('drivetrain_efficiency',  0.0), promotes=['*'])
-        self.add('machine_rating',         IndepVarComp('machine_rating',         0.0), promotes=['*'])
+        if topLevelFlag:
+            # Add some more IndepVarComps to get rid of 'no associated unknowns' message
+            self.add('rotor_diameter',         IndepVarComp('rotor_diameter',         0.0), promotes=['*'])
+            self.add('rotor_rpm',              IndepVarComp('rotor_rpm',              0.0), promotes=['*'])
+            self.add('rotor_torque',           IndepVarComp('rotor_torque',           0.0), promotes=['*'])
+            self.add('rotor_thrust',           IndepVarComp('rotor_thrust',           0.0), promotes=['*'])
+            self.add('rotor_bending_moment_x', IndepVarComp('rotor_bending_moment_x', 0.0), promotes=['*'])
+            self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
+            self.add('rotor_bending_moment_z', IndepVarComp('rotor_bending_moment_z', 0.0), promotes=['*'])
+            self.add('rotor_force_y',          IndepVarComp('rotor_force_y',          0.0), promotes=['*'])
+            self.add('rotor_force_z',          IndepVarComp('rotor_force_z',          0.0), promotes=['*'])
+            self.add('blade_mass',             IndepVarComp('blade_mass',             0.0), promotes=['*'])
+            self.add('blade_root_diameter',    IndepVarComp('blade_root_diameter',    0.0), promotes=['*'])
+            self.add('blade_length',           IndepVarComp('blade_length',           0.0), promotes=['*'])
+            self.add('drivetrain_efficiency',  IndepVarComp('drivetrain_efficiency',  0.0), promotes=['*'])
+            self.add('machine_rating',         IndepVarComp('machine_rating',         0.0), promotes=['*'])
         
         # select components
         self.add('hub', HubMassOnlySE(blade_number), promotes=['*'])
@@ -829,7 +831,7 @@ class Drive4pt(Group):
 #------------------------------------------------------------------
 # examples
 
-def nacelle_example_5MW_baseline_3pt(debug=False):
+def nacelle_example_5MW_baseline_3pt(debug=False, topLevelFlag=False):
 
     # NREL 5 MW Drivetrain variables
     # geared 3-stage Gearbox with induction generator machine
@@ -847,7 +849,8 @@ def nacelle_example_5MW_baseline_3pt(debug=False):
     modid = ''
     
     prob=Problem(root=Drive3pt(mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
-                               uptower_transformer, yaw_motors_number, crane, blade_number, debug=debug))
+                               uptower_transformer, yaw_motors_number, crane, blade_number, 
+                               debug=debug, topLevelFlag=topLevelFlag))
     prob.setup()
     #view_connections(prob.root, show_browser=True)
     
@@ -911,7 +914,7 @@ def nacelle_example_5MW_baseline_3pt(debug=False):
 
 #-------------------------------------------------------------------------
 
-def nacelle_example_5MW_baseline_4pt(debug=False):
+def nacelle_example_5MW_baseline_4pt(debug=False, topLevelFlag=False):
 
     # NREL 5 MW Drivetrain variables
     # geared 3-stage Gearbox with induction generator machine
@@ -928,7 +931,8 @@ def nacelle_example_5MW_baseline_4pt(debug=False):
 
 
     prob=Problem(root=Drive4pt(mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
-                               uptower_transformer, yaw_motors_number, crane, blade_number))
+                               uptower_transformer, yaw_motors_number, crane, blade_number, 
+                               debug=debug, topLevelFlag=topLevelFlag))
     prob.setup()
 
     # Rotor and load inputs
@@ -1329,9 +1333,12 @@ if __name__ == '__main__':
     debug = True
     #debug = False
     
-    #nacelle_example_5MW_baseline_3pt(debug=debug)
+    topLevelFlag = True
+    #topLevelFlag = False
+    
+    #nacelle_example_5MW_baseline_3pt(debug=debug, topLevelFlag=topLevelFlag)
 
-    nacelle_example_5MW_baseline_4pt(debug=debug)
+    nacelle_example_5MW_baseline_4pt(debug=debug, topLevelFlag=topLevelFlag)
     
     '''
     nacelle_example_1p5MW_3pt()
