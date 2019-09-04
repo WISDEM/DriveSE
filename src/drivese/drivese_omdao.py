@@ -1,5 +1,5 @@
 """
-DriveSE.py
+drivese_omdao.py
 
 Created by Yi Guo, Taylor Parsons and Ryan King 2014.
 Copyright (c) NREL. All rights reserved.
@@ -7,6 +7,13 @@ Copyright (c) NREL. All rights reserved.
 Functions nacelle_example_5MW_baseline_[34]pt() did not define blade_mass
   We've added prob['blade_mass'] = 17740.0 (copied from hubse_omdao.py)
   GNS 2019 05 13
+  
+GNS 2019 06 05: nacelle_example_*() now return prob
+  
+Classes with declarations like
+  class ObjName_OM(Component)
+are OpenMDAO wrappers for pure-python objects that define the parts of a wind turbine drivetrain.
+These objects are defined in drivese_components.py (which contains NO OpenMDAO code).
 """
 
 import numpy as np
@@ -17,7 +24,7 @@ import sys
 from drivese.drivese_components_clean import LowSpeedShaft4pt, LowSpeedShaft3pt, Gearbox, MainBearing, Bedplate, YawSystem, \
                                        Transformer, HighSpeedSide, Generator, NacelleSystemAdder, AboveYawMassAdder, RNASystemAdder
 from drivese.hubse_omdao import HubSE, HubMassOnlySE, Hub_CM_Adder_OM
-from openmdao.api import Group, Component, IndepVarComp, Problem
+from openmdao.api import Group, Component, IndepVarComp, Problem, view_connections
 
 
 
@@ -28,11 +35,11 @@ from openmdao.api import Group, Component, IndepVarComp, Problem
 class LowSpeedShaft4pt_OM(Component):
     ''' LowSpeedShaft class
           The LowSpeedShaft class is used to represent the low speed shaft component of a wind turbine drivetrain. 
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
-    def __init__(self, mb1Type, mb2Type, IEC_Class):
+    def __init__(self, mb1Type, mb2Type, IEC_Class, debug=False):
 
         super(LowSpeedShaft4pt_OM, self).__init__()
 
@@ -40,43 +47,45 @@ class LowSpeedShaft4pt_OM(Component):
         self.add_param('rotor_bending_moment_x', val=0.0, units='N*m', desc='The bending moment about the x axis')
         self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='The bending moment about the y axis')
         self.add_param('rotor_bending_moment_z', val=0.0, units='N*m', desc='The bending moment about the z axis')
-        self.add_param('rotor_thrust', val=0.0, units='N', desc='The force along the x axis applied at hub center')
-        self.add_param('rotor_force_y', val=0.0, units='N', desc='The force along the y axis applied at hub center')
-        self.add_param('rotor_force_z', val=0.0, units='N', desc='The force along the z axis applied at hub center')
-        self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
-        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-        self.add_param('machine_rating', val=0.0, units='kW', desc='machine_rating machine rating of the turbine')
-        self.add_param('gearbox_mass', val=0.0, units='kg', desc='Gearbox mass')
-        self.add_param('carrier_mass', val=0.0, units='kg', desc='Carrier mass')
-        self.add_param('overhang', val=0.0, units='m', desc='Overhang distance')
-        self.add_param('distance_hub2mb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
-        self.add_param('drivetrain_efficiency', val=0.0, desc='overall drivettrain efficiency')
+        self.add_param('rotor_thrust',           val=0.0, units='N',   desc='The force along the x axis applied at hub center')
+        self.add_param('rotor_force_y',          val=0.0, units='N',   desc='The force along the y axis applied at hub center')
+        self.add_param('rotor_force_z',          val=0.0, units='N',   desc='The force along the z axis applied at hub center')
+        self.add_param('rotor_mass',             val=0.0, units='kg',  desc='rotor mass')
+        self.add_param('rotor_diameter',         val=0.0, units='m',   desc='rotor diameter')
+        self.add_param('machine_rating',         val=0.0, units='kW',  desc='machine_rating machine rating of the turbine')
+        self.add_param('gearbox_mass',           val=0.0, units='kg',  desc='Gearbox mass')
+        self.add_param('carrier_mass',           val=0.0, units='kg',  desc='Carrier mass')
+        self.add_param('overhang',               val=0.0, units='m',   desc='Overhang distance')
+        self.add_param('distance_hub2mb',        val=0.0, units='m',   desc='distance between hub center and upwind main bearing')
+        self.add_param('drivetrain_efficiency',  val=0.0,              desc='overall drivettrain efficiency')
 
         # parameters
-        self.add_param('shrink_disc_mass', val=0.0, units='kg', desc='Mass of the shrink disc')
-        self.add_param('gearbox_cm', val=np.array([0.0, 0.0, 0.0]), units='m', desc='center of mass of gearbox')
-        self.add_param('gearbox_length', val=0.0, units='m', desc='gearbox length')
-        self.add_param('flange_length', val=0.0, units='m', desc='flange length')
-        self.add_param('shaft_angle', val=0.0, units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
-        self.add_param('shaft_ratio', val=0.0, desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
+        self.add_param('shrink_disc_mass', val=0.0,         units='kg',  desc='Mass of the shrink disc')
+        self.add_param('gearbox_cm',       val=np.zeros(3), units='m',   desc='center of mass of gearbox')
+        self.add_param('gearbox_length',   val=0.0,         units='m',   desc='gearbox length')
+        self.add_param('flange_length',    val=0.0,         units='m',   desc='flange length')
+        self.add_param('shaft_angle',      val=0.0,         units='rad', desc='Angle of the LSS inclination with respect to the horizontal')
+        self.add_param('shaft_ratio',      val=0.0,                      desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
       
+        self.add_param('hub_flange_thickness', val=0.0, desc='Shell thickness for spherical hub')
+        
         # outputs
-        self.add_output('lss_design_torque', val=0.0,  units='N*m', desc='lss design torque')
-        self.add_output('lss_design_bending_load', val=0.0,  units='N', desc='lss design bending load')
-        self.add_output('lss_length', val=0.0, units='m', desc='lss length')
-        self.add_output('lss_diameter1', val=0.0, units='m',  desc='lss outer diameter at main bearing')
-        self.add_output('lss_diameter2', val=0.0, units='m',  desc='lss outer diameter at second bearing')
-        self.add_output('lss_mass', val=0.0, units='kg', desc='overall component mass')
-        self.add_output('lss_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('lss_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
-        self.add_output('lss_mb1_facewidth', val=0.0, units='m',  desc='facewidth of upwind main bearing')
-        self.add_output('lss_mb2_facewidth', val=0.0, units='m',  desc='facewidth of main bearing')
-        self.add_output('lss_mb1_mass', val=0.0,  units='kg', desc='main bearing mass')
-        self.add_output('lss_mb2_mass', val=0.0, units='kg',  desc='second bearing mass')
-        self.add_output('lss_mb1_cm', val=np.array([0, 0, 0]), units='m', desc='main bearing 1 center of mass')
-        self.add_output('lss_mb2_cm', val=np.array([0, 0, 0]), units='m', desc='main bearing 2 center of mass')
+        self.add_output('lss_design_torque',       val=0.0,         units='N*m', desc='lss design torque')
+        self.add_output('lss_design_bending_load', val=0.0,         units='N',   desc='lss design bending load')
+        self.add_output('lss_length',              val=0.0,         units='m',   desc='lss length')
+        self.add_output('lss_diameter1',           val=0.0,         units='m',   desc='lss outer diameter at main bearing')
+        self.add_output('lss_diameter2',           val=0.0,         units='m',   desc='lss outer diameter at second bearing')
+        self.add_output('lss_mass',                val=0.0,         units='kg',  desc='overall component mass')
+        self.add_output('lss_cm',                  val=np.zeros(3),              desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('lss_I',                   val=np.zeros(3),              desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+        self.add_output('lss_mb1_facewidth',       val=0.0,         units='m',   desc='facewidth of upwind main bearing')
+        self.add_output('lss_mb2_facewidth',       val=0.0,         units='m',   desc='facewidth of main bearing')
+        self.add_output('lss_mb1_mass',            val=0.0,         units='kg',  desc='main bearing mass')
+        self.add_output('lss_mb2_mass',            val=0.0,         units='kg',  desc='second bearing mass')
+        self.add_output('lss_mb1_cm',              val=np.zeros(3), units='m',   desc='main bearing 1 center of mass')
+        self.add_output('lss_mb2_cm',              val=np.zeros(3), units='m',   desc='main bearing 2 center of mass')
 
-        self.lss4pt = LowSpeedShaft4pt(mb1Type, mb2Type, IEC_Class)
+        self.lss4pt = LowSpeedShaft4pt(mb1Type, mb2Type, IEC_Class, debug=debug)
 
     def solve_nonlinear(self, inputs, outputs, resid):
 
@@ -86,7 +95,8 @@ class LowSpeedShaft4pt_OM(Component):
                                     inputs['rotor_bending_moment_x'], inputs['rotor_bending_moment_y'], inputs['rotor_bending_moment_z'], \
                                     inputs['overhang'], inputs['machine_rating'], inputs['drivetrain_efficiency'], \
                                     inputs['gearbox_mass'], inputs['carrier_mass'], inputs['gearbox_cm'], inputs['gearbox_length'], \
-                                    inputs['shrink_disc_mass'], inputs['flange_length'], inputs['distance_hub2mb'], inputs['shaft_angle'], inputs['shaft_ratio'])       
+                                    inputs['shrink_disc_mass'], inputs['flange_length'], inputs['distance_hub2mb'], inputs['shaft_angle'], inputs['shaft_ratio'], \
+                                    inputs['hub_flange_thickness'])
 
         return outputs
 
@@ -96,10 +106,10 @@ class LowSpeedShaft4pt_OM(Component):
 class LowSpeedShaft3pt_OM(Component):
     ''' LowSpeedShaft class
           The LowSpeedShaft class is used to represent the low speed shaft component of a wind turbine drivetrain. 
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
-    def __init__(self, mb1Type, IEC_Class):
+    def __init__(self, mb1Type, IEC_Class, debug=False):
 
         super(LowSpeedShaft3pt_OM, self).__init__()
 
@@ -107,43 +117,45 @@ class LowSpeedShaft3pt_OM(Component):
         self.add_param('rotor_bending_moment_x', val=0.0, units='N*m', desc='The bending moment about the x axis')
         self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='The bending moment about the y axis')
         self.add_param('rotor_bending_moment_z', val=0.0, units='N*m', desc='The bending moment about the z axis')
-        self.add_param('rotor_thrust', val=0.0, units='N', desc='The force along the x axis applied at hub center')
-        self.add_param('rotor_force_y', val=0.0, units='N', desc='The force along the y axis applied at hub center')
-        self.add_param('rotor_force_z', val=0.0, units='N', desc='The force along the z axis applied at hub center')
-        self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
-        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-        self.add_param('machine_rating', val=0.0, units='kW', desc='machine_rating machine rating of the turbine')
-        self.add_param('gearbox_mass', val=0.0, units='kg', desc='Gearbox mass')
-        self.add_param('carrier_mass', val=0.0, units='kg', desc='Carrier mass')
-        self.add_param('overhang', val=0.0, units='m', desc='Overhang distance')
-        self.add_param('distance_hub2mb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
-        self.add_param('drivetrain_efficiency', val=0.0, desc='overall drivettrain efficiency')
+        self.add_param('rotor_thrust',           val=0.0, units='N',   desc='The force along the x axis applied at hub center')
+        self.add_param('rotor_force_y',          val=0.0, units='N',   desc='The force along the y axis applied at hub center')
+        self.add_param('rotor_force_z',          val=0.0, units='N',   desc='The force along the z axis applied at hub center')
+        self.add_param('rotor_mass',             val=0.0, units='kg',  desc='rotor mass')
+        self.add_param('rotor_diameter',         val=0.0, units='m',   desc='rotor diameter')
+        self.add_param('machine_rating',         val=0.0, units='kW',  desc='machine_rating machine rating of the turbine')
+        self.add_param('gearbox_mass',           val=0.0, units='kg',  desc='Gearbox mass')
+        self.add_param('carrier_mass',           val=0.0, units='kg',  desc='Carrier mass')
+        self.add_param('overhang',               val=0.0, units='m',   desc='Overhang distance')
+        self.add_param('distance_hub2mb',        val=0.0, units='m',   desc='distance between hub center and upwind main bearing')
+        self.add_param('drivetrain_efficiency',  val=0.0,              desc='overall drivettrain efficiency')
 
         # parameters
-        self.add_param('shrink_disc_mass', val=0.0, units='kg', desc='Mass of the shrink disc')
-        self.add_param('gearbox_cm', val=np.array([0.0, 0.0, 0.0]), units='m', desc='center of mass of gearbox')
-        self.add_param('gearbox_length', val=0.0, units='m', desc='gearbox length')
-        self.add_param('flange_length', val=0.0, units='m', desc='flange length')
-        self.add_param('shaft_angle', val=0.0, units='rad', desc='Angle of the LSS inclindation with respect to the horizontal')
-        self.add_param('shaft_ratio', val=0.0, desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
+        self.add_param('shrink_disc_mass', val=0.0,         units='kg',  desc='Mass of the shrink disc')
+        self.add_param('gearbox_cm',       val=np.zeros(3), units='m',   desc='center of mass of gearbox')
+        self.add_param('gearbox_length',   val=0.0,         units='m',   desc='gearbox length')
+        self.add_param('flange_length',    val=0.0,         units='m',   desc='flange length')
+        self.add_param('shaft_angle',      val=0.0,         units='rad', desc='Angle of the LSS inclination with respect to the horizontal')
+        self.add_param('shaft_ratio',      val=0.0,                      desc='Ratio of inner diameter to outer diameter.  Leave zero for solid LSS')
+        
+        self.add_param('hub_flange_thickness', val=0.0, desc='Shell thickness for spherical hub')
         
         # outputs
-        self.add_output('lss_design_torque', val=0.0,  units='N*m', desc='lss design torque')
-        self.add_output('lss_design_bending_load', val=0.0,  units='N', desc='lss design bending load')
-        self.add_output('lss_length', val=0.0, units='m', desc='lss length')
-        self.add_output('lss_diameter1', val=0.0, units='m',  desc='lss outer diameter at main bearing')
-        self.add_output('lss_diameter2', val=0.0, units='m',  desc='lss outer diameter at second bearing')
-        self.add_output('lss_mass', val=0.0, units='kg', desc='overall component mass')
-        self.add_output('lss_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('lss_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
-        self.add_output('lss_mb1_facewidth', val=0.0, units='m',  desc='facewidth of upwind main bearing')
-        self.add_output('lss_mb2_facewidth', val=0.0, units='m',  desc='facewidth of main bearing')
-        self.add_output('lss_mb1_mass', val=0.0,  units='kg', desc='main bearing mass')
-        self.add_output('lss_mb2_mass', val=0.0, units='kg',  desc='second bearing mass')
-        self.add_output('lss_mb1_cm', val=np.array([0, 0, 0]), units='m', desc='main bearing 1 center of mass')
-        self.add_output('lss_mb2_cm', val=np.array([0, 0, 0]), units='m', desc='main bearing 2 center of mass')
+        self.add_output('lss_design_torque',       val=0.0,         units='N*m', desc='lss design torque')
+        self.add_output('lss_design_bending_load', val=0.0,         units='N',   desc='lss design bending load')
+        self.add_output('lss_length',              val=0.0,         units='m',   desc='lss length')
+        self.add_output('lss_diameter1',           val=0.0,         units='m',   desc='lss outer diameter at main bearing')
+        self.add_output('lss_diameter2',           val=0.0,         units='m',   desc='lss outer diameter at second bearing')
+        self.add_output('lss_mass',                val=0.0,         units='kg',  desc='overall component mass')
+        self.add_output('lss_cm',                  val=np.zeros(3),              desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('lss_I',                   val=np.zeros(3),              desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+        self.add_output('lss_mb1_facewidth',       val=0.0,         units='m',   desc='facewidth of upwind main bearing')
+        self.add_output('lss_mb2_facewidth',       val=0.0,         units='m',   desc='facewidth of main bearing')
+        self.add_output('lss_mb1_mass',            val=0.0,         units='kg',  desc='main bearing mass')
+        self.add_output('lss_mb2_mass',            val=0.0,         units='kg',  desc='second bearing mass')
+        self.add_output('lss_mb1_cm',              val=np.zeros(3), units='m',   desc='main bearing 1 center of mass')
+        self.add_output('lss_mb2_cm',              val=np.zeros(3), units='m',   desc='main bearing 2 center of mass')
 
-        self.lss3pt = LowSpeedShaft3pt(mb1Type, IEC_Class)
+        self.lss3pt = LowSpeedShaft3pt(mb1Type, IEC_Class, debug=debug)
 
     def solve_nonlinear(self, inputs, outputs, resid):
 
@@ -153,7 +165,8 @@ class LowSpeedShaft3pt_OM(Component):
                                     inputs['rotor_bending_moment_x'], inputs['rotor_bending_moment_y'], inputs['rotor_bending_moment_z'], \
                                     inputs['overhang'], inputs['machine_rating'], inputs['drivetrain_efficiency'], \
                                     inputs['gearbox_mass'], inputs['carrier_mass'], inputs['gearbox_cm'], inputs['gearbox_length'], \
-                                    inputs['shrink_disc_mass'], inputs['flange_length'], inputs['distance_hub2mb'], inputs['shaft_angle'], inputs['shaft_ratio'])       
+                                    inputs['shrink_disc_mass'], inputs['flange_length'], inputs['distance_hub2mb'], inputs['shaft_angle'], inputs['shaft_ratio'],
+                                    inputs['hub_flange_thickness'])       
 
         return outputs
 
@@ -162,7 +175,7 @@ class LowSpeedShaft3pt_OM(Component):
 class MainBearing_OM(Component):
     ''' MainBearings class
           The MainBearings class is used to represent the main bearing components of a wind turbine drivetrain. It contains two subcomponents (main bearing and second bearing) which also inherit from the SubComponent class.
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
@@ -179,8 +192,8 @@ class MainBearing_OM(Component):
 
         # returns
         self.add_output('mb_mass', val=0.0, units='kg', desc='overall component mass')
-        self.add_output('mb_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('mb_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+        self.add_output('mb_cm',   val=np.zeros(3), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('mb_I',    val=np.zeros(3), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
 
         self.mb = MainBearing(bearing_position)
         
@@ -196,11 +209,11 @@ class MainBearing_OM(Component):
 class Gearbox_OM(Component):
     ''' Gearbox class
           The Gearbox class is used to represent the gearbox component of a wind turbine drivetrain.
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
-    def __init__(self, gear_configuration, shaft_factor):
+    def __init__(self, gear_configuration, shaft_factor, debug=False):
 
         super(Gearbox_OM, self).__init__()
 
@@ -213,15 +226,15 @@ class Gearbox_OM(Component):
         self.add_param('gearbox_input_xcm', val=0.00, units='m', desc='gearbox position along x-axis')
 
         # outputs
-        self.add_output('stage_masses', val=np.array([0.0, 0.0, 0.0]), units='kg', desc='individual gearbox stage gearbox_masses')
+        self.add_output('stage_masses', val=np.zeros(3), units='kg', desc='individual gearbox stage gearbox_masses')
         self.add_output('gearbox_mass', val=0.0, units='kg', desc='overall component gearbox_mass')
-        self.add_output('gearbox_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of gearbox_mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('gearbox_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of gearbox_Inertia for the component [gearbox_Ixx, gearbox_Iyy, gearbox_Izz] around its center of gearbox_mass')
+        self.add_output('gearbox_cm', val=np.zeros(3), desc='center of gearbox_mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('gearbox_I', val=np.zeros(3), desc=' moments of gearbox_Inertia for the component [gearbox_Ixx, gearbox_Iyy, gearbox_Izz] around its center of gearbox_mass')
         self.add_output('gearbox_length', val=0.0, units='m', desc='gearbox length')
         self.add_output('gearbox_height', val=0.0, units='m', desc='gearbox height')
         self.add_output('gearbox_diameter', val=0.0, units='m', desc='gearbox diameter')
 
-        self.gearbox = Gearbox(gear_configuration, shaft_factor)
+        self.gearbox = Gearbox(gear_configuration, shaft_factor, debug=debug)
 
     def solve_nonlinear(self, inputs, outputs, resid):
         
@@ -230,15 +243,13 @@ class Gearbox_OM(Component):
 
         return outputs
 
-
-
 #-------------------------------------------------------------------
 
 class HighSpeedSide_OM(Component):
     '''
     HighSpeedShaft class
           The HighSpeedShaft class is used to represent the high speed shaft and mechanical brake components of a wind turbine drivetrain.
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
@@ -253,13 +264,13 @@ class HighSpeedSide_OM(Component):
         self.add_param('lss_diameter', val=0.0, units='m', desc='low speed shaft outer diameter')
         self.add_param('gearbox_length', val=0.0, units='m', desc='gearbox length')
         self.add_param('gearbox_height', val=0.0, units='m', desc='gearbox height')
-        self.add_param('gearbox_cm', val=np.array([0.0, 0.0, 0.0]), units='m', desc='gearbox cm [x,y,z]')
+        self.add_param('gearbox_cm', val=np.zeros(3), units='m', desc='gearbox cm [x,y,z]')
         self.add_param('hss_input_length', val=0.0, units='m', desc='high speed shaft length determined by user. Default 0.5m')
 
         # returns
         self.add_output('hss_mass', val=0.0, units='kg', desc='overall component mass')
-        self.add_output('hss_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('hss_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+        self.add_output('hss_cm', val=np.zeros(3), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('hss_I', val=np.zeros(3), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
         self.add_output('hss_length', val=0.0, desc='length of high speed shaft')
 
         self.hss = HighSpeedSide()
@@ -276,7 +287,7 @@ class HighSpeedSide_OM(Component):
 class Generator_OM(Component):
     '''Generator class
           The Generator class is used to represent the generator of a wind turbine drivetrain.
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
@@ -294,8 +305,8 @@ class Generator_OM(Component):
 
         #returns
         self.add_output('generator_mass', val=0.0, units='kg', desc='overall component mass')
-        self.add_output('generator_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('generator_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
+        self.add_output('generator_cm', val=np.zeros(3), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('generator_I', val=np.zeros(3), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')
 
         self.gen = Generator(drivetrain_design)
         
@@ -307,11 +318,12 @@ class Generator_OM(Component):
         return outputs
 
 #--------------------------------------------
+
 class RNASystemAdder_OM(Component):
     ''' RNASystem class
           This analysis is only to be used in placing the transformer of the drivetrain.
           The Rotor-Nacelle-Group class is used to represent the RNA of the turbine without the transformer and bedplate (to resolve circular dependency issues).
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component. 
     '''
 
@@ -350,13 +362,12 @@ class RNASystemAdder_OM(Component):
 
         return outputs
         
-
 #-------------------------------------------------------------------------------
 
 class Transformer_OM(Component):
     ''' Transformer class
             The transformer class is used to represent the transformer of a wind turbine drivetrain.
-            It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+            It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
             It contains an update method to determine the mass, mass properties, and dimensions of the component if it is in fact uptower'''
 
     def __init__(self, uptower_transformer):
@@ -367,15 +378,15 @@ class Transformer_OM(Component):
         self.add_param('machine_rating', val=0.0, units='kW', desc='machine rating of the turbine')
         self.add_param('tower_top_diameter', val=0.0, units='m', desc='tower top diameter for comparision of nacelle CM')
         self.add_param('rotor_mass', val=0.0, units='kg', desc='rotor mass')
-        self.add_param('generator_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the generator in [x,y,z]')
+        self.add_param('generator_cm', val=np.zeros(3), desc='center of mass of the generator in [x,y,z]')
         self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter of turbine')
         self.add_param('RNA_mass', val=0.0, units='kg', desc='mass of total RNA')
         self.add_param('RNA_cm', val=0.0, units='m', desc='RNA CM along x-axis')
 
         # outputs
         self.add_output('transformer_mass', val=0.0, units='kg', desc='overall component mass')
-        self.add_output('transformer_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('transformer_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+        self.add_output('transformer_cm', val=np.zeros(3), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('transformer_I', val=np.zeros(3), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
 
         self.transformer = Transformer(uptower_transformer)
 
@@ -386,17 +397,16 @@ class Transformer_OM(Component):
 
         return outputs
 
-
 #-------------------------------------------------------------------------
 
 class Bedplate_OM(Component):
     ''' Bedplate class
           The Bedplate class is used to represent the bedplate of a wind turbine drivetrain.
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
-    def __init__(self, uptower_transformer):
+    def __init__(self, uptower_transformer, debug=False):
 
         super(Bedplate_OM, self).__init__()
 
@@ -412,12 +422,12 @@ class Bedplate_OM(Component):
         self.add_param('lss_mass', val=0.0, units='kg', desc='LSS mass')
         self.add_param('lss_length', val=0.0, units='m', desc='LSS length')
         self.add_param('lss_mb1_facewidth', val=0.0, units='m', desc='Upwind main bearing facewidth')
-        self.add_param('mb1_cm', val=np.array([0.0, 0.0, 0.0]), units='m', desc='Upwind main bearing CM location')
+        self.add_param('mb1_cm', val=np.zeros(3), units='m', desc='Upwind main bearing CM location')
         self.add_param('mb1_mass', val=0.0, units='kg', desc='Upwind main bearing mass')
-        self.add_param('mb2_cm', val=np.array([0.0, 0.0, 0.0]), units='m', desc='Downwind main bearing CM location')
+        self.add_param('mb2_cm', val=np.zeros(3), units='m', desc='Downwind main bearing CM location')
         self.add_param('mb2_mass', val=0.0, units='kg', desc='Downwind main bearing mass')
         self.add_param('transformer_mass', val=0.0, units='kg', desc='Transformer mass')
-        self.add_param('transformer_cm', val=np.array([0.0, 0.0, 0.0]), units='m', desc='transformer CM location')
+        self.add_param('transformer_cm', val=np.zeros(3), units='m', desc='transformer CM location')
         self.add_param('tower_top_diameter', val=0.0, units='m', desc='diameter of the top tower section at the yaw gear')
         self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
         self.add_param('machine_rating', val=0.0, units='kW', desc='machine_rating machine rating of the turbine')
@@ -429,13 +439,15 @@ class Bedplate_OM(Component):
 
         # outputs
         self.add_output('bedplate_mass', val=0.0, units='kg', desc='overall component bedplate_mass')
-        self.add_output('bedplate_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of bedplate_mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('bedplate_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of bedplate_mass')
+        self.add_output('bedplate_cm', val=np.zeros(3), desc='center of bedplate_mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('bedplate_I', val=np.zeros(3), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of bedplate_mass')
         self.add_output('bedplate_length', val=0.0, units='m', desc='length of bedplate')
         self.add_output('bedplate_height', val=0.0, units='m',  desc='max height of bedplate')
         self.add_output('bedplate_width', val=0.0, units='m', desc='width of bedplate')
         
-        self.bpl = Bedplate(uptower_transformer)
+        self.bpl = Bedplate(uptower_transformer, debug=debug)
+        
+        self.debug = debug
 
     def solve_nonlinear(self, inputs, outputs, resid):
 
@@ -451,8 +463,14 @@ class Bedplate_OM(Component):
 #-------------------------------------------------------------------------------
 
 class AboveYawMassAdder_OM(Component):
+    ''' AboveYawMassAdder_OM class
+          The AboveYawMassAdder_OM class is used to represent the masses of all parts of a wind turbine drivetrain that
+          are above the yaw system.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
+          It contains an update method to determine the mass, mass properties, and dimensions of the component.
+    '''
 
-    def __init__(self, crane):
+    def __init__(self, crane, debug=False):
 
         super(AboveYawMassAdder_OM, self).__init__()
 
@@ -484,19 +502,30 @@ class AboveYawMassAdder_OM(Component):
         self.add_output('nacelle_height', val=0.0, units='m', desc='component height')
         
         self.aboveyawmass = AboveYawMassAdder(crane)
+        
+        self.debug = debug
 
     def solve_nonlinear(self, inputs, outputs, resid):
 
-        (outputs['electrical_mass'], outputs['vs_electronics_mass'], outputs['hvac_mass'], outputs['controls_mass'], outputs['platforms_mass'], outputs['crane_mass'], \
-               outputs['mainframe_mass'], outputs['cover_mass'], outputs['above_yaw_mass'], outputs['nacelle_length'], outputs['nacelle_width'], outputs['nacelle_height']) \
-            = self.aboveyawmass.compute(inputs['machine_rating'], inputs['lss_mass'], inputs['mb1_mass'], inputs['mb2_mass'], inputs['gearbox_mass'], \
-                      inputs['hss_mass'], inputs['generator_mass'], inputs['bedplate_mass'], inputs['bedplate_length'], inputs['bedplate_width'], inputs['transformer_mass'])
-        print(inputs['machine_rating'], inputs['lss_mass'], inputs['mb1_mass'], inputs['mb2_mass'], inputs['gearbox_mass'],
-              inputs['hss_mass'], inputs['generator_mass'], inputs['bedplate_mass'], inputs['bedplate_length'],
-              inputs['bedplate_width'], inputs['transformer_mass'])
-        print(outputs['electrical_mass'], outputs['vs_electronics_mass'], outputs['hvac_mass'], outputs['controls_mass'],
-              outputs['platforms_mass'], outputs['crane_mass'], outputs['mainframe_mass'], outputs['cover_mass'],
-              outputs['above_yaw_mass'], outputs['nacelle_length'], outputs['nacelle_width'], outputs['nacelle_height'])
+        (outputs['electrical_mass'], outputs['vs_electronics_mass'], outputs['hvac_mass'], outputs['controls_mass'], 
+         outputs['platforms_mass'], outputs['crane_mass'], outputs['mainframe_mass'], outputs['cover_mass'], 
+         outputs['above_yaw_mass'], outputs['nacelle_length'], outputs['nacelle_width'], outputs['nacelle_height']) \
+            = self.aboveyawmass.compute(inputs['machine_rating'], inputs['lss_mass'], inputs['mb1_mass'], inputs['mb2_mass'], 
+                    inputs['gearbox_mass'], inputs['hss_mass'], inputs['generator_mass'], inputs['bedplate_mass'], 
+                    inputs['bedplate_length'], inputs['bedplate_width'], inputs['transformer_mass'])
+        
+        if self.debug:
+            print('AYMA IN: {:.1f} kW BPl {:.1f} m BPw {:.1f} m'.format(
+                  inputs['machine_rating'],inputs['bedplate_length'], inputs['bedplate_width']))
+            print('AYMA IN  masses (kg): LSS {:.1f} MB1 {:.1f} MB2 {:.1f} GBOX {:.1f} HSS {:.1f} GEN {:.1f} BP {:.1f} TFRM {:.1f}'.format(
+                  inputs['lss_mass'], inputs['mb1_mass'], inputs['mb2_mass'], inputs['gearbox_mass'],
+                  inputs['hss_mass'], inputs['generator_mass'], inputs['bedplate_mass'], inputs['transformer_mass']))
+            print('AYMA OUT masses (kg) : E {:.1f} VSE {:.1f} HVAC {:.1f} CNTL {:.1f} PTFM {:.1f} CRN {:.1f} MNFRM {:.1f} CVR {:.1f} AYM {:.1f}'.format( 
+                  outputs['electrical_mass'], outputs['vs_electronics_mass'], outputs['hvac_mass'], outputs['controls_mass'],
+                  outputs['platforms_mass'], outputs['crane_mass'], outputs['mainframe_mass'], outputs['cover_mass'],
+                  outputs['above_yaw_mass']))
+            print('AYMA OUT nacelle (m): L {:.2f} W {:.2f} H {:.2f}'.format( 
+                 outputs['nacelle_length'], outputs['nacelle_width'], outputs['nacelle_height']))
 
         return outputs
 
@@ -505,7 +534,7 @@ class AboveYawMassAdder_OM(Component):
 class YawSystem_OM(Component):
     ''' YawSystem class
           The YawSystem class is used to represent the yaw system of a wind turbine drivetrain.
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
@@ -522,8 +551,8 @@ class YawSystem_OM(Component):
 
         # outputs
         self.add_output('yaw_mass', val=0.0, units='kg', desc='overall component mass')
-        self.add_output('yaw_cm', val=np.array([0.0, 0.0, 0.0]), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
-        self.add_output('yaw_I', val=np.array([0.0, 0.0, 0.0]), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
+        self.add_output('yaw_cm', val=np.zeros(3), desc='center of mass of the component in [x,y,z] for an arbitrary coordinate system')
+        self.add_output('yaw_I', val=np.zeros(3), desc=' moments of Inertia for the component [Ixx, Iyy, Izz] around its center of mass')    
 
         self.yaw = YawSystem(yaw_motors_number)
 
@@ -534,12 +563,11 @@ class YawSystem_OM(Component):
 
         return outputs
 
-
 #--------------------------------------------
 class NacelleSystemAdder_OM(Component): #added to drive to include transformer
     ''' NacelleSystem class
           The Nacelle class is used to represent the overall nacelle of a wind turbine.
-          It contains the general properties for a wind turbine component as well as additional design load and dimentional attributes as listed below.
+          It contains the general properties for a wind turbine component as well as additional design load and dimensional attributes as listed below.
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
@@ -594,12 +622,31 @@ class NacelleSystemAdder_OM(Component): #added to drive to include transformer
         return outputs
 
 #-------------------------------------------------------------------------
-# Assemblies
+# Groups
+#   (were Assemblies in OpenMDAO 0.x)
 #-------------------------------------------------------------------------
     
 class Drive3pt(Group):
+    ''' Class Drive3pt defines an OpenMDAO group that represents a wind turbine drivetrain with a 3-point suspension.
+        This Group can serve as the root of an OpenMDAO Problem.
+    It contains the following components:
+        HubMassOnlySE(blade_number)
+        LowSpeedShaft3pt_OM(mb1Type, IEC_Class)
+        MainBearing_OM('main')
+        Hub_CM_Adder_OM()
+        Gearbox_OM(gear_configuration, shaft_factor)
+        HighSpeedSide_OM()
+        Generator_OM(drivetrain_design)
+        Bedplate_OM(uptower_transformer)
+        Transformer_OM(uptower_transformer)
+        RNASystemAdder_OM()
+        AboveYawMassAdder_OM(crane)
+        YawSystem_OM(yaw_motors_number)
+        NacelleSystemAdder_OM()
+    '''
 
-    def __init__(self, mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane, blade_number):
+    def __init__(self, mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
+                 uptower_transformer, yaw_motors_number, crane, blade_number, debug=False):
         super(Drive3pt, self).__init__()
 
 
@@ -616,7 +663,7 @@ class Drive3pt(Group):
         #self.add('machine_rating',IndepVarComp('machine_rating', 0.0), promotes=['*'])
 
         # Add common inputs for drivetrain
-        self.add('gear_ratio', IndepVarComp('gear_ratio', 0.0), promotes=['*'])
+        self.add('gear_ratio',  IndepVarComp('gear_ratio', 0.0), promotes=['*'])
         self.add('shaft_angle', IndepVarComp('shaft_angle', 0.0), promotes=['*'])
         self.add('shaft_ratio', IndepVarComp('shaft_ratio', 0.0), promotes=['*'])
         self.add('shrink_disc_mass', IndepVarComp('shrink_disc_mass', 0.0), promotes=['*'])
@@ -632,38 +679,74 @@ class Drive3pt(Group):
         # Add common inputs for tower
         self.add('tower_top_diameter',IndepVarComp([('tower_top_diameter', 0.0)]), promotes=['*'])
 
+        # Add some more IndepVarComps to get rid of 'no associated unknowns' message
+        self.add('rotor_diameter',         IndepVarComp('rotor_diameter',         0.0), promotes=['*'])
+        self.add('rotor_rpm',              IndepVarComp('rotor_rpm',              0.0), promotes=['*'])
+        self.add('rotor_torque',           IndepVarComp('rotor_torque',           0.0), promotes=['*'])
+        self.add('rotor_thrust',           IndepVarComp('rotor_thrust',           0.0), promotes=['*'])
+        self.add('rotor_bending_moment_x', IndepVarComp('rotor_bending_moment_x', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_z', IndepVarComp('rotor_bending_moment_z', 0.0), promotes=['*'])
+        self.add('rotor_force_y',          IndepVarComp('rotor_force_y',          0.0), promotes=['*'])
+        self.add('rotor_force_z',          IndepVarComp('rotor_force_z',          0.0), promotes=['*'])
+        self.add('blade_mass',             IndepVarComp('blade_mass',             0.0), promotes=['*'])
+        self.add('blade_root_diameter',    IndepVarComp('blade_root_diameter',    0.0), promotes=['*'])
+        self.add('blade_length',           IndepVarComp('blade_length',           0.0), promotes=['*'])
+        self.add('drivetrain_efficiency',  IndepVarComp('drivetrain_efficiency',  0.0), promotes=['*'])
+        self.add('machine_rating',         IndepVarComp('machine_rating',         0.0), promotes=['*'])
+        
         # Create 3 pt drivetrain group
-        self.add('hub', HubMassOnlySE(blade_number), promotes=['*'])
-        self.add('lowSpeedShaft', LowSpeedShaft3pt_OM(mb1Type, IEC_Class), promotes=['*'])
-        self.add('mainBearing', MainBearing_OM('main'), promotes=['lss_design_torque','rotor_diameter']) #need to make explicit connections for main bearing
-        self.add('hubCM', Hub_CM_Adder_OM(), promotes=['*'])
-        self.add('gearbox', Gearbox_OM(gear_configuration, shaft_factor), promotes=['*'])
-        self.add('highSpeedSide', HighSpeedSide_OM(), promotes=['*'])
-        self.add('generator', Generator_OM(drivetrain_design), promotes=['*'])
-        self.add('bedplate', Bedplate_OM(uptower_transformer), promotes=['*'])
-        self.add('transformer', Transformer_OM(uptower_transformer), promotes=['*'])
-        self.add('rna', RNASystemAdder_OM(), promotes=['*'])
-        self.add('above_yaw_massAdder', AboveYawMassAdder_OM(crane), promotes=['*'])
-        self.add('yawSystem', YawSystem_OM(yaw_motors_number), promotes=['*'])
-        self.add('nacelleSystem', NacelleSystemAdder_OM(), promotes=['*'])
+        self.add('hub',                 HubMassOnlySE(blade_number, debug=debug), promotes=['*'])
+        self.add('lowSpeedShaft',       LowSpeedShaft3pt_OM(mb1Type, IEC_Class, debug=debug), promotes=['*'])
+        self.add('mainBearing',         MainBearing_OM('main'), promotes=['lss_design_torque','rotor_diameter']) #need to make explicit connections for main bearing
+        self.add('hubCM',               Hub_CM_Adder_OM(), promotes=['*'])
+        self.add('gearbox',             Gearbox_OM(gear_configuration, shaft_factor, debug=debug), promotes=['*'])
+        self.add('highSpeedSide',       HighSpeedSide_OM(), promotes=['*'])
+        self.add('generator',           Generator_OM(drivetrain_design), promotes=['*'])
+        self.add('bedplate',            Bedplate_OM(uptower_transformer, debug=debug), promotes=['*'])
+        self.add('transformer',         Transformer_OM(uptower_transformer), promotes=['*'])
+        self.add('rna',                 RNASystemAdder_OM(), promotes=['*'])
+        self.add('above_yaw_massAdder', AboveYawMassAdder_OM(crane, debug=debug), promotes=['*'])
+        self.add('yawSystem',           YawSystem_OM(yaw_motors_number), promotes=['*'])
+        self.add('nacelleSystem',       NacelleSystemAdder_OM(), promotes=['*'])
 
         # Connect components where explicit connections needed (for main bearing)
-        self.connect('lss_mb1_mass', ['mainBearing.bearing_mass'])
-        self.connect('lss_diameter1', ['mainBearing.lss_diameter', 'lss_diameter'])
-        self.connect('lss_mb1_cm', ['mainBearing.lss_mb_cm'])
+        self.connect('lss_mb1_mass',        ['mainBearing.bearing_mass'])
+        self.connect('lss_diameter1',       ['mainBearing.lss_diameter', 'lss_diameter'])
+        self.connect('lss_mb1_cm',          ['mainBearing.lss_mb_cm'])
         self.connect('mainBearing.mb_mass', ['mb1_mass'])
-        self.connect('mainBearing.mb_cm', ['mb1_cm', 'MB1_location'])
-        self.connect('mainBearing.mb_I', ['mb1_I'])
+        self.connect('mainBearing.mb_cm',   ['mb1_cm', 'MB1_location'])
+        self.connect('mainBearing.mb_I',    ['mb1_I'])
 
-        self.connect('lss_cm','lss_location',src_indices=[0])
-        self.connect('hss_cm','hss_location',src_indices=[0])
-        self.connect('gearbox_cm','gearbox_location',src_indices=[0])
-        self.connect('generator_cm','generator_location',src_indices=[0])
+        self.connect('lss_cm',       'lss_location',       src_indices=[0])
+        self.connect('hss_cm',       'hss_location',       src_indices=[0])
+        self.connect('gearbox_cm',   'gearbox_location',   src_indices=[0])
+        self.connect('generator_cm', 'generator_location', src_indices=[0])
 
 #------------------------------------------------------------------
-class Drive4pt(Group):
 
-    def __init__(self, mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane, blade_number):
+class Drive4pt(Group):
+    ''' Class Drive4pt defines an OpenMDAO group that represents a wind turbine drivetrain with a 4-point suspension
+      (two main bearings). This Group can serve as the root of an OpenMDAO Problem.
+    It contains the following components:
+        HubMassOnlySE(blade_number)
+        LowSpeedShaft3pt_OM(mb1Type, IEC_Class)
+        MainBearing_OM('main')
+        MainBearing_OM('second')
+        Hub_CM_Adder_OM()
+        Gearbox_OM(gear_configuration, shaft_factor)
+        HighSpeedSide_OM()
+        Generator_OM(drivetrain_design)
+        Bedplate_OM(uptower_transformer)
+        Transformer_OM(uptower_transformer)
+        RNASystemAdder_OM()
+        AboveYawMassAdder_OM(crane)
+        YawSystem_OM(yaw_motors_number)
+        NacelleSystemAdder_OM()
+    '''
+
+    def __init__(self, mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
+                 uptower_transformer, yaw_motors_number, crane, blade_number, debug=False):
         super(Drive4pt, self).__init__()
 
         # Add common inputs for rotor
@@ -695,6 +778,22 @@ class Drive4pt(Group):
         # Add common inputs for tower
         self.add('tower_top_diameter',IndepVarComp([('tower_top_diameter', 0.0)]), promotes=['*'])
 
+        # Add some more IndepVarComps to get rid of 'no associated unknowns' message
+        self.add('rotor_diameter',         IndepVarComp('rotor_diameter',         0.0), promotes=['*'])
+        self.add('rotor_rpm',              IndepVarComp('rotor_rpm',              0.0), promotes=['*'])
+        self.add('rotor_torque',           IndepVarComp('rotor_torque',           0.0), promotes=['*'])
+        self.add('rotor_thrust',           IndepVarComp('rotor_thrust',           0.0), promotes=['*'])
+        self.add('rotor_bending_moment_x', IndepVarComp('rotor_bending_moment_x', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_y', IndepVarComp('rotor_bending_moment_y', 0.0), promotes=['*'])
+        self.add('rotor_bending_moment_z', IndepVarComp('rotor_bending_moment_z', 0.0), promotes=['*'])
+        self.add('rotor_force_y',          IndepVarComp('rotor_force_y',          0.0), promotes=['*'])
+        self.add('rotor_force_z',          IndepVarComp('rotor_force_z',          0.0), promotes=['*'])
+        self.add('blade_mass',             IndepVarComp('blade_mass',             0.0), promotes=['*'])
+        self.add('blade_root_diameter',    IndepVarComp('blade_root_diameter',    0.0), promotes=['*'])
+        self.add('blade_length',           IndepVarComp('blade_length',           0.0), promotes=['*'])
+        self.add('drivetrain_efficiency',  IndepVarComp('drivetrain_efficiency',  0.0), promotes=['*'])
+        self.add('machine_rating',         IndepVarComp('machine_rating',         0.0), promotes=['*'])
+        
         # select components
         self.add('hub', HubMassOnlySE(blade_number), promotes=['*'])
         self.add('lowSpeedShaft', LowSpeedShaft4pt_OM(mb1Type, mb2Type, IEC_Class), promotes=['*'])
@@ -748,10 +847,14 @@ def nacelle_example_5MW_baseline_3pt(debug=False):
     yaw_motors_number = 0 # default value - will be internally calculated
     blade_number = 3
 
+    runid = 'N5_3pt'
+    modid = ''
+    
     prob=Problem(root=Drive3pt(mb1Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
-                               uptower_transformer, yaw_motors_number, crane, blade_number))
+                               uptower_transformer, yaw_motors_number, crane, blade_number, debug=debug))
     prob.setup()
-
+    #view_connections(prob.root, show_browser=True)
+    
     # Rotor and load inputs
     prob['rotor_diameter'] = 126.0  # m
     prob['rotor_rpm'] = 12.1  # rpm m/s
@@ -772,11 +875,11 @@ def nacelle_example_5MW_baseline_3pt(debug=False):
     prob['machine_rating'] = 5000.0  # kW
     prob['gear_ratio'] = 96.76  # 97:1 as listed in the 5 MW reference document
     prob['shaft_angle'] = 5.0*np.pi / 180.0  # rad
-    prob['shaft_ratio'] = 0.10
+    prob['shaft_ratio'] = 0.10 # 0.10 may be a bit small!
     prob['planet_numbers'] = [3, 3, 1]
     prob['shrink_disc_mass'] = 333.3 * prob['machine_rating'] / 1000.0  # estimated
     prob['carrier_mass'] = 8000.0  # estimated
-    prob['flange_length'] = 0.5
+    #prob['flange_length'] = 0.5
     prob['overhang'] = 5.0
     prob['distance_hub2mb'] = 1.912  # length from hub center to main bearing, leave zero if unknown
     prob['gearbox_input_xcm'] = 0.1
@@ -788,6 +891,9 @@ def nacelle_example_5MW_baseline_3pt(debug=False):
     # Tower inputs
     prob['tower_top_diameter'] = 3.78  # m
 
+    # test cases
+    #prob['rotor_mass'] = 1000; modid = '_r1k'
+    
     prob.run()
 
     if debug:
@@ -795,12 +901,17 @@ def nacelle_example_5MW_baseline_3pt(debug=False):
         print(prob.root.unknowns.dump())
         
         # dump to file - gns 2019 04 29
-        ofname = 'N5_3pt_dump.txt'
+        #ofname = 'N5_3pt_dump.txt'
+        ofname = '{}{}_dump.txt'.format(runid, modid)
         ofh = open(ofname, 'w')
         ofh.write('----- NREL 5 MW Turbine - 3 Point Suspension -----\n')
         prob.root.unknowns.dump(out_stream=ofh)
         ofh.close()
         sys.stderr.write('Dumped unknowns to {}\n'.format(ofname))
+
+    return prob
+
+#-------------------------------------------------------------------------
 
 def nacelle_example_5MW_baseline_4pt(debug=False):
 
@@ -818,7 +929,8 @@ def nacelle_example_5MW_baseline_4pt(debug=False):
     blade_number = 3
 
 
-    prob=Problem(root=Drive4pt(mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, uptower_transformer, yaw_motors_number, crane, blade_number))
+    prob=Problem(root=Drive4pt(mb1Type, mb2Type, IEC_Class, gear_configuration, shaft_factor, drivetrain_design, 
+                               uptower_transformer, yaw_motors_number, crane, blade_number))
     prob.setup()
 
     # Rotor and load inputs
@@ -828,7 +940,6 @@ def nacelle_example_5MW_baseline_4pt(debug=False):
     prob['drivetrain_efficiency'] = 0.95
     prob['rotor_torque'] = 1.5 * (prob['machine_rating'] * 1000 / \
                              prob['drivetrain_efficiency']) / (prob['rotor_rpm'] * (np.pi / 30))
-    #prob['rotor_thrust'] = 599610.0  # N
     prob['rotor_mass'] = 0.0  # accounted for in F_z # kg
     prob['rotor_bending_moment_x'] =    330770.0  # Nm
     prob['rotor_bending_moment_y'] = -16665000.0  # Nm
@@ -870,6 +981,8 @@ def nacelle_example_5MW_baseline_4pt(debug=False):
         prob.root.unknowns.dump(out_stream=ofh)
         ofh.close()
         sys.stderr.write('Dumped unknowns to {}\n'.format(ofname))
+
+    return prob
 
 '''
 #Need to update for new structure of drivetrain
@@ -1216,9 +1329,9 @@ if __name__ == '__main__':
     debug = True
     #debug = False
     
-    #nacelle_example_5MW_baseline_3pt(debug=debug)
+    nacelle_example_5MW_baseline_3pt(debug=debug)
 
-    nacelle_example_5MW_baseline_4pt(debug=debug)
+    #nacelle_example_5MW_baseline_4pt(debug=debug)
     
     '''
     nacelle_example_1p5MW_3pt()

@@ -1,11 +1,19 @@
 '''
-2019 06 25 - debug=False argument added to many Components
+Components for the new spherical hub model - July 2019
+  Sph_Hub, PitchSystem, Sph_Spinner, Hub_System_Adder, Hub_Mass_Adder, Hub_CM_Adder are now imported 
+  from sph_hubse_components.py (instead of hubse_components.py)
+
 '''
 
 import numpy as np
+#import sys
 
 from openmdao.api import Component, Group, Problem, IndepVarComp
-from drivese.hubse_components import Hub, PitchSystem, Spinner, Hub_System_Adder, Hub_Mass_Adder, Hub_CM_Adder
+#from openmdao.recorders.hdf5_recorder import HDF5Recorder
+#from openmdao.api import view_connections, view_tree, view_model
+
+#from drivese.hubse_components import Hub, PitchSystem, Spinner, Hub_System_Adder, Hub_Mass_Adder, Hub_CM_Adder
+from drivese.sph_hubse_components import Sph_Hub, PitchSystem, Sph_Spinner, Hub_System_Adder, Hub_Mass_Adder, Hub_CM_Adder
 
 
 #-------------------------------------------------------------------------
@@ -20,25 +28,25 @@ class Hub_System_Adder_OM(Component):
         super(Hub_System_Adder_OM, self).__init__()
 
         # variables
-        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-        self.add_param('distance_hub2mb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
-        self.add_param('shaft_angle', val=0.0, units='rad', desc='shaft angle')
-        self.add_param('MB1_location', val=np.zeros(3), shape=(3,), units='m', desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
-        self.add_param('hub_mass', val=0.0, units='kg', desc='mass of Hub')
-        self.add_param('hub_diameter', val=0.03, units='m', desc='hub diameter')
-        self.add_param('hub_thickness', val=0.0, units='m', desc='hub thickness')
-        self.add_param('pitch_system_mass', val=0.0, units='kg', desc='mass of Pitch System')
-        self.add_param('spinner_mass', val=0.0, units='kg', desc='mass of spinner')
-        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+        self.add_param('rotor_diameter',    val=0.0,                     units='m',   desc='rotor diameter')
+        self.add_param('distance_hub2mb',   val=0.0,                     units='m',   desc='distance between hub center and upwind main bearing')
+        self.add_param('shaft_angle',       val=0.0,                     units='rad', desc='shaft angle')
+        self.add_param('MB1_location',      val=np.zeros(3), shape=(3,), units='m',   desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+        self.add_param('hub_mass',          val=0.0,                     units='kg',  desc='mass of Hub')
+        self.add_param('hub_diameter',      val=0.03,                    units='m',   desc='hub diameter')
+        self.add_param('hub_thickness',     val=0.0,                     units='m',   desc='hub thickness')
+        self.add_param('pitch_system_mass', val=0.0,                     units='kg',  desc='mass of Pitch System')
+        self.add_param('spinner_mass',      val=0.0,                     units='kg',  desc='mass of spinner')
+        self.add_param('blade_mass',        val=0.0,                     units='kg',  desc='mass of one blade')
 
         # outputs
-        self.add_output('hub_system_cm', val=np.zeros(3), shape=(3,), units='m',  desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
-        self.add_output('hub_system_I', val=np.zeros(6), shape=(3,), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
-        self.add_output('hub_I', val=np.zeros(3), desc='Hub inertia about rotor axis (does not include pitch and spinner masses)')
-        self.add_output('hub_system_mass', val=0.0,  units='kg', desc='mass of hub system')
-        self.add_output('rotor_mass', val=0.0,  units='kg', desc='mass of rotor')
+        self.add_output('hub_system_cm',   val=np.zeros(3), shape=(3,), units='m',  desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+        self.add_output('hub_system_I',    val=np.zeros(6), shape=(3,),             desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+        self.add_output('hub_I',           val=np.zeros(3),                         desc='Hub inertia about rotor axis (does not include pitch and spinner masses)')
+        self.add_output('hub_system_mass', val=0.0,                     units='kg', desc='mass of hub system')
+        self.add_output('rotor_mass',      val=0.0,                     units='kg', desc='mass of rotor')
 
-        self.hub_adder = Hub_System_Adder(blade_number)
+        self.hub_adder = Hub_System_Adder(blade_number, debug=debug)
 
     def solve_nonlinear(self, inputs, outputs, resid):
     
@@ -65,25 +73,26 @@ class Hub_Mass_Adder_OM(Component):
         super(Hub_Mass_Adder_OM, self).__init__()
 
         # variables
-        self.add_param('hub_mass', val=0.0, units='kg', desc='mass of Hub')
-        self.add_param('hub_diameter', val=0.03, units='m', desc='hub diameter')
-        self.add_param('hub_thickness', val=0.0, units='m', desc='hub thickness')
-        self.add_param('pitch_system_mass', val=0.0, units='kg', desc='mass of Pitch System')
-        self.add_param('spinner_mass', val=0.0, units='kg', desc='mass of spinner')
-        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+        self.add_param('hub_mass',          val=0.0,  units='kg', desc='mass of Hub')
+        self.add_param('hub_diameter',      val=0.03, units='m',  desc='hub diameter')
+        self.add_param('hub_thickness',     val=0.0,  units='m',  desc='hub thickness')
+        self.add_param('pitch_system_mass', val=0.0,  units='kg', desc='mass of Pitch System')
+        self.add_param('spinner_mass',      val=0.0,  units='kg', desc='mass of spinner')
+        self.add_param('blade_mass',        val=0.0,  units='kg', desc='mass of one blade')
 
         # outputs
-        self.add_output('hub_system_I', val=np.zeros(6), shape=(3,), desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
-        self.add_output('hub_system_mass', val=0.0,  units='kg', desc='mass of hub system')
-        self.add_output('rotor_mass', val=0.0,  units='kg', desc='mass of rotor')
-        self.add_output('hub_I', val=np.zeros(3), desc='Hub inertia about rotor axis (does not include pitch and spinner masses)')
+        self.add_output('hub_system_I',    val=np.zeros(6), shape=(3,),             desc='mass moments of Inertia of hub [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] around its center of mass in yaw-aligned c.s.')
+        self.add_output('hub_system_mass', val=0.0,                     units='kg', desc='mass of hub system')
+        self.add_output('rotor_mass',      val=0.0,                     units='kg', desc='mass of rotor')
+        self.add_output('hub_I',           val=np.zeros(3),                         desc='Hub inertia about rotor axis (does not include pitch and spinner masses)')
 
-        self.hub_adder = Hub_Mass_Adder(blade_number)
+        self.hub_adder = Hub_Mass_Adder(blade_number, debug=debug)
 
     def solve_nonlinear(self, inputs, outputs, resid):
-    
+        
         (outputs['rotor_mass'], outputs['hub_system_mass'], outputs['hub_system_I'], outputs['hub_I'])\
-             = self.hub_adder.compute(inputs['blade_mass'], inputs['hub_mass'], inputs['hub_diameter'], inputs['hub_thickness'], inputs['pitch_system_mass'], inputs['spinner_mass'])        
+             = self.hub_adder.compute(inputs['blade_mass'], inputs['hub_mass'], inputs['hub_diameter'], 
+                                      inputs['hub_thickness'], inputs['pitch_system_mass'], inputs['spinner_mass'])        
         
         return outputs
 
@@ -101,13 +110,13 @@ class Hub_CM_Adder_OM(Component):
         super(Hub_CM_Adder_OM, self).__init__()
 
         # variables
-        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
-        self.add_param('distance_hub2mb', val=0.0, units='m', desc='distance between hub center and upwind main bearing')
-        self.add_param('shaft_angle', val=0.0, units='rad', desc='shaft angle')
-        self.add_param('MB1_location', val=np.zeros(3), shape=(3,), units='m', desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
+        self.add_param('rotor_diameter',  val=0.0,                     units='m',   desc='rotor diameter')
+        self.add_param('distance_hub2mb', val=0.0,                     units='m',   desc='distance between hub center and upwind main bearing')
+        self.add_param('shaft_angle',     val=0.0,                     units='rad', desc='shaft angle')
+        self.add_param('MB1_location',    val=np.zeros(3), shape=(3,), units='m',   desc='center of mass of main bearing in [x,y,z] for an arbitrary coordinate system')
 
         # outputs
-        self.add_output('hub_system_cm', val=np.zeros(3), shape=(3,), units='m',  desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
+        self.add_output('hub_system_cm', val=np.zeros(3), shape=(3,),  units='m',  desc='center of mass of the hub relative to tower to in yaw-aligned c.s.')
 
         self.hub_adder = Hub_CM_Adder()
 
@@ -132,25 +141,30 @@ class Hub_OM(Component):
         super(Hub_OM, self).__init__()
 
         # variables
-        self.add_param('blade_root_diameter', val=0.0, units='m', desc='blade root diameter')
-        self.add_param('machine_rating', val=0.0, units='kW', desc='machine rating of turbine')
+        self.add_param('blade_root_diameter', val=0.0, units='m',   desc='blade root diameter')
+        self.add_param('machine_rating',      val=0.0, units='kW',  desc='machine rating of turbine')
+        self.add_param('rotor_rpm',           val=0.0, units='rpm', desc='RPM at rated power')
+        self.add_param('blade_mass',          val=0.0, units='kg',  desc='mass of one blade')
+        self.add_param('rotor_diameter',      val=0.0, units='m',   desc='diameter of rotor')
+        self.add_param('blade_length',        val=0.0, units='m',   desc='length of blade')
 
         # outputs
-        self.add_output('hub_diameter', val=0.0, units='m', desc='hub diameter')
-        self.add_output('hub_thickness', val=0.0, units='m', desc='hub thickness')
-        self.add_output('hub_mass', val=0.0, units='kg', desc='overall component mass')
+        self.add_output('hub_diameter',  val=0.0, units='m',  desc='hub diameter')
+        self.add_output('hub_thickness', val=0.0, units='m',  desc='hub thickness')
+        self.add_output('hub_mass',      val=0.0, units='kg', desc='overall component mass')
+        self.add_output('hub_cm',        val=0.0, units='m',  desc='hub center of mass')
+        self.add_output('hub_cost',      val=0.0, units='$',  desc='hub cost')
 
-        self.hub = Hub(blade_number)
-        self.debug = debug
+        self.hub = Sph_Hub(blade_number, debug=debug)
 
     def solve_nonlinear(self, inputs, outputs, resid):
     
-        (outputs['hub_mass'], outputs['hub_diameter'], outputs['hub_thickness']) \
-            = self.hub.compute(inputs['blade_root_diameter'], inputs['machine_rating'])
-        
-        if self.debug:
-            sys.stderr.write('Hub_OM: M {:.1f} kg  D {:.2f} m  T {:.3f} m\n'.format(outputs['hub_mass'], outputs['hub_diameter'], outputs['hub_thickness']))
-            
+        #(outputs['hub_mass'], outputs['hub_diameter'], outputs['hub_thickness']) \
+        #    = self.hub.compute(inputs['blade_root_diameter'], inputs['machine_rating'])
+        (outputs['hub_mass'], outputs['hub_diameter'], outputs['hub_cm'], outputs['hub_cost'], outputs['hub_thickness']) \
+            = self.hub.compute(inputs['blade_root_diameter'], inputs['rotor_rpm'], 
+                               inputs['blade_mass'], inputs['rotor_diameter'], inputs['blade_length']) 
+
         return outputs
 
 
@@ -167,13 +181,15 @@ class PitchSystem_OM(Component):
         super(PitchSystem_OM, self).__init__()
 
         # variables
-        self.add_param('blade_mass', val=0.0, units='kg', desc='mass of one blade')
+        self.add_param('blade_mass',             val=0.0, units='kg',  desc='mass of one blade')
         self.add_param('rotor_bending_moment_y', val=0.0, units='N*m', desc='flapwise bending moment at blade root')
 
         # outputs
-        self.add_output('pitch_system_mass', val=0.0, units='kg', desc='overall component mass')
+        self.add_output('pitch_system_mass',     val=0.0, units='kg',  desc='overall component mass')
 
-        self.pitch = PitchSystem(blade_number)
+        self.pitch = PitchSystem(blade_number, debug=debug)
+        
+        self.debug = debug
 
     def solve_nonlinear(self, inputs, outputs, resid):
     
@@ -193,34 +209,27 @@ class Spinner_OM(Component):
           It contains an update method to determine the mass, mass properties, and dimensions of the component.
     '''
 
-    def __init__(self, debug=False):
+    def __init__(self, blade_number, debug=False):
 
         super(Spinner_OM, self).__init__()
 
         # variables
-        self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+        #self.add_param('rotor_diameter', val=0.0, units='m', desc='rotor diameter')
+        self.add_param('blade_root_diameter', val=0.0, units='m',  desc='blade root diameter')
 
         # outputs
-        self.add_output('spinner_mass', val=0.0, units='kg', desc='overall component mass')
+        self.add_output('spinner_mass',       val=0.0, units='kg', desc='overall component mass')
 
-        self.spinner = Spinner()
+        self.spinner = Sph_Spinner(blade_number, debug=debug)
 
     def solve_nonlinear(self, inputs, outputs, resid):
 
-        (outputs['spinner_mass']) \
-            =self.spinner.compute(inputs['rotor_diameter'])    
+        (outputs['spinner_mass'], _, _) \
+            = self.spinner.compute(inputs['blade_root_diameter']) 
         
         return outputs
 
 #%%-----------------------
-
-# Main code to run hub system examples
-if __name__ == "__main__":
-
-    #TODO: fused_hubse examples
-    pass
-
-#-------------------------------------------------------------------------
 
 class HubSE(Group):
 
@@ -231,10 +240,17 @@ class HubSE(Group):
               The HubSE class is used to represent the hub system of a wind turbine. 
               HubSE integrates the hub, pitch system and spinner / nose cone components for the hub system.
         '''
-        self.add('hub', Hub_OM(blade_number, debug=debug), ['*'])
-        self.add('pitchSystem', PitchSystem_OM(blade_number), ['*'])
-        self.add('spinner', Spinner_OM(), ['*'])
-        self.add('adder', Hub_System_Adder_OM(blade_number), ['*'])
+        self.add('hub',                    Hub_OM(blade_number, debug=debug), ['*'])
+        self.add('pitchSystem',    PitchSystem_OM(blade_number, debug=debug), ['*'])
+        self.add('spinner',            Spinner_OM(blade_number, debug=debug), ['*'])
+        self.add('adder',     Hub_System_Adder_OM(blade_number, debug=debug), ['*'])
+        
+        self.add('rotor_diameter',      IndepVarComp('rotor_diameter', 0.0), ['*'])
+        self.add('blade_root_diameter', IndepVarComp('blade_root_diameter', 0.0), ['*'])
+        self.add('machine_rating',      IndepVarComp('machine_rating', 0.0), ['*'])
+        self.add('blade_mass',          IndepVarComp('blade_mass',     0.0), ['*'])
+        self.add('shaft_angle',         IndepVarComp('shaft_angle',    0.0), ['*'])
+        self.add('rotor_rpm',           IndepVarComp('rotor_rpm',      0.0), ['*'])
         
 class HubMassOnlySE(Group):
 
@@ -246,30 +262,41 @@ class HubMassOnlySE(Group):
               HubSE integrates the hub, pitch system and spinner / nose cone components for the hub system.
               Mass only here, because CM has a dependency on main bearing location, which can only be calculated once the full rotor mass is set
         '''
-        self.add('hub', Hub_OM(blade_number, debug=debug), ['*'])
+        self.add('hub',                 Hub_OM(blade_number, debug=debug), ['*'])
         self.add('pitchSystem', PitchSystem_OM(blade_number, debug=debug), ['*'])
-        self.add('spinner', Spinner_OM(debug=debug), ['*'])
-        self.add('adder', Hub_Mass_Adder_OM(blade_number, debug=debug), ['*'])
+        self.add('spinner',         Spinner_OM(blade_number, debug=debug), ['*'])
+        self.add('adder',    Hub_Mass_Adder_OM(blade_number, debug=debug), ['*'])
         
 #%%----------------------------
         
         #-------------------------------------------------------------------------
         # Examples based on reference turbines including the NREL 5 MW, WindPACT 1.5 MW and the GRC 750 kW system.
 
-def example_5MW_4pt():
+def example_5MW_4pt(debug=False):
     
     # simple test of module
     
     blade_number = 3
 
-    prob=Problem(root=HubSE(blade_number))
+    prob=Problem(root=HubSE(blade_number, debug=debug))
+    '''
+    recorder = HDF5Recorder('dump5MW4pt.h5')
+    recorder.options['record_params'] = True
+    recorder.options['record_metadata'] = True
+    prob.driver.add_recorder(recorder)
+    '''
+    
     prob.setup()
-
+    #view_connections(prob.root, show_browser=True)
+    #view_tree(prob, show_browser=True)
+    view_model(prob, show_browser=True)
+    
     prob['rotor_diameter'] = 126.0  # m
     prob['blade_root_diameter'] = 3.542
     prob['machine_rating'] = 5000.0
     prob['blade_mass'] = 17740.0  # kg
     prob['shaft_angle'] = np.radians(5)
+    prob['rotor_rpm'] = 12.1
     #prob['distance_hub2mb'] = 0.0
     #prob['MB1_location'] = [0.0, 0.0, 0.0]
 
@@ -281,7 +308,7 @@ def example_5MW_4pt():
 
     prob.run()
 
-    print("NREL 5 MW turbine test")
+    print("NREL 5 MW spherical-hub turbine test")
     print(prob.root.unknowns.dump())
 
 #%%----------------------------
@@ -385,4 +412,5 @@ def example_750kW_4pt():
 # Main code to run hub system examples
 if __name__ == "__main__":
 
-    example_5MW_4pt()
+    debug = True
+    example_5MW_4pt(debug=debug)
