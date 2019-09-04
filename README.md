@@ -1,3 +1,11 @@
+# DEPRECATED
+------------
+
+**THIS REPOSITORY IS DEPRECATED AND WILL BE ARCHIVED (READ-ONLY) IN NOVEMBER 2019.**
+
+WISDEM has moved to a single, integrated repository at https://github.com/wisdem/wisdem
+
+---------------
 # DriveSE
 
 DriveSE is a set of models to size wind turbine components from the hub system, drivetrain and overall nacelle.  It replaces the Drive WindPACT (DriveWPACT) model which was based on older technology and empirical data.  The new models are physics-based and provide sizing of components based off of key system configuration parameters as well as the aerodynamic loads from the rotor. 
